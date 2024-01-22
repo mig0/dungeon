@@ -11,12 +11,12 @@ cell4 = Actor('rock')
 cell5 = Actor('border')
 
 # Игровое окно
-PLAY_MAP_SIZE_X = 7
-PLAY_MAP_SIZE_Y = 7
-WHOLE_MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
-WHOLE_MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
-WIDTH = cell.width * WHOLE_MAP_SIZE_X
-HEIGHT = cell.height * WHOLE_MAP_SIZE_Y
+PLAY_MAP_SIZE_X = 12
+PLAY_MAP_SIZE_Y = 10
+MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
+MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
+WIDTH = cell.width * MAP_SIZE_X
+HEIGHT = cell.height * MAP_SIZE_Y
 
 MIN_ENEMY_HEALTH = 10
 MAX_ENEMY_HEALTH = 20
@@ -37,18 +37,7 @@ mode = "game"
 TITLE = "WeCode и Драконы" # Заголовок окна игры
 FPS = 30 # Количество кадров в секунду
 
-my_map = [
-	[5, 5, 5, 5, 5, 5, 5, 5, 5],
-	[5, 1, 1, 4, 1, 1, 1, 1, 5],
-	[5, 1, 1, 2, 1, 3, 1, 4, 5],
-	[5, 1, 1, 1, 2, 1, 1, 1, 5],
-	[5, 1, 3, 2, 1, 1, 3, 1, 5],
-	[5, 1, 1, 1, 1, 3, 1, 1, 5],
-	[5, 4, 1, 3, 1, 1, 2, 1, 5],
-	[5, 1, 1, 1, 1, 4, 1, 1, 5],
-	[5, 5, 5, 5, 5, 5, 5, 5, 5],
-	[0, 0, 0, 0, 0, 0, 0, 0, 0],  # Строка со здоровьем и атакой
-]
+my_map = []  # will be generated
 map_cells = [ cell, cell1, cell2, cell3, cell4, cell5 ]
 
 # Главный герой
@@ -56,11 +45,25 @@ char = Actor('stand', topleft=(cell.width, cell.height))
 
 enemies = []
 hearts = []
-swords = []   
+swords = []
+
+def generate_map():
+	for y in range(MAP_SIZE_Y):
+		if y == 0 or y == PLAY_MAP_SIZE_Y + 1:
+			line = [5] * MAP_SIZE_X
+		elif y == MAP_SIZE_Y - 1:
+			line = [0] * MAP_SIZE_X
+		else:
+			line = [5]
+			for x in range(PLAY_MAP_SIZE_X):
+				line.append(random.randint(1, 4))
+			line.append(5)
+		my_map.append(line)
 
 def init_game():
 	char.health = INITIAL_CHAR_HEALTH
 	char.attack = INITIAL_CHAR_ATTACK
+	generate_map()
 	# generate enemies
 	for i in range(MAX_ENEMIES):
 		positioned = False
@@ -84,23 +87,32 @@ def init_game():
 init_game()
 
 #Отрисовка карты
-def map_draw():
+def draw_map():
 	for i in range(len(my_map)):
 		for j in range(len(my_map[0])):
 			map_cell = map_cells[my_map[i][j]]
 			map_cell.left = cell.width * j
 			map_cell.top = cell.height * i
 			map_cell.draw()
+
+def draw_status():
+	health_label = "HP:"
+	health_value = str(char.health)
+	attack_label = "AP:"
+	attack_value = str(char.attack)
+	status_y = HEIGHT - cell.height / 2
+	screen.draw.text(health_label, center=(00000 + cell.width * 0.5, status_y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(health_value, center=(00000 + cell.width * 1.5, status_y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(attack_label, center=(WIDTH - cell.width * 1.5, status_y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(attack_value, center=(WIDTH - cell.width * 0.5, status_y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+
 #Отрисовка
 def draw():
 	screen.fill("#2f3542")
 	if mode == 'game' or mode == "end":
-		map_draw()
+		draw_map()
+		draw_status()
 		char.draw()
-		screen.draw.text("HP:", center=(25, 475), color='white', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-		screen.draw.text(str(char.health), center=(75, 475), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-		screen.draw.text("AP:", center=(375, 475), color='white', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-		screen.draw.text(str(char.attack), center=(425, 475), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 		for enemy in enemies:
 			enemy.draw()
 		for heart in hearts:
