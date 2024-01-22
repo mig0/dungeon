@@ -3,15 +3,20 @@
 import random
 import pygame
 
-# Игровое окно
-cell = Actor('border')
+cell = Actor('marble')
 cell1 = Actor('floor')
 cell2 = Actor("crack")
 cell3 = Actor("bones")
-size_w = 9 # Ширина поля в клетках
-size_h = 10 # Высота поля в клетках
-WIDTH = cell.width * size_w
-HEIGHT = cell.height * size_h
+cell4 = Actor('rock')
+cell5 = Actor('border')
+
+# Игровое окно
+PLAY_MAP_SIZE_X = 7
+PLAY_MAP_SIZE_Y = 7
+WHOLE_MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
+WHOLE_MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
+WIDTH = cell.width * WHOLE_MAP_SIZE_X
+HEIGHT = cell.height * WHOLE_MAP_SIZE_Y
 
 MIN_ENEMY_HEALTH = 10
 MAX_ENEMY_HEALTH = 20
@@ -33,18 +38,18 @@ TITLE = "WeCode и Драконы" # Заголовок окна игры
 FPS = 30 # Количество кадров в секунду
 
 my_map = [
-	[0, 0, 0, 0, 0, 0, 0, 0, 0],
-	[0, 1, 1, 1, 1, 1, 1, 1, 0],
-	[0, 1, 1, 2, 1, 3, 1, 1, 0],
-	[0, 1, 1, 1, 2, 1, 1, 1, 0],
-	[0, 1, 3, 2, 1, 1, 3, 1, 0],
-	[0, 1, 1, 1, 1, 3, 1, 1, 0],
-	[0, 1, 1, 3, 1, 1, 2, 1, 0],
-	[0, 1, 1, 1, 1, 1, 1, 1, 0],
-	[0, 0, 0, 0, 0, 0, 0, 0, 0],
-	[1, 1, 1, 1, 1, 1, 1, 1, 1],  # Строка со здоровьем и атакой
+	[5, 5, 5, 5, 5, 5, 5, 5, 5],
+	[5, 1, 1, 4, 1, 1, 1, 1, 5],
+	[5, 1, 1, 2, 1, 3, 1, 4, 5],
+	[5, 1, 1, 1, 2, 1, 1, 1, 5],
+	[5, 1, 3, 2, 1, 1, 3, 1, 5],
+	[5, 1, 1, 1, 1, 3, 1, 1, 5],
+	[5, 4, 1, 3, 1, 1, 2, 1, 5],
+	[5, 1, 1, 1, 1, 4, 1, 1, 5],
+	[5, 5, 5, 5, 5, 5, 5, 5, 5],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],  # Строка со здоровьем и атакой
 ]
-map_cells = [ cell, cell1, cell2, cell3 ]
+map_cells = [ cell, cell1, cell2, cell3, cell4, cell5 ]
 
 # Главный герой
 char = Actor('stand', topleft=(cell.width, cell.height))
@@ -70,7 +75,7 @@ def init_game():
 					positioned = False
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
-		enemy = Actor("enemy", topleft=(left, top))
+		enemy = Actor("skeleton", topleft=(left, top))
 		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
 		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
 		enemy.bonus = random.randint(0, 2)
