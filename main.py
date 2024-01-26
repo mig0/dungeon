@@ -24,12 +24,16 @@ MAX_ENEMY_ATTACK = 10
 MIN_CHAR_HEALTH = 0
 INITIAL_CHAR_HEALTH = 100
 INITIAL_CHAR_ATTACK = 5
-BONUS_HEALTH = 7
-BONUS_ATTACK = 7
+BONUS_HEALTH_VALUE = 7
+BONUS_ATTACK_VALUE = 7
 MAX_ENEMIES = 5
 MAX_GAME_BATTLES = 3
 CENTER_X = WIDTH / 2
 STATUS_Y = HEIGHT - CELL_H / 2
+
+BONUS_NONE   = 0
+BONUS_HEALTH = 1
+BONUS_ATTACK = 2
 
 # game sprites
 cell1 = Actor('floor')
@@ -40,6 +44,9 @@ cell5 = Actor('border')
 cell6 = Actor('marble')
 
 char = Actor('stand', topleft=(CELL_W, CELL_H))
+
+status_heart = Actor("heart", (CENTER_X - 2 * CELL_W / 2, STATUS_Y))
+status_sword = Actor("sword", (CENTER_X + 1 * CELL_W / 2, STATUS_Y))
 
 # game variables
 num_battles_won = 0
@@ -52,6 +59,9 @@ map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
 enemies = []
 hearts = []
 swords = []
+
+num_bonus_health = 0
+num_bonus_attack = 0
 
 def generate_map():
 	for y in range(MAP_SIZE_Y):
@@ -67,6 +77,8 @@ def generate_map():
 		my_map.append(line)
 
 def init_game():
+	global num_bonus_health, num_bonus_attack
+
 	char.health = INITIAL_CHAR_HEALTH
 	char.attack = INITIAL_CHAR_ATTACK
 	generate_map()
@@ -88,6 +100,10 @@ def init_game():
 		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
 		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
 		enemy.bonus = random.randint(0, 2)
+		if enemy.bonus == BONUS_HEALTH:
+			num_bonus_health += 1
+		elif enemy.bonus == BONUS_ATTACK:
+			num_bonus_attack += 1
 		enemies.append(enemy)
 
 init_game()
@@ -109,6 +125,10 @@ def draw_status():
 	screen.draw.text(health_value, center=(00000 + CELL_W * 1.5, STATUS_Y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	screen.draw.text(attack_label, center=(WIDTH - CELL_W * 1.5, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	screen.draw.text(attack_value, center=(WIDTH - CELL_W * 0.5, STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	status_heart.draw()
+	screen.draw.text(str(num_bonus_health), center=(CENTER_X - 1 * CELL_W / 2, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	status_sword.draw()
+	screen.draw.text(str(num_bonus_attack), center=(CENTER_X + 2 * CELL_W / 2, STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 
 def draw():
 	screen.fill("#2f3542")
@@ -160,10 +180,10 @@ def on_key_down(key):
 		char.health -= enemy.attack
 		if enemy.health <= 0:
 			# fallen bonuses upon enemy death
-			if enemy.bonus == 1:
+			if enemy.bonus == BONUS_HEALTH:
 				heart = Actor('heart', center=enemy.pos)
 				hearts.append(heart)
-			elif enemy.bonus == 2:
+			elif enemy.bonus == BONUS_ATTACK:
 				sword = Actor('sword', center=enemy.pos)
 				swords.append(sword)
 			enemies.pop(enemy_index)
@@ -187,15 +207,20 @@ def check_victory():
 		mode = "end"
 
 def update(dt):
+	global num_bonus_health, num_bonus_attack
+
 	check_victory()
+
 	for i in range(len(hearts)):
 		if char.colliderect(hearts[i]):
-			char.health += BONUS_HEALTH
+			char.health += BONUS_HEALTH_VALUE
 			hearts.pop(i)
+			num_bonus_health -= 1
 			break
 
 	for i in range(len(swords)):
 		if char.colliderect(swords[i]):
-			char.attack += BONUS_ATTACK
+			char.attack += BONUS_ATTACK_VALUE
 			swords.pop(i)
+			num_bonus_attack -= 1
 			break
