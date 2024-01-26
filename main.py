@@ -3,20 +3,19 @@
 import random
 import pygame
 
-cell = Actor('marble')
-cell1 = Actor('floor')
-cell2 = Actor("crack")
-cell3 = Actor("bones")
-cell4 = Actor('rock')
-cell5 = Actor('border')
+# game constants
+TITLE = "Skull Labyrinth"
+FPS = 30
 
-# Игровое окно
 PLAY_MAP_SIZE_X = 12
 PLAY_MAP_SIZE_Y = 10
 MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
 MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
-WIDTH = cell.width * MAP_SIZE_X
-HEIGHT = cell.height * MAP_SIZE_Y
+
+CELL_W = 50
+CELL_H = 50
+WIDTH = CELL_W * MAP_SIZE_X
+HEIGHT = CELL_H * MAP_SIZE_Y
 
 MIN_ENEMY_HEALTH = 10
 MAX_ENEMY_HEALTH = 20
@@ -29,19 +28,26 @@ BONUS_HEALTH = 7
 BONUS_ATTACK = 7
 MAX_ENEMIES = 5
 MAX_GAME_BATTLES = 3
+CENTER_X = WIDTH / 2
+STATUS_Y = HEIGHT - CELL_H / 2
 
+# game sprites
+cell1 = Actor('floor')
+cell2 = Actor("crack")
+cell3 = Actor("bones")
+cell4 = Actor('rock')
+cell5 = Actor('border')
+cell6 = Actor('marble')
+
+char = Actor('stand', topleft=(CELL_W, CELL_H))
+
+# game variables
 num_battles_won = 0
 is_game_won = False
 mode = "game"
 
-TITLE = "WeCode и Драконы" # Заголовок окна игры
-FPS = 30 # Количество кадров в секунду
-
 my_map = []  # will be generated
-map_cells = [ cell, cell1, cell2, cell3, cell4, cell5 ]
-
-# Главный герой
-char = Actor('stand', topleft=(cell.width, cell.height))
+map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
 
 enemies = []
 hearts = []
@@ -50,14 +56,14 @@ swords = []
 def generate_map():
 	for y in range(MAP_SIZE_Y):
 		if y == 0 or y == PLAY_MAP_SIZE_Y + 1:
-			line = [5] * MAP_SIZE_X
+			line = [4] * MAP_SIZE_X
 		elif y == MAP_SIZE_Y - 1:
-			line = [0] * MAP_SIZE_X
+			line = [5] * MAP_SIZE_X
 		else:
-			line = [5]
+			line = [4]
 			for x in range(PLAY_MAP_SIZE_X):
-				line.append(random.randint(1, 4))
-			line.append(5)
+				line.append(random.randint(0, 3))
+			line.append(4)
 		my_map.append(line)
 
 def init_game():
@@ -70,8 +76,8 @@ def init_game():
 		num_tries = 10000
 		while not positioned and num_tries > 0:
 			num_tries -= 1
-			left = random.randint(1, 7) * cell.width
-			top  = random.randint(1, 7) * cell.height
+			left = random.randint(1, 7) * CELL_W
+			top  = random.randint(1, 7) * CELL_H
 			positioned = True
 			for other in (enemies + hearts + swords + [char]):
 				if left == other.left and top == other.top:
@@ -86,13 +92,12 @@ def init_game():
 
 init_game()
 
-#Отрисовка карты
 def draw_map():
 	for i in range(len(my_map)):
 		for j in range(len(my_map[0])):
 			map_cell = map_cells[my_map[i][j]]
-			map_cell.left = cell.width * j
-			map_cell.top = cell.height * i
+			map_cell.left = CELL_W * j
+			map_cell.top = CELL_H * i
 			map_cell.draw()
 
 def draw_status():
@@ -100,13 +105,11 @@ def draw_status():
 	health_value = str(char.health)
 	attack_label = "AP:"
 	attack_value = str(char.attack)
-	status_y = HEIGHT - cell.height / 2
-	screen.draw.text(health_label, center=(00000 + cell.width * 0.5, status_y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(health_value, center=(00000 + cell.width * 1.5, status_y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(attack_label, center=(WIDTH - cell.width * 1.5, status_y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(attack_value, center=(WIDTH - cell.width * 0.5, status_y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(health_label, center=(00000 + CELL_W * 0.5, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(health_value, center=(00000 + CELL_W * 1.5, STATUS_Y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(attack_label, center=(WIDTH - CELL_W * 1.5, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(attack_value, center=(WIDTH - CELL_W * 0.5, STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 
-#Отрисовка
 def draw():
 	screen.fill("#2f3542")
 	if mode == 'game' or mode == "end":
@@ -120,10 +123,9 @@ def draw():
 		for sword in swords:
 			sword.draw()
 		for enemy in enemies:
-			screen.draw.text(str(enemy.health), center=(enemy.left + cell.width / 2, enemy.top - 34), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-			screen.draw.text(str(enemy.attack), center=(enemy.left + cell.width / 2, enemy.top - 14), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+			screen.draw.text(str(enemy.health), center=(enemy.left + CELL_W / 2, enemy.top - 34), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+			screen.draw.text(str(enemy.attack), center=(enemy.left + CELL_W / 2, enemy.top - 14), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 
-	# Окно победы или поражения
 	if mode == "end":
 		msg_surface = pygame.Surface((WIDTH, 60))
 		msg_surface.set_alpha(50)
@@ -131,25 +133,24 @@ def draw():
 		screen.blit(msg_surface, (0, HEIGHT / 2 - 30))
 		screen.draw.text("Победа!" if is_game_won else "Поражение!", center=(WIDTH / 2, HEIGHT / 2), color='white', fontsize=46)
 
-# Управление
 def on_key_down(key):
 #	if mode != "game":
 #		return
 
 	old_x = char.x
 	old_y = char.y
-	if keyboard.right and char.x + cell.width < WIDTH - cell.width:
-		char.x += cell.width
+	if keyboard.right and char.x + CELL_W < WIDTH - CELL_W:
+		char.x += CELL_W
 		char.image = 'stand'
-	elif keyboard.left and char.x - cell.width > cell.width:
-		char.x -= cell.width
+	elif keyboard.left and char.x - CELL_W > CELL_W:
+		char.x -= CELL_W
 		char.image = 'left'
-	elif keyboard.down and char.y + cell.height < HEIGHT - cell.height*2:
-		char.y += cell.height
-	elif keyboard.up and char.y - cell.height > cell.height:
-		char.y -= cell.height
+	elif keyboard.down and char.y + CELL_H < HEIGHT - CELL_H*2:
+		char.y += CELL_H
+	elif keyboard.up and char.y - CELL_H > CELL_H:
+		char.y -= CELL_H
 
-	# Столкновение с врагами
+	# collision with enemies
 	enemy_index = char.collidelist(enemies)
 	if enemy_index != -1:
 		char.x = old_x
@@ -158,7 +159,7 @@ def on_key_down(key):
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		if enemy.health <= 0:
-			# Выпадение бонусов при гибели врага
+			# fallen bonuses upon enemy death
 			if enemy.bonus == 1:
 				heart = Actor('heart', center=enemy.pos)
 				hearts.append(heart)
@@ -167,7 +168,6 @@ def on_key_down(key):
 				swords.append(sword)
 			enemies.pop(enemy_index)
 
-# Логика победы или поражения
 def check_victory():
 	global mode, num_battles_won, is_game_won
 
@@ -186,7 +186,6 @@ def check_victory():
 		is_game_won = False
 		mode = "end"
 
-# Логика бонусов
 def update(dt):
 	check_victory()
 	for i in range(len(hearts)):
