@@ -16,6 +16,8 @@ CELL_W = 50
 CELL_H = 50
 WIDTH = CELL_W * MAP_SIZE_X
 HEIGHT = CELL_H * MAP_SIZE_Y
+CENTER_X = WIDTH / 2
+STATUS_Y = HEIGHT - CELL_H / 2
 
 MIN_ENEMY_HEALTH = 10
 MAX_ENEMY_HEALTH = 20
@@ -27,9 +29,8 @@ INITIAL_CHAR_ATTACK = 5
 BONUS_HEALTH_VALUE = 7
 BONUS_ATTACK_VALUE = 7
 MAX_ENEMIES = 5
+EMPTY_FLOOR_FREQUENCY = 3  # 0 means empty floor is as frequent as non empty
 MAX_GAME_BATTLES = 3
-CENTER_X = WIDTH / 2
-STATUS_Y = HEIGHT - CELL_H / 2
 
 BONUS_NONE   = 0
 BONUS_HEALTH = 1
@@ -39,7 +40,7 @@ BONUS_ATTACK = 2
 cell1 = Actor('floor')
 cell2 = Actor("crack")
 cell3 = Actor("bones")
-cell4 = Actor('rock')
+cell4 = Actor('rocks')
 cell5 = Actor('border')
 cell6 = Actor('marble')
 
@@ -72,7 +73,9 @@ def generate_map():
 		else:
 			line = [4]
 			for x in range(PLAY_MAP_SIZE_X):
-				line.append(random.randint(0, 3))
+				cell_type = random.randint(0, 3 + EMPTY_FLOOR_FREQUENCY)
+				if cell_type > 3: cell_type = 0
+				line.append(cell_type)
 			line.append(4)
 		my_map.append(line)
 
