@@ -12,23 +12,24 @@ PLAY_MAP_SIZE_Y = 10
 MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
 MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
 
-CELL_W = 50
-CELL_H = 50
+CELL_W = 64
+CELL_H = 64
 WIDTH = CELL_W * MAP_SIZE_X
 HEIGHT = CELL_H * MAP_SIZE_Y
-CENTER_X = WIDTH / 2
-STATUS_Y = HEIGHT - CELL_H / 2
+POS_CENTER_X = WIDTH / 2
+POS_CENTER_Y = HEIGHT / 2
+POS_STATUS_Y = HEIGHT - CELL_H / 2
 
-MIN_ENEMY_HEALTH = 10
-MAX_ENEMY_HEALTH = 20
+MAX_ENEMIES = int((PLAY_MAP_SIZE_X + PLAY_MAP_SIZE_Y) / 2)
+MIN_ENEMY_HEALTH = 5
+MAX_ENEMY_HEALTH = 15
 MIN_ENEMY_ATTACK = 5
 MAX_ENEMY_ATTACK = 10
 MIN_CHAR_HEALTH = 0
-INITIAL_CHAR_HEALTH = 100
+INITIAL_CHAR_HEALTH = int(MAX_ENEMIES * (MAX_ENEMY_HEALTH + MIN_ENEMY_HEALTH) / 2)
 INITIAL_CHAR_ATTACK = 5
 BONUS_HEALTH_VALUE = 7
 BONUS_ATTACK_VALUE = 7
-MAX_ENEMIES = 5
 EMPTY_FLOOR_FREQUENCY = 3  # 0 means empty floor is as frequent as non empty
 MAX_GAME_BATTLES = 3
 
@@ -36,25 +37,55 @@ BONUS_NONE   = 0
 BONUS_HEALTH = 1
 BONUS_ATTACK = 2
 
+def get_map_cell_pos(x, y):
+	return (CELL_W * (x + 0.5), CELL_H * (y + 0.5))
+
+def get_rel_map_cell_pos(c, pos):
+	pos_x1, pos_y1 = get_map_cell_pos(*c)
+	pos_x2, pos_y2 = pos
+	return (pos_x1 + pos_x2, pos_y1 + pos_y2)
+
+def get_rel_actor_pos(actor, pos):
+	return get_rel_map_cell_pos(actor.c, pos)
+
+def set_actor_coord(actor, x, y):
+	actor.c = (x, y)
+	actor.cx = x
+	actor.cy = y
+	actor.x, actor.y = get_map_cell_pos(x, y)
+
+def create_actor(image_name, x, y):
+	actor = Actor(image_name)
+	set_actor_coord(actor, x, y)
+	return actor
+
+def move_map_actor(actor, c):
+	x, y = c
+	set_actor_coord(actor, actor.cx + x, actor.cy + y)
+
 # game sprites
-cell1 = Actor('floor')
-cell2 = Actor("crack")
-cell3 = Actor("bones")
-cell4 = Actor('rocks')
-cell5 = Actor('border')
-cell6 = Actor('marble')
+#theme_prefix = 'modern2/'
+#theme_prefix = 'modern1/'
+#theme_prefix = 'ancient1/'
+theme_prefix = 'classic/'
+cell1 = Actor(theme_prefix + 'floor')
+cell2 = Actor(theme_prefix + 'crack')
+cell3 = Actor(theme_prefix + 'bones')
+cell4 = Actor(theme_prefix + 'rocks')
+cell5 = Actor(theme_prefix + 'border')
+cell6 = Actor(theme_prefix + 'status')
 
-char = Actor('stand', topleft=(CELL_W, CELL_H))
+char = create_actor('stand', 1, 1)
 
-status_heart = Actor("heart", (CENTER_X - 2 * CELL_W / 2, STATUS_Y))
-status_sword = Actor("sword", (CENTER_X + 1 * CELL_W / 2, STATUS_Y))
+status_heart = Actor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
+status_sword = Actor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
 
 # game variables
 num_battles_won = 0
 is_game_won = False
 mode = "game"
 
-my_map = []  # will be generated
+map = []  # will be generated
 map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
 
 enemies = []
@@ -77,7 +108,7 @@ def generate_map():
 				if cell_type > 3: cell_type = 0
 				line.append(cell_type)
 			line.append(4)
-		my_map.append(line)
+		map.append(line)
 
 def init_game():
 	global num_bonus_health, num_bonus_attack
@@ -91,15 +122,15 @@ def init_game():
 		num_tries = 10000
 		while not positioned and num_tries > 0:
 			num_tries -= 1
-			left = random.randint(1, 7) * CELL_W
-			top  = random.randint(1, 7) * CELL_H
+			x = random.randint(1, PLAY_MAP_SIZE_X)
+			y = random.randint(1, PLAY_MAP_SIZE_Y)
 			positioned = True
 			for other in (enemies + hearts + swords + [char]):
-				if left == other.left and top == other.top:
+				if (x, y) == other.c:
 					positioned = False
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
-		enemy = Actor("skeleton", topleft=(left, top))
+		enemy = create_actor("skeleton", x, y)
 		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
 		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
 		enemy.bonus = random.randint(0, 2)
@@ -112,26 +143,31 @@ def init_game():
 init_game()
 
 def draw_map():
-	for i in range(len(my_map)):
-		for j in range(len(my_map[0])):
-			map_cell = map_cells[my_map[i][j]]
-			map_cell.left = CELL_W * j
-			map_cell.top = CELL_H * i
-			map_cell.draw()
+	for i in range(len(map)):
+		for j in range(len(map[0])):
+			cell_type = map[i][j]
+			cell_types = [0]
+			if cell_type > 0:
+				cell_types.append(cell_type)
+			for cell_type in cell_types:
+				map_cell = map_cells[cell_type]
+				map_cell.left = CELL_W * j
+				map_cell.top = CELL_H * i
+				map_cell.draw()
 
 def draw_status():
 	health_label = "HP:"
 	health_value = str(char.health)
 	attack_label = "AP:"
 	attack_value = str(char.attack)
-	screen.draw.text(health_label, center=(00000 + CELL_W * 0.5, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(health_value, center=(00000 + CELL_W * 1.5, STATUS_Y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(attack_label, center=(WIDTH - CELL_W * 1.5, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(attack_value, center=(WIDTH - CELL_W * 0.5, STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(health_label, center=(00000 + CELL_W * 0.5, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(health_value, center=(00000 + CELL_W * 1.5, POS_STATUS_Y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(attack_label, center=(WIDTH - CELL_W * 1.5, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(attack_value, center=(WIDTH - CELL_W * 0.5, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	status_heart.draw()
-	screen.draw.text(str(num_bonus_health), center=(CENTER_X - 1 * CELL_W / 2, STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	status_sword.draw()
-	screen.draw.text(str(num_bonus_attack), center=(CENTER_X + 2 * CELL_W / 2, STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(str(num_bonus_attack), center=(POS_CENTER_X + 2 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 
 def draw():
 	screen.fill("#2f3542")
@@ -146,48 +182,51 @@ def draw():
 		for sword in swords:
 			sword.draw()
 		for enemy in enemies:
-			screen.draw.text(str(enemy.health), center=(enemy.left + CELL_W / 2, enemy.top - 34), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-			screen.draw.text(str(enemy.attack), center=(enemy.left + CELL_W / 2, enemy.top - 14), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+			screen.draw.text(str(enemy.health), center=get_rel_actor_pos(enemy, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+			screen.draw.text(str(enemy.attack), center=get_rel_actor_pos(enemy, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 
 	if mode == "end":
 		msg_surface = pygame.Surface((WIDTH, 60))
 		msg_surface.set_alpha(50)
 		msg_surface.fill((0, 0, 0))
 		screen.blit(msg_surface, (0, HEIGHT / 2 - 30))
-		screen.draw.text("Победа!" if is_game_won else "Поражение!", center=(WIDTH / 2, HEIGHT / 2), color='white', fontsize=46)
+		screen.draw.text("Победа!" if is_game_won else "Поражение!", center=(POS_CENTER_X, POS_CENTER_Y), color='white', fontsize=46)
 
 def on_key_down(key):
 #	if mode != "game":
 #		return
 
-	old_x = char.x
-	old_y = char.y
-	if keyboard.right and char.x + CELL_W < WIDTH - CELL_W:
-		char.x += CELL_W
+	diff = None
+
+	if keyboard.right and char.cx < PLAY_MAP_SIZE_X:
+		diff = (+1, 0)
 		char.image = 'stand'
-	elif keyboard.left and char.x - CELL_W > CELL_W:
-		char.x -= CELL_W
+	elif keyboard.left and char.cx > 1:
+		diff = (-1, 0)
 		char.image = 'left'
-	elif keyboard.down and char.y + CELL_H < HEIGHT - CELL_H*2:
-		char.y += CELL_H
-	elif keyboard.up and char.y - CELL_H > CELL_H:
-		char.y -= CELL_H
+	elif keyboard.down and char.cy < PLAY_MAP_SIZE_Y:
+		diff = (0, +1)
+	elif keyboard.up and char.cy > 1:
+		diff = (0, -1)
+
+	if diff:
+		move_map_actor(char, diff)
 
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
 	if enemy_index != -1:
-		char.x = old_x
-		char.y = old_y
+		if diff:
+			move_map_actor(char, (-diff[0], -diff[1]))
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		if enemy.health <= 0:
 			# fallen bonuses upon enemy death
 			if enemy.bonus == BONUS_HEALTH:
-				heart = Actor('heart', center=enemy.pos)
+				heart = create_actor('heart', *enemy.c)
 				hearts.append(heart)
 			elif enemy.bonus == BONUS_ATTACK:
-				sword = Actor('sword', center=enemy.pos)
+				sword = create_actor('sword', *enemy.c)
 				swords.append(sword)
 			enemies.pop(enemy_index)
 
