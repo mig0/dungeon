@@ -20,13 +20,12 @@ POS_CENTER_X = WIDTH / 2
 POS_CENTER_Y = HEIGHT / 2
 POS_STATUS_Y = HEIGHT - CELL_H / 2
 
-MAX_ENEMIES = int((PLAY_MAP_SIZE_X + PLAY_MAP_SIZE_Y) / 2)
 MIN_ENEMY_HEALTH = 5
 MAX_ENEMY_HEALTH = 15
 MIN_ENEMY_ATTACK = 5
 MAX_ENEMY_ATTACK = 10
 MIN_CHAR_HEALTH = 0
-INITIAL_CHAR_HEALTH = int(MAX_ENEMIES * (MAX_ENEMY_HEALTH + MIN_ENEMY_HEALTH) / 2)
+#INITIAL_CHAR_HEALTH = 100
 INITIAL_CHAR_ATTACK = 5
 BONUS_HEALTH_VALUE = 7
 BONUS_ATTACK_VALUE = 7
@@ -64,16 +63,12 @@ def move_map_actor(actor, c):
 	set_actor_coord(actor, actor.cx + x, actor.cy + y)
 
 # game sprites
-#theme_prefix = 'modern2/'
-#theme_prefix = 'modern1/'
-#theme_prefix = 'ancient1/'
-theme_prefix = 'classic/'
-cell1 = Actor(theme_prefix + 'floor')
-cell2 = Actor(theme_prefix + 'crack')
-cell3 = Actor(theme_prefix + 'bones')
-cell4 = Actor(theme_prefix + 'rocks')
-cell5 = Actor(theme_prefix + 'border')
-cell6 = Actor(theme_prefix + 'status')
+cell1 = None
+cell2 = None
+cell3 = None
+cell4 = None
+cell5 = None
+cell6 = None
 
 char = create_actor('stand', 1, 1)
 
@@ -81,12 +76,11 @@ status_heart = Actor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
 status_sword = Actor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
 
 # game variables
-num_battles_won = 0
 is_game_won = False
-mode = "game"
+mode = "start"
 
 map = []  # will be generated
-map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
+map_cells = []  # will be generated
 
 enemies = []
 hearts = []
@@ -94,6 +88,41 @@ swords = []
 
 num_bonus_health = 0
 num_bonus_attack = 0
+
+init_level_timer = 0
+
+levels = [
+	{
+		"n": 1,
+		"name": "First skeleton encounter",
+		"num_enemies": 5,
+		"theme": "classic",
+		"char_health": 100,
+	},
+	{
+		"n": 2,
+		"name": "More skeletons...",
+		"num_enemies": 10,
+		"theme": "ancient1",
+		"char_health": 150,
+	},
+	{
+		"n": 3,
+		"name": "Even more skeletons...",
+		"num_enemies": 15,
+		"theme": "modern1",
+		"char_health": 200,
+	},
+	{
+		"n": 4,
+		"name": "Help me with skeletons!",
+		"num_enemies": PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y - 1,
+		"theme": "modern2",
+		"char_health": 10000,
+	},
+]
+level = None
+level_idx = -1
 
 def generate_map():
 	for y in range(MAP_SIZE_Y):
@@ -110,14 +139,51 @@ def generate_map():
 			line.append(4)
 		map.append(line)
 
-def init_game():
-	global num_bonus_health, num_bonus_attack
+def set_theme(theme_name):
+	global cell1, cell2, cell3, cell4, cell5, cell6, map_cells
 
-	char.health = INITIAL_CHAR_HEALTH
+	theme_prefix = theme_name + '/'
+	cell1 = Actor(theme_prefix + 'floor')
+	cell2 = Actor(theme_prefix + 'crack')
+	cell3 = Actor(theme_prefix + 'bones')
+	cell4 = Actor(theme_prefix + 'rocks')
+	cell5 = Actor(theme_prefix + 'border')
+	cell6 = Actor(theme_prefix + 'status')
+
+	map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
+
+def init_new_level(offset=1):
+	global level_idx, level, mode, is_game_won, init_level_timer, num_bonus_health, num_bonus_attack, enemies, hearts, swords
+
+	if level_idx + offset < 0 or level_idx + offset > len(levels):
+		print("Requested level is out of range")
+		return
+
+	mode = "init"
+
+	level_idx += offset
+	if level_idx == len(levels):
+		mode = "end"
+		is_game_won = True
+		return
+
+	level = levels[level_idx]
+	init_level_timer = 4 * 60  # 4 seconds
+
+	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
+
+	hearts = []
+	swords = []
+	enemies = []
+	num_bonus_health = 0
+	num_bonus_attack = 0
+
 	generate_map()
+	set_theme(level["theme"])
+
 	# generate enemies
-	for i in range(MAX_ENEMIES):
+	for i in range(level["num_enemies"]):
 		positioned = False
 		num_tries = 10000
 		while not positioned and num_tries > 0:
@@ -140,7 +206,9 @@ def init_game():
 			num_bonus_attack += 1
 		enemies.append(enemy)
 
-init_game()
+	mode = "game"
+
+init_new_level()
 
 def draw_map():
 	for i in range(len(map)):
@@ -165,9 +233,9 @@ def draw_status():
 	screen.draw.text(attack_label, center=(WIDTH - CELL_W * 1.5, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	screen.draw.text(attack_value, center=(WIDTH - CELL_W * 0.5, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	status_heart.draw()
-	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
-	screen.draw.text(str(num_bonus_attack), center=(POS_CENTER_X + 2 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+	screen.draw.text(str(num_bonus_attack), center=(POS_CENTER_X + 2 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 
 def draw():
 	screen.fill("#2f3542")
@@ -182,19 +250,45 @@ def draw():
 		for sword in swords:
 			sword.draw()
 		for enemy in enemies:
-			screen.draw.text(str(enemy.health), center=get_rel_actor_pos(enemy, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-			screen.draw.text(str(enemy.attack), center=get_rel_actor_pos(enemy, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
+			screen.draw.text(str(enemy.health), center=get_rel_actor_pos(enemy, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			screen.draw.text(str(enemy.attack), center=get_rel_actor_pos(enemy, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 
 	if mode == "end":
-		msg_surface = pygame.Surface((WIDTH, 60))
+		msg_surface = pygame.Surface((WIDTH, 80))
 		msg_surface.set_alpha(50)
 		msg_surface.fill((0, 0, 0))
-		screen.blit(msg_surface, (0, HEIGHT / 2 - 30))
-		screen.draw.text("Победа!" if is_game_won else "Поражение!", center=(POS_CENTER_X, POS_CENTER_Y), color='white', fontsize=46)
+		screen.blit(msg_surface, (0, POS_CENTER_Y - 40))
+		screen.draw.text("Victory!" if is_game_won else "Defeat...", center=(POS_CENTER_X, POS_CENTER_Y), color='white', gcolor=("#008080" if is_game_won else "#800000"), owidth=0.8, ocolor="#202020", alpha=1, fontsize=60)
+
+	if mode == "game" and init_level_timer > 0:
+		msg_surface = pygame.Surface((WIDTH, 120))
+		msg_surface.set_alpha(50)
+		msg_surface.fill((0, 40, 40))
+		screen.blit(msg_surface, (0, POS_CENTER_Y - 60))
+		level_line_1 = "Level " + str(level["n"])
+		level_line_2 = level["name"]
+		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 20), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
+		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 18), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
 
 def on_key_down(key):
-#	if mode != "game":
-#		return
+	if mode != "game" and mode != "end":
+		return
+
+	if keyboard.k_0:
+		set_theme("classic")
+	if keyboard.k_1:
+		set_theme("ancient1")
+	if keyboard.k_2:
+		set_theme("modern1")
+	if keyboard.k_3:
+		set_theme("modern2")
+
+	if keyboard.p:
+		init_new_level(-1)
+	if keyboard.r:
+		init_new_level(0)
+	if keyboard.n:
+		init_new_level(+1)
 
 	diff = None
 
@@ -231,25 +325,21 @@ def on_key_down(key):
 			enemies.pop(enemy_index)
 
 def check_victory():
-	global mode, num_battles_won, is_game_won
+	global mode
 
 	if mode != "game":
 		return
 
-	if enemies == [] and char.health > MIN_CHAR_HEALTH:
-		num_battles_won += 1
-		char.health = INITIAL_CHAR_HEALTH
-		if num_battles_won >= MAX_GAME_BATTLES:
-			is_game_won = True
-			mode = "end"
-		else:
-			init_game()
+	if not enemies and char.health > MIN_CHAR_HEALTH:
+		init_new_level()
 	elif char.health <= MIN_CHAR_HEALTH:
-		is_game_won = False
 		mode = "end"
 
 def update(dt):
-	global num_bonus_health, num_bonus_attack
+	global init_level_timer, num_bonus_health, num_bonus_attack
+
+	if init_level_timer > 0:
+		init_level_timer -= 1
 
 	check_victory()
 
