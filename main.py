@@ -39,6 +39,9 @@ BONUS_ATTACK = 2
 def get_map_cell_pos(x, y):
 	return (CELL_W * (x + 0.5), CELL_H * (y + 0.5))
 
+def get_actor_pos(actor):
+	return get_map_cell_pos(*actor.c)
+
 def get_rel_map_cell_pos(c, pos):
 	pos_x1, pos_y1 = get_map_cell_pos(*c)
 	pos_x2, pos_y2 = pos
@@ -88,6 +91,8 @@ swords = []
 
 num_bonus_health = 0
 num_bonus_attack = 0
+
+killed_enemies = []
 
 init_level_timer = 0
 
@@ -242,13 +247,15 @@ def draw():
 	if mode == 'game' or mode == "end":
 		draw_map()
 		draw_status()
-		char.draw()
+		for enemy in killed_enemies:
+			enemy.draw()
 		for enemy in enemies:
 			enemy.draw()
 		for heart in hearts:
 			heart.draw()
 		for sword in swords:
 			sword.draw()
+		char.draw()
 		for enemy in enemies:
 			screen.draw.text(str(enemy.health), center=get_rel_actor_pos(enemy, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 			screen.draw.text(str(enemy.attack), center=get_rel_actor_pos(enemy, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
@@ -269,6 +276,9 @@ def draw():
 		level_line_2 = level["name"]
 		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 20), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
 		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 18), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
+
+def kill_enemy():
+	enemy = killed_enemies.pop(0)
 
 def on_key_down(key):
 	if mode != "game" and mode != "end":
@@ -309,12 +319,17 @@ def on_key_down(key):
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
 	if enemy_index != -1:
-		if diff:
-			move_map_actor(char, (-diff[0], -diff[1]))
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
 		char.health -= enemy.attack
-		if enemy.health <= 0:
+		enemy.pos = get_actor_pos(enemy)
+		if diff:
+			move_map_actor(char, (-diff[0], -diff[1]))
+			enemy.pos = get_rel_actor_pos(enemy, (diff[0] * 12, diff[1] * 12))
+		if enemy.health > 0:
+			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
+		else:
+			enemies.remove(enemy)
 			# fallen bonuses upon enemy death
 			if enemy.bonus == BONUS_HEALTH:
 				heart = create_actor('heart', *enemy.c)
@@ -322,7 +337,9 @@ def on_key_down(key):
 			elif enemy.bonus == BONUS_ATTACK:
 				sword = create_actor('sword', *enemy.c)
 				swords.append(sword)
-			enemies.pop(enemy_index)
+			enemy.angle = (random.randint(-1, 1) + 2) * 90
+			killed_enemies.append(enemy)
+			clock.schedule(kill_enemy, 0.3)
 
 def check_victory():
 	global mode
@@ -330,7 +347,7 @@ def check_victory():
 	if mode != "game":
 		return
 
-	if not enemies and char.health > MIN_CHAR_HEALTH:
+	if not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
 		init_new_level()
 	elif char.health <= MIN_CHAR_HEALTH:
 		mode = "end"
