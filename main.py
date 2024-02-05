@@ -80,6 +80,8 @@ status_sword = Actor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
 
 # game variables
 is_game_won = False
+is_music_enabled = True
+is_music_started = False
 mode = "start"
 
 map = []  # will be generated
@@ -103,6 +105,7 @@ levels = [
 		"name": "First skeleton encounter",
 		"num_enemies": 5,
 		"theme": "classic",
+		"music": "a_new_path",
 		"char_health": 100,
 	},
 	{
@@ -110,6 +113,7 @@ levels = [
 		"name": "More skeletons...",
 		"num_enemies": 10,
 		"theme": "ancient1",
+		"music": "playful_sparrow",
 		"char_health": 150,
 	},
 	{
@@ -117,6 +121,7 @@ levels = [
 		"name": "Even more skeletons...",
 		"num_enemies": 15,
 		"theme": "modern1",
+		"music": "adventures",
 		"char_health": 200,
 	},
 	{
@@ -124,6 +129,7 @@ levels = [
 		"name": "Help me with skeletons!",
 		"num_enemies": PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y - 1,
 		"theme": "modern2",
+		"music": "breath",
 		"char_health": 10000,
 	},
 ]
@@ -158,6 +164,50 @@ def set_theme(theme_name):
 
 	map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
 
+def start_music():
+	global is_music_started
+
+	if mode != "game" and mode != "end":
+		print("Called start_music outside of game or end")
+		return
+
+	is_music_started = True
+
+	if is_music_enabled:
+		track = level["music"] if mode == "game" else "victory" if is_game_won else "defeat"
+		music.play(track)
+
+def stop_music():
+	global is_music_started
+
+	is_music_started = False
+
+	if is_music_enabled:
+		music.stop()
+
+def enable_music():
+	global is_music_enabled
+
+	if is_music_enabled:
+		return
+
+	is_music_enabled = True
+
+	if is_music_started:
+		start_music()
+
+def disable_music():
+	global is_music_enabled, is_music_started
+
+	if not is_music_enabled:
+		return
+
+	if is_music_started:
+		stop_music()
+		is_music_started = True
+
+	is_music_enabled = False
+
 def init_new_level(offset=1):
 	global level_idx, level, mode, is_game_won, init_level_timer, level_target_timer, num_bonus_health, num_bonus_attack, enemies, hearts, swords
 
@@ -165,12 +215,14 @@ def init_new_level(offset=1):
 		print("Requested level is out of range")
 		return
 
+	stop_music()
 	mode = "init"
 
 	level_idx += offset
 	if level_idx == len(levels):
 		mode = "end"
 		is_game_won = True
+		start_music()
 		return
 
 	level = levels[level_idx]
@@ -217,6 +269,7 @@ def init_new_level(offset=1):
 		enemies.append(enemy)
 
 	mode = "game"
+	start_music()
 
 init_new_level()
 
@@ -308,6 +361,12 @@ def on_key_down(key):
 	if keyboard.n:
 		init_new_level(+1)
 
+	if keyboard.m:
+		if is_music_enabled:
+			disable_music()
+		else:
+			enable_music()
+
 	diff = None
 
 	if keyboard.right and char.cx < PLAY_MAP_SIZE_X:
@@ -350,7 +409,7 @@ def on_key_down(key):
 			clock.schedule(kill_enemy, 0.3)
 
 def check_victory():
-	global mode
+	global mode, is_game_won
 
 	if mode != "game":
 		return
@@ -358,7 +417,10 @@ def check_victory():
 	if not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
 		init_new_level()
 	elif char.health <= MIN_CHAR_HEALTH:
+		stop_music()
 		mode = "end"
+		is_game_won = False
+		start_music()
 
 def update(dt):
 	global init_level_timer, level_target_timer, num_bonus_health, num_bonus_attack
