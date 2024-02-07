@@ -155,7 +155,7 @@ num_bonus_attack = 0
 
 killed_enemies = []
 
-init_level_timer = 0
+level_title_timer = 0
 level_target_timer = 0
 
 levels = [
@@ -263,8 +263,14 @@ def disable_music():
 
 	is_music_enabled = False
 
+def reset_level_and_target_timer():
+	global level_title_timer, level_target_timer
+
+	level_title_timer = 4 * 60  # 4 seconds
+	level_target_timer = 3 * 60  # 3 seconds
+
 def init_new_level(offset=1):
-	global level_idx, level, mode, is_game_won, init_level_timer, level_target_timer, num_bonus_health, num_bonus_attack, enemies, hearts, swords
+	global level_idx, level, mode, is_game_won, num_bonus_health, num_bonus_attack, enemies, hearts, swords
 
 	if level_idx + offset < 0 or level_idx + offset > len(levels):
 		print("Requested level is out of range")
@@ -281,7 +287,6 @@ def init_new_level(offset=1):
 		return
 
 	level = levels[level_idx]
-	init_level_timer = 4 * 60  # 4 seconds
 
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
@@ -297,7 +302,6 @@ def init_new_level(offset=1):
 
 	if "target" not in level:
 		level["target"] = "default-level-target"
-	level_target_timer = 3 * 60  # 3 seconds
 
 	# generate enemies
 	for i in range(level["num_enemies"]):
@@ -322,6 +326,8 @@ def init_new_level(offset=1):
 		elif enemy.bonus == BONUS_ATTACK:
 			num_bonus_attack += 1
 		enemies.append(enemy)
+
+	reset_level_and_target_timer()
 
 	mode = "game"
 	start_music()
@@ -376,7 +382,7 @@ def draw():
 		draw_central_flash()
 		screen.draw.text(end_line, center=(POS_CENTER_X, POS_CENTER_Y), color='white', gcolor=("#008080" if is_game_won else "#800000"), owidth=0.8, ocolor="#202020", alpha=1, fontsize=60)
 
-	if mode == "game" and init_level_timer > 0:
+	if mode == "game" and level_title_timer > 0:
 		draw_central_flash()
 		level_line_1 = _('level-label') + " " + str(level["n"])
 		level_line_2 = _('level-' + str(level["n"]) + '-name')
@@ -420,6 +426,9 @@ def on_key_down(key):
 		init_new_level(0)
 	if keyboard.n:
 		init_new_level(+1)
+
+	if keyboard.l:
+		reset_level_and_target_timer()
 
 	if keyboard.m:
 		if is_music_enabled:
@@ -483,10 +492,10 @@ def check_victory():
 		start_music()
 
 def update(dt):
-	global init_level_timer, level_target_timer, num_bonus_health, num_bonus_attack
+	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
 
-	if init_level_timer > 0:
-		init_level_timer -= 1
+	if level_title_timer > 0:
+		level_title_timer -= 1
 	elif level_target_timer > 0:
 		level_target_timer -= 1
 
