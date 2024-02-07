@@ -182,10 +182,10 @@ levels = [
 	},
 	{
 		"n": 4,
-		"num_enemies": PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y - 1,
+		"num_enemies": int(PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y / 2),
 		"theme": "modern2",
 		"music": "breath",
-		"char_health": 10000,
+		"char_health": 500,
 	},
 ]
 level = None
@@ -342,14 +342,6 @@ def draw_map():
 				map_cell.draw()
 
 def draw_status():
-	health_label = "HP:"
-	health_value = str(char.health)
-	attack_label = "AP:"
-	attack_value = str(char.attack)
-	screen.draw.text(health_label, center=(00000 + CELL_W * 0.5, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(health_value, center=(00000 + CELL_W * 1.5, POS_STATUS_Y), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(attack_label, center=(WIDTH - CELL_W * 1.5, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
-	screen.draw.text(attack_value, center=(WIDTH - CELL_W * 0.5, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.9, fontsize=24)
 	status_heart.draw()
 	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
@@ -375,9 +367,9 @@ def draw():
 		for sword in swords:
 			sword.draw()
 		char.draw()
-		for enemy in enemies:
-			screen.draw.text(str(enemy.health), center=get_rel_actor_pos(enemy, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
-			screen.draw.text(str(enemy.attack), center=get_rel_actor_pos(enemy, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+		for actor in enemies + [char]:
+			screen.draw.text(str(actor.health), center=get_rel_actor_pos(actor, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			screen.draw.text(str(actor.attack), center=get_rel_actor_pos(actor, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 
 	if mode == "end":
 		end_line = _('victory-text') if is_game_won else _('defeat-text')
