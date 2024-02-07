@@ -36,6 +36,65 @@ BONUS_NONE   = 0
 BONUS_HEALTH = 1
 BONUS_ATTACK = 2
 
+translations = {
+	'en': {
+		'level-label': "Level",
+		'level-1-name': "First skeleton encounter",
+		'level-2-name': "More skeletons...",
+		'level-3-name': "Even more skeletons...",
+		'level-4-name': "Help me with the skeletons!",
+		'level-target-label': "Level target",
+		'default-level-target': "Kill all enemies",
+		'victory-text': "Victory!",
+		'defeat-text': "Defeat...",
+	},
+	'ru': {
+		'level-label': "Уровень",
+		'level-1-name': "Первая встреча со скелетами",
+		'level-2-name': "Больше скелетов",
+		'level-3-name': "Еще больше скелетов...",
+		'level-4-name': "Помогите мне со скелетами!",
+		'level-target-label': "Цель уровня",
+		'default-level-target': "Уничтожь всех врагов",
+		'victory-text': "Победа!",
+		'defeat-text': "Поражение...",
+	},
+	'he': {
+		'level-label': "שלב",
+		'level-1-name': "פגישה ראשונה עם שלדים",
+		'level-2-name': "יותר שלדים",
+		'level-3-name': "עוד יותר שלדים",
+		'level-4-name': "עזרו לי עם השלדים!",
+		'level-target-label': "מטרת השלב",
+		'default-level-target': "תחסל את כל האויבים",
+		'victory-text': "נצחון!",
+		'defeat-text': "הפסד...",
+	},
+}
+
+lang = 'en'
+
+def autodetect_lang():
+	global lang
+
+	lang = 'en'
+	try:
+		import os
+		if 'LANG' in os.environ:
+			lang0 = (os.environ['LANG'])[0:2]
+			if lang0 in translations:
+				lang = lang0
+	except:
+		pass
+
+def _(str_key):
+	str = translations[lang][str_key] if str_key in translations[lang] else translations['en'][str_key] if str_key in translations['en'] else str_key
+	if lang == 'he' and str_key in translations[lang]:
+		str = str[::-1]
+	return str
+
+autodetect_lang()
+
 def get_map_cell_pos(x, y):
 	return (CELL_W * (x + 0.5), CELL_H * (y + 0.5))
 
@@ -102,7 +161,6 @@ level_target_timer = 0
 levels = [
 	{
 		"n": 1,
-		"name": "First skeleton encounter",
 		"num_enemies": 5,
 		"theme": "classic",
 		"music": "a_new_path",
@@ -110,7 +168,6 @@ levels = [
 	},
 	{
 		"n": 2,
-		"name": "More skeletons...",
 		"num_enemies": 10,
 		"theme": "ancient1",
 		"music": "playful_sparrow",
@@ -118,7 +175,6 @@ levels = [
 	},
 	{
 		"n": 3,
-		"name": "Even more skeletons...",
 		"num_enemies": 15,
 		"theme": "modern1",
 		"music": "adventures",
@@ -126,7 +182,6 @@ levels = [
 	},
 	{
 		"n": 4,
-		"name": "Help me with skeletons!",
 		"num_enemies": PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y - 1,
 		"theme": "modern2",
 		"music": "breath",
@@ -241,7 +296,7 @@ def init_new_level(offset=1):
 	set_theme(level["theme"])
 
 	if "target" not in level:
-		level["target"] = "kill-all-enemies"
+		level["target"] = "default-level-target"
 	level_target_timer = 3 * 60  # 3 seconds
 
 	# generate enemies
@@ -325,24 +380,37 @@ def draw():
 			screen.draw.text(str(enemy.attack), center=get_rel_actor_pos(enemy, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 
 	if mode == "end":
+		end_line = _('victory-text') if is_game_won else _('defeat-text')
 		draw_central_flash()
-		screen.draw.text("Victory!" if is_game_won else "Defeat...", center=(POS_CENTER_X, POS_CENTER_Y), color='white', gcolor=("#008080" if is_game_won else "#800000"), owidth=0.8, ocolor="#202020", alpha=1, fontsize=60)
+		screen.draw.text(end_line, center=(POS_CENTER_X, POS_CENTER_Y), color='white', gcolor=("#008080" if is_game_won else "#800000"), owidth=0.8, ocolor="#202020", alpha=1, fontsize=60)
 
 	if mode == "game" and init_level_timer > 0:
 		draw_central_flash()
-		level_line_1 = "Level " + str(level["n"])
-		level_line_2 = level["name"]
+		level_line_1 = _('level-label') + " " + str(level["n"])
+		level_line_2 = _('level-' + str(level["n"]) + '-name')
 		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 20), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
 		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 18), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
 	elif mode == "game" and level_target_timer > 0:
+		target_line = _('level-target-label') + ": " + _(level["target"])
 		draw_central_flash()
-		screen.draw.text("Target: " + level["target"], center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
+		screen.draw.text(target_line, center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=40)
 
 def kill_enemy():
 	enemy = killed_enemies.pop(0)
 
 def on_key_down(key):
+	global lang
+
 	if mode != "game" and mode != "end":
+		return
+
+	if keyboard.rshift:
+		if keyboard.e:
+			lang = 'en'
+		if keyboard.r:
+			lang = 'ru'
+		if keyboard.h:
+			lang = 'he'
 		return
 
 	if keyboard.k_0:
