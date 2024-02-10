@@ -144,6 +144,10 @@ is_music_started = False
 is_sound_enabled = True
 mode = "start"
 
+game_time = 0
+arrow_keys_resolution = 0.15
+last_time_arrow_keys_scanned = 0
+
 map = []  # will be generated
 map_cells = []  # will be generated
 
@@ -444,32 +448,40 @@ def on_key_down(key):
 		else:
 			enable_music()
 
-	diff = None
+def check_victory():
+	global mode, is_game_won
 
-	if keyboard.right and char.cx < PLAY_MAP_SIZE_X:
-		diff = (+1, 0)
-		char.image = 'stand'
-	elif keyboard.left and char.cx > 1:
-		diff = (-1, 0)
-		char.image = 'left'
-	elif keyboard.down and char.cy < PLAY_MAP_SIZE_Y:
-		diff = (0, +1)
-	elif keyboard.up and char.cy > 1:
-		diff = (0, -1)
+	if mode != "game":
+		return
 
-	if diff:
-		move_map_actor(char, diff)
+	if not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
+		play_sound("finish")
+		mode = "next"
+		clock.schedule(init_new_level, 1.5)
+	elif char.health <= MIN_CHAR_HEALTH:
+		stop_music()
+		mode = "end"
+		is_game_won = False
+		start_music()
+
+def move_char(diff_x, diff_y):
+	old_char_pos = char.pos
+
+	move_map_actor(char, (diff_x, diff_y))
 
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
-	if enemy_index != -1:
+	if enemy_index == -1:
+		new_char_pos = char.pos
+		char.pos = old_char_pos
+		animate(char, duration=arrow_keys_resolution, pos=new_char_pos)
+	else:
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		enemy.pos = get_actor_pos(enemy)
-		if diff:
-			move_map_actor(char, (-diff[0], -diff[1]))
-			enemy.pos = get_rel_actor_pos(enemy, (diff[0] * 12, diff[1] * 12))
+		move_map_actor(char, (-diff_x, -diff_y))
+		enemy.pos = get_rel_actor_pos(enemy, (diff_x * 12, diff_y * 12))
 		if enemy.health > 0:
 			play_sound("beat")
 			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
@@ -487,24 +499,11 @@ def on_key_down(key):
 			killed_enemies.append(enemy)
 			clock.schedule(kill_enemy, 0.3)
 
-def check_victory():
-	global mode, is_game_won
-
-	if mode != "game":
-		return
-
-	if not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
-		play_sound("finish")
-		mode = "next"
-		clock.schedule(init_new_level, 1.5)
-	elif char.health <= MIN_CHAR_HEALTH:
-		stop_music()
-		mode = "end"
-		is_game_won = False
-		start_music()
-
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
+	global game_time, last_time_arrow_keys_scanned
+
+	game_time += dt
 
 	if level_title_timer > 0:
 		level_title_timer -= 1
@@ -526,3 +525,26 @@ def update(dt):
 			swords.pop(i)
 			num_bonus_attack -= 1
 			break
+
+	if game_time - last_time_arrow_keys_scanned < arrow_keys_resolution:
+		return
+
+	last_time_arrow_keys_scanned = game_time
+	keys = pygame.key.get_pressed()
+
+	diff_x = 0
+	diff_y = 0
+
+	if keys[pygame.K_RIGHT] and char.cx < PLAY_MAP_SIZE_X:
+		diff_x += 1
+		char.image = 'stand'
+	if keys[pygame.K_LEFT] and char.cx > 1:
+		diff_x -= 1
+		char.image = 'left'
+	if keys[pygame.K_DOWN] and char.cy < PLAY_MAP_SIZE_Y:
+		diff_y += 1
+	if keys[pygame.K_UP] and char.cy > 1:
+		diff_y -= 1
+
+	if diff_x or diff_y:
+		move_char(diff_x, diff_y)
