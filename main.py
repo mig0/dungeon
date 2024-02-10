@@ -141,6 +141,7 @@ status_sword = Actor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
 is_game_won = False
 is_music_enabled = True
 is_music_started = False
+is_sound_enabled = True
 mode = "start"
 
 map = []  # will be generated
@@ -263,6 +264,13 @@ def disable_music():
 
 	is_music_enabled = False
 
+def play_sound(name):
+	if not is_sound_enabled:
+		return
+
+	sound = getattr(sounds, name)
+	sound.play()
+
 def reset_level_and_target_timer():
 	global level_title_timer, level_target_timer
 
@@ -361,7 +369,7 @@ def draw_central_flash():
 
 def draw():
 	screen.fill("#2f3542")
-	if mode == 'game' or mode == "end":
+	if mode == "game" or mode == "end" or mode == "next":
 		draw_map()
 		draw_status()
 		for enemy in killed_enemies:
@@ -399,7 +407,7 @@ def kill_enemy():
 def on_key_down(key):
 	global lang
 
-	if mode != "game" and mode != "end":
+	if mode != "game" and mode != "end" and mode != "next":
 		return
 
 	if keyboard.rshift:
@@ -463,8 +471,10 @@ def on_key_down(key):
 			move_map_actor(char, (-diff[0], -diff[1]))
 			enemy.pos = get_rel_actor_pos(enemy, (diff[0] * 12, diff[1] * 12))
 		if enemy.health > 0:
+			play_sound("beat")
 			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
 		else:
+			play_sound("kill")
 			enemies.remove(enemy)
 			# fallen bonuses upon enemy death
 			if enemy.bonus == BONUS_HEALTH:
@@ -484,7 +494,9 @@ def check_victory():
 		return
 
 	if not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
-		init_new_level()
+		play_sound("finish")
+		mode = "next"
+		clock.schedule(init_new_level, 1.5)
 	elif char.health <= MIN_CHAR_HEALTH:
 		stop_music()
 		mode = "end"
