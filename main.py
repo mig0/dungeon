@@ -142,6 +142,7 @@ is_game_won = False
 is_music_enabled = True
 is_music_started = False
 is_sound_enabled = True
+is_move_animate_enabled = True
 mode = "start"
 
 game_time = 0
@@ -410,6 +411,7 @@ def kill_enemy():
 
 def on_key_down(key):
 	global lang
+	global is_move_animate_enabled
 
 	if mode != "game" and mode != "end" and mode != "next":
 		return
@@ -447,6 +449,8 @@ def on_key_down(key):
 			disable_music()
 		else:
 			enable_music()
+	if keyboard.a:
+		is_move_animate_enabled = not is_move_animate_enabled
 
 def check_victory():
 	global mode, is_game_won
@@ -473,8 +477,9 @@ def move_char(diff_x, diff_y):
 	enemy_index = char.collidelist(enemies)
 	if enemy_index == -1:
 		new_char_pos = char.pos
-		char.pos = old_char_pos
-		animate(char, duration=arrow_keys_resolution, pos=new_char_pos)
+		if is_move_animate_enabled:
+			char.pos = old_char_pos
+			animate(char, duration=arrow_keys_resolution, pos=new_char_pos)
 	else:
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
