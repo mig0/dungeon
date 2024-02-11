@@ -30,11 +30,17 @@ INITIAL_CHAR_ATTACK = 5
 BONUS_HEALTH_VALUE = 7
 BONUS_ATTACK_VALUE = 7
 EMPTY_FLOOR_FREQUENCY = 3  # 0 means empty floor is as frequent as non empty
-MAX_GAME_BATTLES = 3
+ARROW_KEYS_RESOLUTION = 0.18
+ALLOW_DIAGONAL_MOVES = True
 
 BONUS_NONE   = 0
 BONUS_HEALTH = 1
 BONUS_ATTACK = 2
+
+ARROW_KEY_R = pygame.K_RIGHT
+ARROW_KEY_L = pygame.K_LEFT
+ARROW_KEY_D = pygame.K_DOWN
+ARROW_KEY_U = pygame.K_UP
 
 translations = {
 	'en': {
@@ -146,8 +152,10 @@ is_move_animate_enabled = True
 mode = "start"
 
 game_time = 0
-arrow_keys_resolution = 0.15
-last_time_arrow_keys_scanned = 0
+last_time_arrow_keys_processed = 0
+
+pressed_arrow_keys = []
+last_processed_arrow_keys = []
 
 map = []  # will be generated
 map_cells = []  # will be generated
@@ -479,7 +487,7 @@ def move_char(diff_x, diff_y):
 		new_char_pos = char.pos
 		if is_move_animate_enabled:
 			char.pos = old_char_pos
-			animate(char, duration=arrow_keys_resolution, pos=new_char_pos)
+			animate(char, duration=ARROW_KEYS_RESOLUTION, pos=new_char_pos)
 	else:
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
@@ -506,7 +514,7 @@ def move_char(diff_x, diff_y):
 
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
-	global game_time, last_time_arrow_keys_scanned
+	global game_time, last_time_arrow_keys_processed, last_processed_arrow_keys
 
 	game_time += dt
 
@@ -531,24 +539,48 @@ def update(dt):
 			num_bonus_attack -= 1
 			break
 
-	if game_time - last_time_arrow_keys_scanned < arrow_keys_resolution:
+	keys = pygame.key.get_pressed()
+	for key in (ARROW_KEY_R, ARROW_KEY_L, ARROW_KEY_D, ARROW_KEY_U):
+		if keys[key] and key not in pressed_arrow_keys:
+			pressed_arrow_keys.append(key)
+		if not keys[key] and key in pressed_arrow_keys and key in last_processed_arrow_keys:
+			pressed_arrow_keys.remove(key)
+
+	if game_time - last_time_arrow_keys_processed < ARROW_KEYS_RESOLUTION:
 		return
 
-	last_time_arrow_keys_scanned = game_time
-	keys = pygame.key.get_pressed()
+	last_time_arrow_keys_processed = game_time
+	last_processed_arrow_keys = []
+
+	def set_arrow_key_to_process(key, condition=True):
+		if not ALLOW_DIAGONAL_MOVES and last_processed_arrow_keys:
+			return
+		pressed_arrow_keys.remove(key)
+		if condition:
+			last_processed_arrow_keys.append(key)
+
+	for key in list(pressed_arrow_keys):
+		if key == ARROW_KEY_R and key not in last_processed_arrow_keys and ARROW_KEY_L not in last_processed_arrow_keys:
+			set_arrow_key_to_process(key, char.cx < PLAY_MAP_SIZE_X)
+		if key == ARROW_KEY_L and key not in last_processed_arrow_keys and ARROW_KEY_R not in last_processed_arrow_keys:
+			set_arrow_key_to_process(key, char.cx > 1)
+		if key == ARROW_KEY_D and key not in last_processed_arrow_keys and ARROW_KEY_U not in last_processed_arrow_keys:
+			set_arrow_key_to_process(key, char.cy < PLAY_MAP_SIZE_Y)
+		if key == ARROW_KEY_U and key not in last_processed_arrow_keys and ARROW_KEY_D not in last_processed_arrow_keys:
+			set_arrow_key_to_process(key, char.cy > 1)
 
 	diff_x = 0
 	diff_y = 0
 
-	if keys[pygame.K_RIGHT] and char.cx < PLAY_MAP_SIZE_X:
+	if ARROW_KEY_R in last_processed_arrow_keys:
 		diff_x += 1
 		char.image = 'stand'
-	if keys[pygame.K_LEFT] and char.cx > 1:
+	if ARROW_KEY_L in last_processed_arrow_keys:
 		diff_x -= 1
 		char.image = 'left'
-	if keys[pygame.K_DOWN] and char.cy < PLAY_MAP_SIZE_Y:
+	if ARROW_KEY_D in last_processed_arrow_keys:
 		diff_y += 1
-	if keys[pygame.K_UP] and char.cy > 1:
+	if ARROW_KEY_U in last_processed_arrow_keys:
 		diff_y -= 1
 
 	if diff_x or diff_y:
