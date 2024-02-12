@@ -32,6 +32,7 @@ BONUS_ATTACK_VALUE = 7
 EMPTY_FLOOR_FREQUENCY = 3  # 0 means empty floor is as frequent as non empty
 ARROW_KEYS_RESOLUTION = 0.18
 ALLOW_DIAGONAL_MOVES = True
+CRITICAL_REMAINING_LEVEL_TIME = 20
 
 BONUS_NONE   = 0
 BONUS_HEALTH = 1
@@ -51,6 +52,7 @@ translations = {
 		'level-4-name': "Help me with the skeletons!",
 		'level-target-label': "Level target",
 		'default-level-target': "Kill all enemies",
+		'level-target-kill-1-min': "Kill all enemies in 1 minute",
 		'victory-text': "Victory!",
 		'defeat-text': "Defeat...",
 	},
@@ -62,6 +64,7 @@ translations = {
 		'level-4-name': "Помогите мне со скелетами!",
 		'level-target-label': "Цель уровня",
 		'default-level-target': "Уничтожь всех врагов",
+		'level-target-kill-1-min': "Уничтожь всех врагов за 1 минуту",
 		'victory-text': "Победа!",
 		'defeat-text': "Поражение...",
 	},
@@ -73,6 +76,7 @@ translations = {
 		'level-4-name': "עזרו לי עם השלדים!",
 		'level-target-label': "מטרת השלב",
 		'default-level-target': "תחסל את כל האויבים",
+		'level-target-kill-1-min': "תחסל את כל האויבים בדקה אחת",
 		'victory-text': "נצחון!",
 		'defeat-text': "הפסד...",
 	},
@@ -152,6 +156,7 @@ is_move_animate_enabled = True
 mode = "start"
 
 game_time = 0
+level_time = 0
 last_time_arrow_keys_processed = 0
 
 pressed_arrow_keys = []
@@ -193,6 +198,8 @@ levels = [
 		"theme": "modern1",
 		"music": "adventures",
 		"char_health": 200,
+		"time_limit": 60,
+		"target": 'level-target-kill-1-min',
 	},
 	{
 		"n": 4,
@@ -291,7 +298,7 @@ def reset_level_and_target_timer():
 	level_target_timer = 3 * 60  # 3 seconds
 
 def init_new_level(offset=1):
-	global level_idx, level, mode, is_game_won, num_bonus_health, num_bonus_attack, enemies, hearts, swords
+	global level_idx, level, mode, is_game_won, num_bonus_health, num_bonus_attack, enemies, hearts, swords, level_time
 
 	if level_idx + offset < 0 or level_idx + offset > len(levels):
 		print("Requested level is out of range")
@@ -349,6 +356,7 @@ def init_new_level(offset=1):
 		enemies.append(enemy)
 
 	reset_level_and_target_timer()
+	level_time = 0
 
 	mode = "game"
 	start_music()
@@ -368,11 +376,21 @@ def draw_map():
 				map_cell.top = CELL_H * i
 				map_cell.draw()
 
+def get_time_str(time):
+	sec = int(time)
+	min = sec / 60
+	sec = sec % 60
+	return "%d:%02d" % (min, sec) if min < 60 else "%d:%02d:%02d" % (min / 60, min % 60, sec)
+
 def draw_status():
 	status_heart.draw()
 	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
 	screen.draw.text(str(num_bonus_attack), center=(POS_CENTER_X + 2 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
+	if mode == "game":
+		color, gcolor = ("#60C0FF", "#0080A0") if "time_limit" not in level else ("#FFC060", "#A08000") if level["time_limit"] - level_time > CRITICAL_REMAINING_LEVEL_TIME else ("#FF6060", "#A04040")
+		time_str = get_time_str(level_time if "time_limit" not in level else level["time_limit"] - level_time)
+		screen.draw.text(time_str, midright=(WIDTH - 20, POS_STATUS_Y), color=color, gcolor=gcolor, owidth=1.2, ocolor="#404030", alpha=1, fontsize=27)
 
 def draw_central_flash():
 	msg_surface = pygame.Surface((WIDTH, 120))
@@ -473,7 +491,7 @@ def check_victory():
 		play_sound("finish")
 		mode = "next"
 		clock.schedule(init_new_level, 1.5)
-	elif char.health <= MIN_CHAR_HEALTH:
+	elif char.health <= MIN_CHAR_HEALTH or "time_limit" in level and level_time > level["time_limit"]:
 		stop_music()
 		mode = "end"
 		is_game_won = False
@@ -517,9 +535,10 @@ def move_char(diff_x, diff_y):
 
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
-	global game_time, last_time_arrow_keys_processed, last_processed_arrow_keys
+	global game_time, level_time, last_time_arrow_keys_processed, last_processed_arrow_keys
 
 	game_time += dt
+	level_time += dt
 
 	if level_title_timer > 0:
 		level_title_timer -= 1
