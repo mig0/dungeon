@@ -460,6 +460,9 @@ def on_key_down(key):
 	if keyboard.a:
 		is_move_animate_enabled = not is_move_animate_enabled
 
+	if keyboard.q:
+		quit()
+
 def check_victory():
 	global mode, is_game_won
 
