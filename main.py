@@ -2,13 +2,14 @@
 
 import random
 import pygame
+from copy import deepcopy
 
 # game constants
 TITLE = "Skull Labyrinth"
 FPS = 30
 
-PLAY_MAP_SIZE_X = 12
-PLAY_MAP_SIZE_Y = 10
+PLAY_MAP_SIZE_X = 11
+PLAY_MAP_SIZE_Y = 11
 MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
 MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
 
@@ -43,16 +44,44 @@ ARROW_KEY_L = pygame.K_LEFT
 ARROW_KEY_D = pygame.K_DOWN
 ARROW_KEY_U = pygame.K_UP
 
+CELL_FLOOR = 0
+CELL_CRACK = 1
+CELL_BONES = 2
+CELL_ROCKS = 3
+CELL_PLATE = 4
+CELL_BORDER = 5
+CELL_STATUS = 6
+
+CELL_FLOOR_ADDITIONS_RANDGEN = (CELL_CRACK, CELL_BONES, CELL_ROCKS)
+CELL_FLOOR_ADDITIONS_FREQUENT = (*CELL_FLOOR_ADDITIONS_RANDGEN, *((CELL_FLOOR,) * EMPTY_FLOOR_FREQUENCY))
+CELL_FLOOR_ADDITIONS = (*CELL_FLOOR_ADDITIONS_RANDGEN, CELL_PLATE)
+
+COLOR_PUZZLE_SIZE_X = 11
+COLOR_PUZZLE_SIZE_Y = 11
+NUM_COLOR_PUZZLE_VALUES = 6
+
+COLOR_MAP_SOLVED = [[1] * COLOR_PUZZLE_SIZE_X for y in range(COLOR_PUZZLE_SIZE_Y)]
+
+COLOR_PUZZLE_X1 = int((PLAY_MAP_SIZE_X - COLOR_PUZZLE_SIZE_X) / 2) + 1
+COLOR_PUZZLE_X2 = int((PLAY_MAP_SIZE_X - COLOR_PUZZLE_SIZE_X) / 2) + COLOR_PUZZLE_SIZE_X
+COLOR_PUZZLE_Y1 = int((PLAY_MAP_SIZE_Y - COLOR_PUZZLE_SIZE_Y) / 2) + 1
+COLOR_PUZZLE_Y2 = int((PLAY_MAP_SIZE_Y - COLOR_PUZZLE_SIZE_Y) / 2) + COLOR_PUZZLE_SIZE_Y
+
+COLOR_PUZZLE_X_RANGE = range(COLOR_PUZZLE_X1, COLOR_PUZZLE_X2 + 1)
+COLOR_PUZZLE_Y_RANGE = range(COLOR_PUZZLE_Y1, COLOR_PUZZLE_Y2 + 1)
+
 translations = {
 	'en': {
 		'level-label': "Level",
 		'level-1-name': "First skeleton encounter",
 		'level-2-name': "More skeletons...",
 		'level-3-name': "Even more skeletons...",
-		'level-4-name': "Help me with the skeletons!",
+		'level-4-name': "Solve color puzzle!",
+		'level-5-name': "Help me with the skeletons!",
 		'level-target-label': "Level target",
 		'default-level-target': "Kill all enemies",
 		'level-target-kill-1-min': "Kill all enemies in 1 minute",
+		'complete-color-puzzle-green': "Make all floor green",
 		'victory-text': "Victory!",
 		'defeat-text': "Defeat...",
 	},
@@ -61,10 +90,12 @@ translations = {
 		'level-1-name': "Первая встреча со скелетами",
 		'level-2-name': "Больше скелетов",
 		'level-3-name': "Еще больше скелетов...",
-		'level-4-name': "Помогите мне со скелетами!",
+		'level-4-name': "Реши головоломку с цветами!",
+		'level-5-name': "Помогите мне со скелетами!",
 		'level-target-label': "Цель уровня",
 		'default-level-target': "Уничтожь всех врагов",
 		'level-target-kill-1-min': "Уничтожь всех врагов за 1 минуту",
+		'complete-color-puzzle-green': "Сделай весь пол зелёным",
 		'victory-text': "Победа!",
 		'defeat-text': "Поражение...",
 	},
@@ -73,10 +104,12 @@ translations = {
 		'level-1-name': "פגישה ראשונה עם שלדים",
 		'level-2-name': "יותר שלדים",
 		'level-3-name': "עוד יותר שלדים",
-		'level-4-name': "עזרו לי עם השלדים!",
+		'level-4-name': "תפתור מסימת הצבעים!",
+		'level-5-name': "עזרו לי עם השלדים!",
 		'level-target-label': "מטרת השלב",
 		'default-level-target': "תחסל את כל האויבים",
 		'level-target-kill-1-min': "תחסל את כל האויבים בדקה אחת",
+		'complete-color-puzzle-green': "תעשה את כל הרצפה ירוקה",
 		'victory-text': "נצחון!",
 		'defeat-text': "הפסד...",
 	},
@@ -134,14 +167,16 @@ def move_map_actor(actor, c):
 	x, y = c
 	set_actor_coord(actor, actor.cx + x, actor.cy + y)
 
-# game sprites
-cell1 = None
-cell2 = None
-cell3 = None
-cell4 = None
-cell5 = None
-cell6 = None
+def get_all_neighbours(cx, cy, include_self=False):
+	neighbours = []
+	for dy in (-1, 0, +1):
+		for dx in (-1, 0, +1):
+			if dy == 0 and dx == 0 and not include_self:
+				continue
+			neighbours.append((cx + dx, cy + dy))
+	return neighbours
 
+# game sprites
 char = create_actor('stand', 1, 1)
 
 status_heart = Actor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
@@ -153,7 +188,9 @@ is_music_enabled = True
 is_music_started = False
 is_sound_enabled = True
 is_move_animate_enabled = True
+
 mode = "start"
+is_color_puzzle = False
 
 game_time = 0
 level_time = 0
@@ -163,7 +200,9 @@ pressed_arrow_keys = []
 last_processed_arrow_keys = []
 
 map = []  # will be generated
-map_cells = []  # will be generated
+color_map = []
+cells = {}  # will be generated
+color_cells = []
 
 enemies = []
 hearts = []
@@ -203,6 +242,16 @@ levels = [
 	},
 	{
 		"n": 4,
+		"num_enemies": 0,
+		"theme": "modern1",
+		"music": "valiant_warriors",
+		"color_puzzle": True,
+		"time_limit": 80,
+		"char_health": None,
+		"target": 'complete-color-puzzle-green',
+	},
+	{
+		"n": 5,
 		"num_enemies": int(PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y / 2),
 		"theme": "modern2",
 		"music": "breath",
@@ -212,33 +261,90 @@ levels = [
 level = None
 level_idx = -1
 
+def get_color_puzzle_cell_value(cx, cy):
+	return color_map[cy - COLOR_PUZZLE_Y1][cx - COLOR_PUZZLE_X1]
+
+def set_color_puzzle_cell_value(cx, cy, n):
+	color_map[cy - COLOR_PUZZLE_Y1][cx - COLOR_PUZZLE_X1] = n
+
+def press_color_puzzle_cell(cx, cy):
+	set_color_puzzle_cell_value(cx, cy, (get_color_puzzle_cell_value(cx, cy) + 1) % NUM_COLOR_PUZZLE_VALUES)
+
+def press_color_puzzle_neighbour_cells(cx, cy):
+	for (nx, ny) in get_all_neighbours(cx, cy):
+		press_color_puzzle_cell(nx, ny)
+
+def get_color_puzzle_cell(cx, cy):
+	return color_cells[get_color_puzzle_cell_value(cx, cy)]
+
+def is_in_color_puzzle(cx, cy):
+	return is_color_puzzle and cx in COLOR_PUZZLE_X_RANGE and cy in COLOR_PUZZLE_Y_RANGE
+
+def is_color_puzzle_plate(cx, cy):
+	return is_in_color_puzzle(cx, cy) and (cx - COLOR_PUZZLE_X1) % 2 == 1 and (cy - COLOR_PUZZLE_Y1) % 2 == 1
+
 def generate_map():
-	for y in range(MAP_SIZE_Y):
-		if y == 0 or y == PLAY_MAP_SIZE_Y + 1:
-			line = [4] * MAP_SIZE_X
-		elif y == MAP_SIZE_Y - 1:
-			line = [5] * MAP_SIZE_X
+	global map, color_map
+
+	map = []
+	for cy in range(0, MAP_SIZE_Y):
+		if cy == 0 or cy == PLAY_MAP_SIZE_Y + 1:
+			line = [CELL_BORDER] * MAP_SIZE_X
+		elif cy == MAP_SIZE_Y - 1:
+			line = [CELL_STATUS] * MAP_SIZE_X
 		else:
-			line = [4]
-			for x in range(PLAY_MAP_SIZE_X):
-				cell_type = random.randint(0, 3 + EMPTY_FLOOR_FREQUENCY)
-				if cell_type > 3: cell_type = 0
+			line = [CELL_BORDER]
+			for cx in range(1, MAP_SIZE_X - 1):
+				cell_type = CELL_FLOOR_ADDITIONS_FREQUENT[random.randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
+				if is_color_puzzle_plate(cx, cy):
+					cell_type = CELL_PLATE
 				line.append(cell_type)
-			line.append(4)
+			line.append(CELL_BORDER)
 		map.append(line)
 
+	if is_color_puzzle:
+		color_map = deepcopy(COLOR_MAP_SOLVED)
+		num_tries = 5
+		while num_tries > 0:
+			for n in range(COLOR_PUZZLE_SIZE_X * COLOR_PUZZLE_SIZE_Y * 3):
+				plate_cx = COLOR_PUZZLE_X1 + random.randint(1, int(COLOR_PUZZLE_SIZE_X / 2)) * 2 - 1
+				plate_cy = COLOR_PUZZLE_Y1 + random.randint(1, int(COLOR_PUZZLE_SIZE_Y / 2)) * 2 - 1
+				for i in range(random.randint(1, NUM_COLOR_PUZZLE_VALUES - 1)):
+					press_color_puzzle_neighbour_cells(plate_cx, plate_cy)
+			if color_map != COLOR_MAP_SOLVED:
+				break
+			num_tries -= 1
+
 def set_theme(theme_name):
-	global cell1, cell2, cell3, cell4, cell5, cell6, map_cells
+	global cells, color_cells
 
 	theme_prefix = theme_name + '/'
 	cell1 = Actor(theme_prefix + 'floor')
 	cell2 = Actor(theme_prefix + 'crack')
 	cell3 = Actor(theme_prefix + 'bones')
 	cell4 = Actor(theme_prefix + 'rocks')
-	cell5 = Actor(theme_prefix + 'border')
-	cell6 = Actor(theme_prefix + 'status')
+	cell5 = Actor(theme_prefix + 'plate') if is_color_puzzle else None
+	cell6 = Actor(theme_prefix + 'border')
+	cell7 = Actor(theme_prefix + 'status')
 
-	map_cells = [ cell1, cell2, cell3, cell4, cell5, cell6 ]
+	if is_color_puzzle:
+		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
+		color_cells = []
+		for color in ((255, 80, 80), (80, 255, 80), (80, 80, 255), (255, 255, 80), (80, 255, 255), (255, 80, 255)):
+			color_cell = pygame.Surface((CELL_W, CELL_H))
+			color_cell.fill(color)
+			color_cell.blit(gray_alpha_image, (0, 0))
+			color_cells.append(color_cell)
+
+	cells = {
+		CELL_FLOOR: cell1,
+		CELL_CRACK: cell2,
+		CELL_BONES: cell3,
+		CELL_ROCKS: cell4,
+		CELL_PLATE: cell5,
+		CELL_BORDER: cell6,
+		CELL_STATUS: cell7,
+	}
 
 def start_music():
 	global is_music_started
@@ -298,7 +404,9 @@ def reset_level_and_target_timer():
 	level_target_timer = 3 * 60  # 3 seconds
 
 def init_new_level(offset=1):
-	global level_idx, level, mode, is_game_won, num_bonus_health, num_bonus_attack, enemies, hearts, swords, level_time
+	global level_idx, level, level_time, mode, is_color_puzzle, is_game_won
+	global num_bonus_health, num_bonus_attack
+	global enemies, hearts, swords, level_time
 
 	if level_idx + offset < 0 or level_idx + offset > len(levels):
 		print("Requested level is out of range")
@@ -315,6 +423,7 @@ def init_new_level(offset=1):
 		return
 
 	level = levels[level_idx]
+	is_color_puzzle = "color_puzzle" in level
 
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
@@ -364,17 +473,21 @@ def init_new_level(offset=1):
 init_new_level()
 
 def draw_map():
-	for i in range(len(map)):
-		for j in range(len(map[0])):
-			cell_type = map[i][j]
-			cell_types = [0]
-			if cell_type > 0:
+	for cy in range(len(map)):
+		for cx in range(len(map[0])):
+			cell_type = map[cy][cx]
+			cell_types = [CELL_FLOOR if cell_type in CELL_FLOOR_ADDITIONS else cell_type]
+			if cell_type in CELL_FLOOR_ADDITIONS:
 				cell_types.append(cell_type)
 			for cell_type in cell_types:
-				map_cell = map_cells[cell_type]
-				map_cell.left = CELL_W * j
-				map_cell.top = CELL_H * i
-				map_cell.draw()
+				if is_in_color_puzzle(cx, cy) and cell_type == CELL_FLOOR and not is_color_puzzle_plate(cx, cy):
+					color_floor = get_color_puzzle_cell(cx, cy)
+					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
+					continue
+				cell = cells[cell_type]
+				cell.left = CELL_W * cx
+				cell.top = CELL_H * cy
+				cell.draw()
 
 def get_time_str(time):
 	sec = int(time)
@@ -413,6 +526,8 @@ def draw():
 			sword.draw()
 		char.draw()
 		for actor in enemies + [char]:
+			if actor.health is None:
+				continue
 			screen.draw.text(str(actor.health), center=get_rel_actor_pos(actor, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 			screen.draw.text(str(actor.attack), center=get_rel_actor_pos(actor, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 
@@ -481,21 +596,37 @@ def on_key_down(key):
 	if keyboard.q:
 		quit()
 
-def check_victory():
+	if keyboard.space and is_color_puzzle_plate(char.cx, char.cy):
+		press_color_puzzle_neighbour_cells(char.cx, char.cy)
+
+def loose_game():
 	global mode, is_game_won
 
+	stop_music()
+	mode = "end"
+	is_game_won = False
+	start_music()
+
+def win_level():
+	global mode
+
+	play_sound("finish")
+	mode = "next"
+	clock.schedule(init_new_level, 1.5)
+
+def check_victory():
 	if mode != "game":
 		return
 
-	if not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
-		play_sound("finish")
-		mode = "next"
-		clock.schedule(init_new_level, 1.5)
+	if "time_limit" in level and level_time > level["time_limit"]:
+		loose_game()
+	elif is_color_puzzle:
+		if color_map == COLOR_MAP_SOLVED:
+			win_level()
+	elif not enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
+		win_level()
 	elif char.health <= MIN_CHAR_HEALTH or "time_limit" in level and level_time > level["time_limit"]:
-		stop_music()
-		mode = "end"
-		is_game_won = False
-		start_music()
+		loose_game()
 
 def move_char(diff_x, diff_y):
 	old_char_pos = char.pos
