@@ -35,6 +35,10 @@ ARROW_KEYS_RESOLUTION = 0.18
 ALLOW_DIAGONAL_MOVES = True
 CRITICAL_REMAINING_LEVEL_TIME = 20
 
+AUTOGENERATION_IDLE_TIME = 30
+AUTOGENERATION_NEXT_TIME = 5
+AUTOGENERATION_HEALTH = 2
+
 BONUS_NONE   = 0
 BONUS_HEALTH = 1
 BONUS_ATTACK = 2
@@ -194,8 +198,11 @@ is_color_puzzle = False
 
 game_time = 0
 level_time = 0
-last_time_arrow_keys_processed = 0
+idle_time = 0
 
+last_autogeneration_time = 0
+
+last_time_arrow_keys_processed = 0
 pressed_arrow_keys = []
 last_processed_arrow_keys = []
 
@@ -403,6 +410,12 @@ def reset_level_and_target_timer():
 	level_title_timer = 4 * 60  # 4 seconds
 	level_target_timer = 3 * 60  # 3 seconds
 
+def reset_idle_time():
+	global idle_time, last_autogeneration_time
+
+	idle_time = 0
+	last_autogeneration_time = 0
+
 def init_new_level(offset=1):
 	global level_idx, level, level_time, mode, is_color_puzzle, is_game_won
 	global num_bonus_health, num_bonus_attack
@@ -464,8 +477,9 @@ def init_new_level(offset=1):
 			num_bonus_attack += 1
 		enemies.append(enemy)
 
-	reset_level_and_target_timer()
 	level_time = 0
+	reset_idle_time()
+	reset_level_and_target_timer()
 
 	mode = "game"
 	start_music()
@@ -553,6 +567,8 @@ def kill_enemy():
 def on_key_down(key):
 	global lang
 	global is_move_animate_enabled
+
+	reset_idle_time()
 
 	if mode != "game" and mode != "end" and mode != "next":
 		return
@@ -666,15 +682,24 @@ def move_char(diff_x, diff_y):
 
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
-	global game_time, level_time, last_time_arrow_keys_processed, last_processed_arrow_keys
+	global game_time, level_time, idle_time, last_autogeneration_time
+	global last_time_arrow_keys_processed, last_processed_arrow_keys
 
 	game_time += dt
 	level_time += dt
+	idle_time += dt
 
 	if level_title_timer > 0:
 		level_title_timer -= 1
 	elif level_target_timer > 0:
 		level_target_timer -= 1
+
+	if last_autogeneration_time == 0 and idle_time >= AUTOGENERATION_IDLE_TIME \
+	or last_autogeneration_time != 0 and idle_time >= last_autogeneration_time + AUTOGENERATION_NEXT_TIME:
+		char.health += AUTOGENERATION_HEALTH
+		if char.health > level["char_health"]:
+			char.health = level["char_health"]
+		last_autogeneration_time = idle_time
 
 	check_victory()
 
@@ -696,6 +721,7 @@ def update(dt):
 	for key in (ARROW_KEY_R, ARROW_KEY_L, ARROW_KEY_D, ARROW_KEY_U):
 		if keys[key] and key not in pressed_arrow_keys:
 			pressed_arrow_keys.append(key)
+			reset_idle_time()
 		if not keys[key] and key in pressed_arrow_keys and key in last_processed_arrow_keys:
 			pressed_arrow_keys.remove(key)
 
