@@ -48,17 +48,21 @@ ARROW_KEY_L = pygame.K_LEFT
 ARROW_KEY_D = pygame.K_DOWN
 ARROW_KEY_U = pygame.K_UP
 
-CELL_FLOOR = 0
-CELL_CRACK = 1
-CELL_BONES = 2
-CELL_ROCKS = 3
-CELL_PLATE = 4
-CELL_BORDER = 5
-CELL_STATUS = 6
+CELL_STATUS = 0
+CELL_BORDER = 1
+CELL_FLOOR  = 2
+CELL_CRACK  = 3
+CELL_BONES  = 4
+CELL_ROCKS  = 5
+CELL_PLATE  = 6
+CELL_BARREL = 7
+CELL_PORTAL = 8
 
 CELL_FLOOR_ADDITIONS_RANDGEN = (CELL_CRACK, CELL_BONES, CELL_ROCKS)
 CELL_FLOOR_ADDITIONS_FREQUENT = (*CELL_FLOOR_ADDITIONS_RANDGEN, *((CELL_FLOOR,) * EMPTY_FLOOR_FREQUENCY))
-CELL_FLOOR_ADDITIONS = (*CELL_FLOOR_ADDITIONS_RANDGEN, CELL_PLATE)
+CELL_FLOOR_ADDITIONS = (*CELL_FLOOR_ADDITIONS_RANDGEN, CELL_PLATE, CELL_BARREL, CELL_PORTAL)
+CELL_ENEMY_OBSTACLES = (CELL_STATUS, CELL_BORDER, CELL_BARREL, CELL_PORTAL)
+CELL_CHAR_OBSTACLES  = (CELL_STATUS, CELL_BORDER)
 
 COLOR_PUZZLE_SIZE_X = 11
 COLOR_PUZZLE_SIZE_Y = 11
@@ -326,13 +330,15 @@ def set_theme(theme_name):
 	global cells, color_cells
 
 	theme_prefix = theme_name + '/'
-	cell1 = Actor(theme_prefix + 'floor')
-	cell2 = Actor(theme_prefix + 'crack')
-	cell3 = Actor(theme_prefix + 'bones')
-	cell4 = Actor(theme_prefix + 'rocks')
-	cell5 = Actor(theme_prefix + 'plate') if is_color_puzzle else None
-	cell6 = Actor(theme_prefix + 'border')
-	cell7 = Actor(theme_prefix + 'status')
+	cell0 = Actor(theme_prefix + 'status')
+	cell1 = Actor(theme_prefix + 'border')
+	cell2 = Actor(theme_prefix + 'floor')
+	cell3 = Actor(theme_prefix + 'crack')
+	cell4 = Actor(theme_prefix + 'bones')
+	cell5 = Actor(theme_prefix + 'rocks')
+	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle else None
+	cell7 = Actor(theme_prefix + 'barrel') if False else None
+	cell8 = Actor(theme_prefix + 'portal') if False else None
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
@@ -344,13 +350,15 @@ def set_theme(theme_name):
 			color_cells.append(color_cell)
 
 	cells = {
-		CELL_FLOOR: cell1,
-		CELL_CRACK: cell2,
-		CELL_BONES: cell3,
-		CELL_ROCKS: cell4,
-		CELL_PLATE: cell5,
-		CELL_BORDER: cell6,
-		CELL_STATUS: cell7,
+		CELL_STATUS: cell0,
+		CELL_BORDER: cell1,
+		CELL_FLOOR:  cell2,
+		CELL_CRACK:  cell3,
+		CELL_BONES:  cell4,
+		CELL_ROCKS:  cell5,
+		CELL_PLATE:  cell6,
+		CELL_BARREL: cell7,
+		CELL_PORTAL: cell8,
 	}
 
 def start_music():
@@ -459,15 +467,15 @@ def init_new_level(offset=1):
 		num_tries = 10000
 		while not positioned and num_tries > 0:
 			num_tries -= 1
-			x = random.randint(1, PLAY_MAP_SIZE_X)
-			y = random.randint(1, PLAY_MAP_SIZE_Y)
-			positioned = True
+			cx = random.randint(1, PLAY_MAP_SIZE_X)
+			cy = random.randint(1, PLAY_MAP_SIZE_Y)
+			positioned = map[cy][cx] not in CELL_ENEMY_OBSTACLES
 			for other in (enemies + hearts + swords + [char]):
-				if (x, y) == other.c:
+				if (cx, cy) == other.c:
 					positioned = False
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
-		enemy = create_actor("skeleton", x, y)
+		enemy = create_actor("skeleton", cx, cy)
 		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
 		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
 		enemy.bonus = random.randint(0, 2)
@@ -731,22 +739,22 @@ def update(dt):
 	last_time_arrow_keys_processed = game_time
 	last_processed_arrow_keys = []
 
-	def set_arrow_key_to_process(key, condition=True):
+	def set_arrow_key_to_process(key, diff):
 		if not ALLOW_DIAGONAL_MOVES and last_processed_arrow_keys:
 			return
 		pressed_arrow_keys.remove(key)
-		if condition:
+		if map[char.cy + diff[1]][char.cx + diff[0]] not in CELL_CHAR_OBSTACLES:
 			last_processed_arrow_keys.append(key)
 
 	for key in list(pressed_arrow_keys):
 		if key == ARROW_KEY_R and key not in last_processed_arrow_keys and ARROW_KEY_L not in last_processed_arrow_keys:
-			set_arrow_key_to_process(key, char.cx < PLAY_MAP_SIZE_X)
+			set_arrow_key_to_process(key, (+1, +0))
 		if key == ARROW_KEY_L and key not in last_processed_arrow_keys and ARROW_KEY_R not in last_processed_arrow_keys:
-			set_arrow_key_to_process(key, char.cx > 1)
+			set_arrow_key_to_process(key, (-1, +0))
 		if key == ARROW_KEY_D and key not in last_processed_arrow_keys and ARROW_KEY_U not in last_processed_arrow_keys:
-			set_arrow_key_to_process(key, char.cy < PLAY_MAP_SIZE_Y)
+			set_arrow_key_to_process(key, (+0, +1))
 		if key == ARROW_KEY_U and key not in last_processed_arrow_keys and ARROW_KEY_D not in last_processed_arrow_keys:
-			set_arrow_key_to_process(key, char.cy > 1)
+			set_arrow_key_to_process(key, (+0, -1))
 
 	diff_x = 0
 	diff_y = 0
