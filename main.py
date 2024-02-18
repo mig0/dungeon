@@ -3,125 +3,11 @@
 import random
 import pygame
 from copy import deepcopy
+from constants import *
+from translations import *
 
-# game constants
-TITLE = "Skull Labyrinth"
-FPS = 30
-
-PLAY_MAP_SIZE_X = 11
-PLAY_MAP_SIZE_Y = 11
-MAP_SIZE_X = PLAY_MAP_SIZE_X + 2
-MAP_SIZE_Y = PLAY_MAP_SIZE_Y + 3
-
-CELL_W = 64
-CELL_H = 64
-WIDTH = CELL_W * MAP_SIZE_X
-HEIGHT = CELL_H * MAP_SIZE_Y
-POS_CENTER_X = WIDTH / 2
-POS_CENTER_Y = HEIGHT / 2
-POS_STATUS_Y = HEIGHT - CELL_H / 2
-
-MIN_ENEMY_HEALTH = 5
-MAX_ENEMY_HEALTH = 15
-MIN_ENEMY_ATTACK = 5
-MAX_ENEMY_ATTACK = 10
-MIN_CHAR_HEALTH = 0
-#INITIAL_CHAR_HEALTH = 100
-INITIAL_CHAR_ATTACK = 5
-BONUS_HEALTH_VALUE = 7
-BONUS_ATTACK_VALUE = 7
-EMPTY_FLOOR_FREQUENCY = 3  # 0 means empty floor is as frequent as non empty
-ARROW_KEYS_RESOLUTION = 0.18
-ALLOW_DIAGONAL_MOVES = True
-CRITICAL_REMAINING_LEVEL_TIME = 20
-
-AUTOGENERATION_IDLE_TIME = 30
-AUTOGENERATION_NEXT_TIME = 5
-AUTOGENERATION_HEALTH = 2
-
-BONUS_NONE   = 0
-BONUS_HEALTH = 1
-BONUS_ATTACK = 2
-
-ARROW_KEY_R = pygame.K_RIGHT
-ARROW_KEY_L = pygame.K_LEFT
-ARROW_KEY_D = pygame.K_DOWN
-ARROW_KEY_U = pygame.K_UP
-
-CELL_STATUS = 0
-CELL_BORDER = 1
-CELL_FLOOR  = 2
-CELL_CRACK  = 3
-CELL_BONES  = 4
-CELL_ROCKS  = 5
-CELL_PLATE  = 6
-CELL_BARREL = 7
-CELL_PORTAL = 8
-
-CELL_FLOOR_ADDITIONS_RANDGEN = (CELL_CRACK, CELL_BONES, CELL_ROCKS)
-CELL_FLOOR_ADDITIONS_FREQUENT = (*CELL_FLOOR_ADDITIONS_RANDGEN, *((CELL_FLOOR,) * EMPTY_FLOOR_FREQUENCY))
-CELL_FLOOR_ADDITIONS = (*CELL_FLOOR_ADDITIONS_RANDGEN, CELL_PLATE, CELL_BARREL, CELL_PORTAL)
-CELL_ENEMY_OBSTACLES = (CELL_STATUS, CELL_BORDER, CELL_BARREL, CELL_PORTAL)
-CELL_CHAR_OBSTACLES  = (CELL_STATUS, CELL_BORDER)
-
-COLOR_PUZZLE_SIZE_X = 11
-COLOR_PUZZLE_SIZE_Y = 11
-NUM_COLOR_PUZZLE_VALUES = 6
-
-COLOR_MAP_SOLVED = [[1] * COLOR_PUZZLE_SIZE_X for y in range(COLOR_PUZZLE_SIZE_Y)]
-
-COLOR_PUZZLE_X1 = int((PLAY_MAP_SIZE_X - COLOR_PUZZLE_SIZE_X) / 2) + 1
-COLOR_PUZZLE_X2 = int((PLAY_MAP_SIZE_X - COLOR_PUZZLE_SIZE_X) / 2) + COLOR_PUZZLE_SIZE_X
-COLOR_PUZZLE_Y1 = int((PLAY_MAP_SIZE_Y - COLOR_PUZZLE_SIZE_Y) / 2) + 1
-COLOR_PUZZLE_Y2 = int((PLAY_MAP_SIZE_Y - COLOR_PUZZLE_SIZE_Y) / 2) + COLOR_PUZZLE_SIZE_Y
-
-COLOR_PUZZLE_X_RANGE = range(COLOR_PUZZLE_X1, COLOR_PUZZLE_X2 + 1)
-COLOR_PUZZLE_Y_RANGE = range(COLOR_PUZZLE_Y1, COLOR_PUZZLE_Y2 + 1)
-
-translations = {
-	'en': {
-		'level-label': "Level",
-		'level-1-name': "First skeleton encounter",
-		'level-2-name': "More skeletons...",
-		'level-3-name': "Even more skeletons...",
-		'level-4-name': "Solve color puzzle!",
-		'level-5-name': "Help me with the skeletons!",
-		'level-target-label': "Level target",
-		'default-level-target': "Kill all enemies",
-		'level-target-kill-1-min': "Kill all enemies in 1 minute",
-		'complete-color-puzzle-green': "Make all floor green",
-		'victory-text': "Victory!",
-		'defeat-text': "Defeat...",
-	},
-	'ru': {
-		'level-label': "Уровень",
-		'level-1-name': "Первая встреча со скелетами",
-		'level-2-name': "Больше скелетов",
-		'level-3-name': "Еще больше скелетов...",
-		'level-4-name': "Реши головоломку с цветами!",
-		'level-5-name': "Помогите мне со скелетами!",
-		'level-target-label': "Цель уровня",
-		'default-level-target': "Уничтожь всех врагов",
-		'level-target-kill-1-min': "Уничтожь всех врагов за 1 минуту",
-		'complete-color-puzzle-green': "Сделай весь пол зелёным",
-		'victory-text': "Победа!",
-		'defeat-text': "Поражение...",
-	},
-	'he': {
-		'level-label': "שלב",
-		'level-1-name': "פגישה ראשונה עם שלדים",
-		'level-2-name': "יותר שלדים",
-		'level-3-name': "עוד יותר שלדים",
-		'level-4-name': "תפתור מסימת הצבעים!",
-		'level-5-name': "עזרו לי עם השלדים!",
-		'level-target-label': "מטרת השלב",
-		'default-level-target': "תחסל את כל האויבים",
-		'level-target-kill-1-min': "תחסל את כל האויבים בדקה אחת",
-		'complete-color-puzzle-green': "תעשה את כל הרצפה ירוקה",
-		'victory-text': "נצחון!",
-		'defeat-text': "הפסד...",
-	},
-}
+def get_color_puzzle_x1():
+	return PLAY_X1 + int((PLAY_SIZE_X - COLOR_PUZZLE_SIZE_X) / 2)
 
 lang = 'en'
 
@@ -198,7 +84,9 @@ is_sound_enabled = True
 is_move_animate_enabled = True
 
 mode = "start"
+is_barrel_puzzle = False
 is_color_puzzle = False
+is_four_rooms = False
 
 game_time = 0
 level_time = 0
@@ -227,48 +115,7 @@ killed_enemies = []
 level_title_timer = 0
 level_target_timer = 0
 
-levels = [
-	{
-		"n": 1,
-		"num_enemies": 5,
-		"theme": "classic",
-		"music": "a_new_path",
-		"char_health": 100,
-	},
-	{
-		"n": 2,
-		"num_enemies": 10,
-		"theme": "ancient1",
-		"music": "playful_sparrow",
-		"char_health": 150,
-	},
-	{
-		"n": 3,
-		"num_enemies": 15,
-		"theme": "modern1",
-		"music": "adventures",
-		"char_health": 200,
-		"time_limit": 60,
-		"target": 'level-target-kill-1-min',
-	},
-	{
-		"n": 4,
-		"num_enemies": 0,
-		"theme": "modern1",
-		"music": "valiant_warriors",
-		"color_puzzle": True,
-		"time_limit": 80,
-		"char_health": None,
-		"target": 'complete-color-puzzle-green',
-	},
-	{
-		"n": 5,
-		"num_enemies": int(PLAY_MAP_SIZE_X * PLAY_MAP_SIZE_Y / 2),
-		"theme": "modern2",
-		"music": "breath",
-		"char_health": 500,
-	},
-]
+from levels import levels
 level = None
 level_idx = -1
 
@@ -294,21 +141,96 @@ def is_in_color_puzzle(cx, cy):
 def is_color_puzzle_plate(cx, cy):
 	return is_in_color_puzzle(cx, cy) and (cx - COLOR_PUZZLE_X1) % 2 == 1 and (cy - COLOR_PUZZLE_Y1) % 2 == 1
 
-def generate_map():
+def set_room_vars(room):
+	global room_size_x, room_size_y, room_x1, room_x2, room_y1, room_y2, room_x_range, room_y_range
+
+	room_size_x = ROOM_SIZE_X[room] if room is not None else PLAY_SIZE_X
+	room_size_y = ROOM_SIZE_Y[room] if room is not None else PLAY_SIZE_Y
+	room_x1 = ROOM_X1[room] if room is not None else PLAY_X1
+	room_x2 = ROOM_X2[room] if room is not None else PLAY_X2
+	room_y1 = ROOM_Y1[room] if room is not None else PLAY_Y1
+	room_y2 = ROOM_Y2[room] if room is not None else PLAY_Y2
+	room_x_range = ROOM_X_RANGE[room] if room is not None else PLAY_X_RANGE
+	room_y_range = ROOM_Y_RANGE[room] if room is not None else PLAY_Y_RANGE
+
+def generate_portal_room(room):
+	global map
+
+	sx = 1 if room == 0 or room == 2 else 7
+	sy = 1 if room == 0 or room == 1 else 7
+	for n in range(3):
+		cx = random.randint(0, 4)
+		cy = random.randint(0, 4)
+		map[sy + cy][sx + cx] = CELL_BARREL
+	cx = random.randint(0, 4)
+	cy = random.randint(0, 4)
+	map[sy + cy][sx + cx] = CELL_PORTAL
+	cx = random.randint(0, 4)
+	cy = random.randint(0, 4)
+	map[sy + cy][sx + cx] = CELL_BORDER
+
+def generate_room(room):
 	global map, color_map
+	global num_bonus_health, num_bonus_attack
+
+	set_room_vars(room)
+
+	for cy in room_y_range:
+		for cx in room_x_range:
+			if is_color_puzzle_plate(cx, cy):
+				map[cy][cx] = CELL_PLATE
+
+	if is_barrel_puzzle:
+		generate_barrel_room(room)
+
+	# generate enemies
+	for i in range(level["num_enemies"]):
+		positioned = False
+		num_tries = 10000
+		while not positioned and num_tries > 0:
+			num_tries -= 1
+			cx = random.randint(room_x1, room_x2)
+			cy = random.randint(room_y1, room_y2)
+			positioned = map[cy][cx] not in CELL_ENEMY_OBSTACLES
+			for other in (enemies + hearts + swords + [char]):
+				if (cx, cy) == other.c:
+					positioned = False
+		if num_tries == 0:
+			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
+		enemy = create_actor("skeleton", cx, cy)
+		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
+		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
+		enemy.bonus = random.randint(0, 2)
+		if enemy.bonus == BONUS_HEALTH:
+			num_bonus_health += 1
+		elif enemy.bonus == BONUS_ATTACK:
+			num_bonus_attack += 1
+		enemies.append(enemy)
+
+def debug_map():
+	for cy in PLAY_Y_RANGE:
+		for cx in PLAY_X_RANGE:
+			print(map[cy][cx] if map[cy][cx] < 10 else chr(map[cy][cx] - 87), end="")
+		print()
+	print()
+
+def generate_map():
+	global map
 
 	map = []
 	for cy in range(0, MAP_SIZE_Y):
-		if cy == 0 or cy == PLAY_MAP_SIZE_Y + 1:
+		if cy == 0 or cy == PLAY_SIZE_Y + 1:
 			line = [CELL_BORDER] * MAP_SIZE_X
 		elif cy == MAP_SIZE_Y - 1:
 			line = [CELL_STATUS] * MAP_SIZE_X
 		else:
 			line = [CELL_BORDER]
-			for cx in range(1, MAP_SIZE_X - 1):
+			for cx in PLAY_X_RANGE:
 				cell_type = CELL_FLOOR_ADDITIONS_FREQUENT[random.randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
 				if is_color_puzzle_plate(cx, cy):
 					cell_type = CELL_PLATE
+				if is_four_rooms and (cx == ROOM_BORDER_X or cy == ROOM_BORDER_Y):
+					cell_type = CELL_BORDER
 				line.append(cell_type)
 			line.append(CELL_BORDER)
 		map.append(line)
@@ -326,6 +248,12 @@ def generate_map():
 				break
 			num_tries -= 1
 
+	if is_four_rooms:
+		for room in range(4):
+			generate_room(room)
+	else:
+		generate_room(None)
+
 def set_theme(theme_name):
 	global cells, color_cells
 
@@ -337,8 +265,8 @@ def set_theme(theme_name):
 	cell4 = Actor(theme_prefix + 'bones')
 	cell5 = Actor(theme_prefix + 'rocks')
 	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle else None
-	cell7 = Actor(theme_prefix + 'barrel') if False else None
-	cell8 = Actor(theme_prefix + 'portal') if False else None
+	cell7 = Actor(theme_prefix + 'barrel') if is_four_rooms else None
+	cell8 = Actor(theme_prefix + 'portal') if is_four_rooms else None
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
@@ -425,7 +353,8 @@ def reset_idle_time():
 	last_autogeneration_time = 0
 
 def init_new_level(offset=1):
-	global level_idx, level, level_time, mode, is_color_puzzle, is_game_won
+	global level_idx, level, level_time, mode, is_game_won
+	global is_color_puzzle, is_four_rooms
 	global num_bonus_health, num_bonus_attack
 	global enemies, hearts, swords, level_time
 
@@ -444,7 +373,9 @@ def init_new_level(offset=1):
 		return
 
 	level = levels[level_idx]
+	is_barrel_puzzle = "barrel_puzzle" in level
 	is_color_puzzle = "color_puzzle" in level
+	is_four_rooms = "four_rooms" in level
 
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
@@ -460,30 +391,6 @@ def init_new_level(offset=1):
 
 	if "target" not in level:
 		level["target"] = "default-level-target"
-
-	# generate enemies
-	for i in range(level["num_enemies"]):
-		positioned = False
-		num_tries = 10000
-		while not positioned and num_tries > 0:
-			num_tries -= 1
-			cx = random.randint(1, PLAY_MAP_SIZE_X)
-			cy = random.randint(1, PLAY_MAP_SIZE_Y)
-			positioned = map[cy][cx] not in CELL_ENEMY_OBSTACLES
-			for other in (enemies + hearts + swords + [char]):
-				if (cx, cy) == other.c:
-					positioned = False
-		if num_tries == 0:
-			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
-		enemy = create_actor("skeleton", cx, cy)
-		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
-		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
-		enemy.bonus = random.randint(0, 2)
-		if enemy.bonus == BONUS_HEALTH:
-			num_bonus_health += 1
-		elif enemy.bonus == BONUS_ATTACK:
-			num_bonus_attack += 1
-		enemies.append(enemy)
 
 	level_time = 0
 	reset_idle_time()

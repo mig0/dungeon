@@ -1,4 +1,5 @@
 #!/bin/sh
 
 cd `dirname $0` && \
-PYGAME_HIDE_SUPPORT_PROMPT=1 pgzrun main.py 2> >(grep -v '<frozen importlib._bootstrap>' - )
+PYGAME_HIDE_SUPPORT_PROMPT=1 PYTHONDONTWRITEBYTECODE=1 \
+pgzrun main.py 2> >(grep -v '<frozen importlib._bootstrap>' - )
