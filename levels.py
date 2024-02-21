@@ -6,6 +6,8 @@ levels = [
 		"num_enemies": 5,
 		"theme": "classic",
 		"music": "a_new_path",
+#		"four_rooms": True,
+		"random_maze": True,
 		"char_health": 100,
 	},
 	{

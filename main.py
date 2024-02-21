@@ -82,6 +82,7 @@ is_sound_enabled = True
 is_move_animate_enabled = True
 
 mode = "start"
+is_random_maze = False
 is_barrel_puzzle = False
 is_color_puzzle = False
 is_four_rooms = False
@@ -195,6 +196,36 @@ def place_char_in_first_free_spot():
 def get_random_floor_cell_type():
 	return CELL_FLOOR_ADDITIONS_FREQUENT[randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
 
+def get_random_even_point(a1, a2):
+	return a1 + randint(0, int((a2 - a1) / 2)) * 2
+
+def generate_random_maze_room(x1, y1, x2, y2):
+	if x2 - x1 <= 1 or y2 - y1 <= 1:
+		return
+
+	# select random point that will divide the area into 4 sub-areas
+	random_x = get_random_even_point(x1 + 1, x2 - 1)
+	random_y = get_random_even_point(y1 + 1, y2 - 1)
+
+	# create the horizontal and vertical border wall via this point
+	for x in range(x1, x2 + 1):
+		map[random_y][x] = CELL_BORDER
+	for y in range(y1, y2 + 1):
+		map[y][random_x] = CELL_BORDER
+
+	# select 3 random holes on the 4 just created border walls
+	skipped_wall = randint(0, 3)
+	if skipped_wall != 0: map[random_y][get_random_even_point(x1, random_x - 1)] = get_random_floor_cell_type()
+	if skipped_wall != 1: map[get_random_even_point(y1, random_y - 1)][random_x] = get_random_floor_cell_type()
+	if skipped_wall != 2: map[random_y][get_random_even_point(random_x + 1, x2)] = get_random_floor_cell_type()
+	if skipped_wall != 3: map[get_random_even_point(random_y + 1, y2)][random_x] = get_random_floor_cell_type()
+
+	# recurse into 4 sub-areas
+	generate_random_maze_room(x1, y1, random_x - 1, random_y - 1)
+	generate_random_maze_room(random_x + 1, y1, x2, random_y - 1)
+	generate_random_maze_room(x1, random_y + 1, random_x - 1, y2)
+	generate_random_maze_room(random_x + 1, random_y + 1, x2, y2)
+
 def generate_barrel_room(room):
 	global map
 
@@ -213,6 +244,9 @@ def generate_room(room):
 	global num_bonus_health, num_bonus_attack
 
 	set_room_vars(room)
+
+	if is_random_maze:
+		generate_random_maze_room(room_x1, room_y1, room_x2, room_y2)
 
 	if is_barrel_puzzle:
 		generate_barrel_room(room)
@@ -397,7 +431,7 @@ def reset_idle_time():
 
 def init_new_level(offset=1):
 	global level_idx, level, level_time, mode, is_game_won
-	global is_color_puzzle, is_four_rooms, current_room
+	global is_random_maze, is_color_puzzle, is_four_rooms, current_room
 	global num_bonus_health, num_bonus_attack
 	global enemies, hearts, swords, level_time
 
@@ -416,6 +450,7 @@ def init_new_level(offset=1):
 		return
 
 	level = levels[level_idx]
+	is_random_maze = "random_maze" in level
 	is_barrel_puzzle = "barrel_puzzle" in level
 	is_color_puzzle = "color_puzzle" in level
 	is_four_rooms = "four_rooms" in level
