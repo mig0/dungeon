@@ -3,6 +3,7 @@
 import random
 import pygame
 from copy import deepcopy
+from random import randint
 from constants import *
 from translations import *
 
@@ -182,16 +183,23 @@ def place_char_in_first_free_spot():
 	for cy in room_y_range:
 		for cx in room_x_range:
 			if map[cy][cx] not in CELL_CHAR_PLACE_OBSTACLES:
-				set_actor_coord(char, cx, cy)
-				return
+				for enemy in enemies:
+					if enemy.cx == cx and enemy.cy == cy:
+						break
+				else:
+					set_actor_coord(char, cx, cy)
+					return
 	print("Was not able to find free spot for char, fix the level or a bug")
 	quit()
+
+def get_random_floor_cell_type():
+	return CELL_FLOOR_ADDITIONS_FREQUENT[randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
 
 def generate_barrel_room(room):
 	global map
 
 	def get_random_coords():
-		return random.randint(0, room_size_x - 1), random.randint(0, room_size_y - 1)
+		return randint(0, room_size_x - 1), randint(0, room_size_y - 1)
 
 	for n in range(3):
 		cx, cy = get_random_coords()
@@ -220,9 +228,9 @@ def generate_room(room):
 		num_tries = 5
 		while num_tries > 0:
 			for n in range(color_puzzle_size_x * color_puzzle_size_y * 3):
-				plate_cx = color_puzzle_x1 + random.randint(1, int(color_puzzle_size_x / 2)) * 2 - 1
-				plate_cy = color_puzzle_y1 + random.randint(1, int(color_puzzle_size_y / 2)) * 2 - 1
-				for i in range(random.randint(1, get_num_color_puzzle_values() - 1)):
+				plate_cx = color_puzzle_x1 + randint(1, int(color_puzzle_size_x / 2)) * 2 - 1
+				plate_cy = color_puzzle_y1 + randint(1, int(color_puzzle_size_y / 2)) * 2 - 1
+				for i in range(randint(1, get_num_color_puzzle_values() - 1)):
 					press_color_puzzle_neighbour_cells(plate_cx, plate_cy)
 			if not is_color_puzzle_solved():
 				break
@@ -234,8 +242,8 @@ def generate_room(room):
 		num_tries = 10000
 		while not positioned and num_tries > 0:
 			num_tries -= 1
-			cx = random.randint(room_x1, room_x2)
-			cy = random.randint(room_y1, room_y2)
+			cx = randint(room_x1, room_x2)
+			cy = randint(room_y1, room_y2)
 			positioned = map[cy][cx] not in CELL_ENEMY_PLACE_OBSTACLES
 			for other in (enemies + hearts + swords + [char]):
 				if (cx, cy) == other.c:
@@ -243,9 +251,9 @@ def generate_room(room):
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
 		enemy = create_actor("skeleton", cx, cy)
-		enemy.health = random.randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
-		enemy.attack = random.randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
-		enemy.bonus = random.randint(0, 2)
+		enemy.health = randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
+		enemy.attack = randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
+		enemy.bonus = randint(0, 2)
 		if enemy.bonus == BONUS_HEALTH:
 			num_bonus_health += 1
 		elif enemy.bonus == BONUS_ATTACK:
@@ -271,7 +279,7 @@ def generate_map():
 		else:
 			line = [CELL_BORDER]
 			for cx in PLAY_X_RANGE:
-				cell_type = CELL_FLOOR_ADDITIONS_FREQUENT[random.randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
+				cell_type = get_random_floor_cell_type()
 				if is_four_rooms and (cx == ROOM_BORDER_X or cy == ROOM_BORDER_Y):
 					cell_type = CELL_BORDER
 				line.append(cell_type)
@@ -643,7 +651,7 @@ def move_char(diff_x, diff_y):
 			elif enemy.bonus == BONUS_ATTACK:
 				sword = create_actor('sword', *enemy.c)
 				swords.append(sword)
-			enemy.angle = (random.randint(-1, 1) + 2) * 90
+			enemy.angle = (randint(-1, 1) + 2) * 90
 			killed_enemies.append(enemy)
 			clock.schedule(kill_enemy, 0.3)
 

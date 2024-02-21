@@ -1,9 +1,11 @@
 TITLE = "Skull Labyrinth"
 FPS = 30
 
+# playing area size
 PLAY_SIZE_X = 11
 PLAY_SIZE_Y = 11
 
+# sprite size
 CELL_W = 64
 CELL_H = 64
 
