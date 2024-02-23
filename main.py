@@ -105,6 +105,7 @@ color_cells = []
 enemies = []
 hearts = []
 swords = []
+barrels = []
 
 num_bonus_health = 0
 num_bonus_attack = 0
@@ -184,8 +185,8 @@ def place_char_in_first_free_spot():
 	for cy in room_y_range:
 		for cx in room_x_range:
 			if map[cy][cx] not in CELL_CHAR_PLACE_OBSTACLES:
-				for enemy in enemies:
-					if enemy.cx == cx and enemy.cy == cy:
+				for actor in enemies + barrels:
+					if actor.cx == cx and actor.cy == cy:
 						break
 				else:
 					set_actor_coord(char, cx, cy)
@@ -226,19 +227,55 @@ def generate_random_maze_room(x1, y1, x2, y2):
 	generate_random_maze_room(x1, random_y + 1, random_x - 1, y2)
 	generate_random_maze_room(random_x + 1, random_y + 1, x2, y2)
 
-def generate_barrel_room(room):
+def generate_barrel_room(x1, y1, x2, y2):
 	global map
 
-	def get_random_coords():
-		return randint(0, room_size_x - 1), randint(0, room_size_y - 1)
+	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
 
-	for n in range(3):
+	def get_random_coords():
+		return randint(x1, x2), randint(y1, y2)
+
+	if False:
+		for n in range(num_barrels):
+			cx, cy = get_random_coords()
+			barrel = create_actor("barrel", cx, cy)
+			barrels.append(barrel)
 		cx, cy = get_random_coords()
-		map[room_y1 + cy][room_x1 + cx] = CELL_BARREL
-	cx, cy = get_random_coords()
-	map[room_y1 + cy][room_x1 + cx] = CELL_PORTAL
-	cx, cy = get_random_coords()
-	map[room_y1 + cy][room_x1 + cx] = CELL_BORDER
+		map[cy][cx] = CELL_PORTAL
+		cx, cy = get_random_coords()
+		map[cy][cx] = CELL_BORDER
+
+	# 0) initialize char position to None
+	# 1) initialize entire room to BORDER
+	for cy in range(y1, y2 + 1):
+		for cx in range(x1, x2 + 1):
+			map[cy][cx] = CELL_BORDER
+	# 2) place room plates randomly or in good positions, as the number of barrels
+	# 3) place room barrels into the place cells, one barrel per one plate
+	for n in range(num_barrels):
+		while True:
+			cx, cy = get_random_coords()
+			if map[cy][cx] != CELL_PLATE:
+				map[cy][cx] = CELL_PLATE
+				break
+		barrel = create_actor("barrel", cx, cy)
+		barrels.append(barrel)
+
+	# 4) for each room barrel do:
+	#    5) select one of 4 directions and place char to the "adjacent to barrel" cell (prefer empty cells)
+	#    6) if the cell is not empty (BORDER), make it empty (FLOOR with additions)
+	#    7) if the char position is not None, first create empty path to the selected adjacent cell
+	#    8) for each move in random number of moves:
+	#       9) either the move is push (only valid when char is adjacent to barrel), then pull the barrel
+	#	   (make the cell empty if needed, check that there is no other barrel)
+	#       10) or the move is free walk, then select one of 4 directions randomly (prefer empty cells)
+	# 11) remember the char position, optionally try to move it as far left-top as possible
+
+	while True:
+		cx, cy = get_random_coords()
+		if map[cy][cx] != CELL_PLATE:
+			map[cy][cx] = get_random_floor_cell_type()
+			break
 
 def generate_room(room):
 	global num_bonus_health, num_bonus_attack
@@ -249,7 +286,7 @@ def generate_room(room):
 		generate_random_maze_room(room_x1, room_y1, room_x2, room_y2)
 
 	if is_barrel_puzzle:
-		generate_barrel_room(room)
+		generate_barrel_room(room_x1, room_y1, room_x2, room_y2)
 
 	if is_color_puzzle:
 		set_color_puzzle_vars(room)
@@ -271,7 +308,7 @@ def generate_room(room):
 			num_tries -= 1
 
 	# generate enemies
-	for i in range(level["num_enemies"]):
+	for i in range(level["num_enemies"] if "num_enemies" in level else DEFAULT_NUM_ENEMIES):
 		positioned = False
 		num_tries = 10000
 		while not positioned and num_tries > 0:
@@ -302,7 +339,7 @@ def debug_map():
 	print()
 
 def generate_map():
-	global map, color_map
+	global map, color_map, barrels
 
 	map = []
 	for cy in range(0, MAP_SIZE_Y):
@@ -319,6 +356,8 @@ def generate_map():
 				line.append(cell_type)
 			line.append(CELL_BORDER)
 		map.append(line)
+
+	barrels = []
 
 	if is_color_puzzle:
 		color_map = [[COLOR_PUZZLE_VALUE_OUTSIDE] * MAP_SIZE_X for y in range(0, MAP_SIZE_Y)]
@@ -341,9 +380,8 @@ def set_theme(theme_name):
 	cell3 = Actor(theme_prefix + 'crack')
 	cell4 = Actor(theme_prefix + 'bones')
 	cell5 = Actor(theme_prefix + 'rocks')
-	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle else None
-	cell7 = Actor(theme_prefix + 'barrel') if is_barrel_puzzle else None
-	cell8 = Actor(theme_prefix + 'portal') if is_barrel_puzzle else None
+	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle else None
+	cell7 = Actor(theme_prefix + 'portal') if is_barrel_puzzle else None
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
@@ -362,8 +400,7 @@ def set_theme(theme_name):
 		CELL_BONES:  cell4,
 		CELL_ROCKS:  cell5,
 		CELL_PLATE:  cell6,
-		CELL_BARREL: cell7,
-		CELL_PORTAL: cell8,
+		CELL_PORTAL: cell7,
 	}
 
 def start_music():
@@ -431,7 +468,8 @@ def reset_idle_time():
 
 def init_new_level(offset=1):
 	global level_idx, level, level_time, mode, is_game_won
-	global is_random_maze, is_color_puzzle, is_four_rooms, current_room
+	global is_random_maze, is_barrel_puzzle, is_color_puzzle
+	global is_four_rooms, current_room
 	global num_bonus_health, num_bonus_attack
 	global enemies, hearts, swords, level_time
 
@@ -544,6 +582,8 @@ def draw():
 			heart.draw()
 		for sword in swords:
 			sword.draw()
+		for barrel in barrels:
+			barrel.draw()
 		char.draw()
 		for actor in enemies + [char]:
 			if actor.health is None:
@@ -647,7 +687,7 @@ def check_victory():
 
 	if "time_limit" in level and level_time > level["time_limit"]:
 		loose_game()
-	elif is_color_puzzle:
+	elif is_color_puzzle or char.health is None:
 		pass
 	elif not room_enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
 		win_room()
