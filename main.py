@@ -120,14 +120,42 @@ level = None
 level_idx = -1
 current_room = None
 
+def debug(level, str):
+	if DEBUG_LEVEL < level:
+		return
+	print(str)
+
+def debug_map(level, full=False, clean=False, combined=False, dual=False, endl=False):
+	if DEBUG_LEVEL < level:
+		return
+	for cy in MAP_Y_RANGE if full else PLAY_Y_RANGE:
+		if not combined:
+			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
+				print(CELL_FLOOR if clean and map[cy][cx] in CELL_FLOOR_ADDITIONS_RANDGEN else map[cy][cx], end="")
+		if dual:
+			print("    ", end="")
+		if dual or combined:
+			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
+				cell_ch = CELL_FLOOR if clean and map[cy][cx] in CELL_FLOOR_ADDITIONS_RANDGEN else map[cy][cx]
+				if is_cell_in_actors((cx, cy), enemies):
+					cell_ch = '&'
+				if is_cell_in_actors((cx, cy), barrels):
+					cell_ch = '*'
+				if char.c is not None and is_cell_in_actors((cx, cy), [char]):
+					cell_ch = '@'
+				print(cell_ch, end="")
+		print()
+	if endl:
+		print()
+
 def get_num_color_puzzle_values():
 	return level["color_puzzle_values"] if "color_puzzle_values" in level else MAX_COLOR_PUZZLE_VALUES
 
 def press_color_puzzle_cell(cx, cy):
 	color_map[cy][cx] = (color_map[cy][cx] + 1) % get_num_color_puzzle_values()
 
-def press_color_puzzle_neighbour_cells(cx, cy):
-	for (nx, ny) in get_all_neighbours(cx, cy):
+def press_color_puzzle_neighbor_cells(cx, cy):
+	for (nx, ny) in get_all_neighbors(cx, cy):
 		press_color_puzzle_cell(nx, ny)
 
 def get_color_puzzle_cell(cx, cy):
@@ -191,11 +219,19 @@ def place_char_in_first_free_spot():
 				else:
 					set_actor_coord(char, cx, cy)
 					return
+
 	print("Was not able to find free spot for char, fix the level or a bug")
-	quit()
+	if DEBUG_LEVEL:
+		set_actor_coord(char, 0, 0)
+	else:
+		quit()
 
 def get_random_floor_cell_type():
 	return CELL_FLOOR_ADDITIONS_FREQUENT[randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
+
+def convert_to_floor_if_needed(cx, cy):
+	if map[cy][cx] == CELL_BORDER or map[cy][cx] == CELL_INTERNAL1:
+		map[cy][cx] = get_random_floor_cell_type()
 
 def get_random_even_point(a1, a2):
 	return a1 + randint(0, int((a2 - a1) / 2)) * 2
@@ -302,7 +338,7 @@ def generate_room(room):
 				plate_cx = color_puzzle_x1 + randint(1, int(color_puzzle_size_x / 2)) * 2 - 1
 				plate_cy = color_puzzle_y1 + randint(1, int(color_puzzle_size_y / 2)) * 2 - 1
 				for i in range(randint(1, get_num_color_puzzle_values() - 1)):
-					press_color_puzzle_neighbour_cells(plate_cx, plate_cy)
+					press_color_puzzle_neighbor_cells(plate_cx, plate_cy)
 			if not is_color_puzzle_solved():
 				break
 			num_tries -= 1
@@ -316,7 +352,7 @@ def generate_room(room):
 			cx = randint(room_x1, room_x2)
 			cy = randint(room_y1, room_y2)
 			positioned = map[cy][cx] not in CELL_ENEMY_PLACE_OBSTACLES
-			for other in (enemies + hearts + swords + [char]):
+			for other in (enemies + hearts + swords + barrels + [char]):
 				if (cx, cy) == other.c:
 					positioned = False
 		if num_tries == 0:
@@ -331,15 +367,8 @@ def generate_room(room):
 			num_bonus_attack += 1
 		enemies.append(enemy)
 
-def debug_map():
-	for cy in PLAY_Y_RANGE:
-		for cx in PLAY_X_RANGE:
-			print(map[cy][cx] if map[cy][cx] < 10 else chr(map[cy][cx] - 87), end="")
-		print()
-	print()
-
 def generate_map():
-	global map, color_map, barrels
+	global map, color_map, barrels, is_char_placed
 
 	map = []
 	for cy in range(0, MAP_SIZE_Y):
@@ -359,6 +388,8 @@ def generate_map():
 
 	barrels = []
 
+	is_char_placed = False
+
 	if is_color_puzzle:
 		color_map = [[COLOR_PUZZLE_VALUE_OUTSIDE] * MAP_SIZE_X for y in range(0, MAP_SIZE_Y)]
 
@@ -368,7 +399,8 @@ def generate_map():
 	else:
 		generate_room(None)
 
-	place_char_in_first_free_spot()
+	if not is_char_placed is None:
+		place_char_in_first_free_spot()
 
 def set_theme(theme_name):
 	global cells, color_cells
@@ -574,6 +606,8 @@ def draw():
 	if mode == "game" or mode == "end" or mode == "next":
 		draw_map()
 		draw_status()
+		for barrel in barrels:
+			barrel.draw()
 		for enemy in killed_enemies:
 			enemy.draw()
 		for enemy in enemies:
@@ -582,8 +616,6 @@ def draw():
 			heart.draw()
 		for sword in swords:
 			sword.draw()
-		for barrel in barrels:
-			barrel.draw()
 		char.draw()
 		for actor in enemies + [char]:
 			if actor.health is None:
@@ -659,7 +691,7 @@ def on_key_down(key):
 		quit()
 
 	if keyboard.space and is_color_puzzle and map[char.cy][char.cx] == CELL_PLATE:
-		press_color_puzzle_neighbour_cells(char.cx, char.cy)
+		press_color_puzzle_neighbor_cells(char.cx, char.cy)
 		set_color_puzzle_vars(current_room)
 		if is_color_puzzle_solved():
 			win_room()

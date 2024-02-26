@@ -9,6 +9,7 @@ PLAY_SIZE_Y = 11
 CELL_W = 64
 CELL_H = 64
 
+DEBUG_LEVEL = 2  # 0 means no debug at all, 2 means more verbose
 MIN_ENEMY_HEALTH = 5
 MAX_ENEMY_HEALTH = 15
 MIN_ENEMY_ATTACK = 5
