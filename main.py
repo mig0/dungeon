@@ -55,18 +55,35 @@ def create_actor(image_name, cx, cy):
 	set_actor_coord(actor, cx, cy)
 	return actor
 
+def is_cell_in_actors(c, actors):
+	for actor in actors:
+		if c == actor.c:
+			return True
+	return False
+
 def move_map_actor(actor, diff_c):
 	diff_cx, diff_cy = diff_c
 	set_actor_coord(actor, actor.cx + diff_cx, actor.cy + diff_cy)
 
-def get_all_neighbours(cx, cy, include_self=False):
-	neighbours = []
+def get_actor_neighbors(actor, range_x=None, range_y=None):
+	cx, cy = actor.c
+	neighbors = []
+	for diff in ((-1, 0), (+1, 0), (0, -1), (0, +1)):
+		nx = cx + diff[0]
+		ny = cy + diff[1]
+		if (range_x is None or nx in range_x) and (range_y is None or ny in range_y):
+			neighbors.append((nx, ny))
+	debug(3, "* get_actor_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
+	return neighbors
+
+def get_all_neighbors(cx, cy, include_self=False):
+	neighbors = []
 	for dy in (-1, 0, +1):
 		for dx in (-1, 0, +1):
 			if dy == 0 and dx == 0 and not include_self:
 				continue
-			neighbours.append((cx + dx, cy + dy))
-	return neighbours
+			neighbors.append((cx + dx, cy + dy))
+	return neighbors
 
 # game sprites
 char = create_actor('stand', 1, 1)
@@ -82,6 +99,7 @@ is_sound_enabled = True
 is_move_animate_enabled = True
 
 mode = "start"
+is_char_placed = False
 is_random_maze = False
 is_barrel_puzzle = False
 is_color_puzzle = False
@@ -263,29 +281,78 @@ def generate_random_maze_room(x1, y1, x2, y2):
 	generate_random_maze_room(x1, random_y + 1, random_x - 1, y2)
 	generate_random_maze_room(random_x + 1, random_y + 1, x2, y2)
 
-def generate_barrel_room(x1, y1, x2, y2):
+def generate_random_free_path(target_c, level=0):
 	global map
+
+	if char.c == target_c:
+		return True
+
+	ox, oy = char.c
+	tx, ty = target_c
+
+	distance = abs(tx - ox) + abs(ty - oy)
+	if level > distance:
+		return False
+
+	debug(2, "* [%d] generating free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
+
+	weighted_neighbors = []
+	for c in get_actor_neighbors(char, room_x_range, room_y_range):
+		cx, cy = c
+		distance = abs(tx - cx) + abs(ty - cy)
+		if is_cell_in_actors(c, barrels):
+			continue
+		if map[cy][cx] == CELL_INTERNAL1:
+			continue
+		weight = randint(0, 30)
+		if map[cy][cx] != CELL_BORDER:
+			weight += 20
+		if map[cy][cx] == CELL_PLATE:
+			weight += 5
+		weight += (1000 - distance) * 10
+		weighted_neighbors.append((weight, c))
+
+	neighbors = [n[1] for n in sorted(weighted_neighbors, reverse=True)]
+
+	if not neighbors:
+		return False
+
+	old_cell_type = map[oy][ox]
+	map[oy][ox] = CELL_INTERNAL1
+
+	for neighbor in neighbors:
+		cx, cy = neighbor
+		set_actor_coord(char, cx, cy)
+		debug(3, "* [%d] trying to move to (%d, %d)" % (level, cx, cy))
+		debug_map(3, full=True, clean=True, combined=True)
+		is_path_found = generate_random_free_path(target_c, level + 1)
+		if is_path_found:
+			debug(2, "* [%d] successfully generated free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
+			debug_map(2, full=True, clean=True, combined=True)
+			map[oy][ox] = old_cell_type
+			convert_to_floor_if_needed(ox, oy)
+			return True
+
+	set_actor_coord(char, ox, oy)
+	map[oy][ox] = old_cell_type
+	return False
+
+def generate_random_solvable_barrel_room(x1, y1, x2, y2):
+	global map, is_char_placed
 
 	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
 
 	def get_random_coords():
 		return randint(x1, x2), randint(y1, y2)
 
-	if False:
-		for n in range(num_barrels):
-			cx, cy = get_random_coords()
-			barrel = create_actor("barrel", cx, cy)
-			barrels.append(barrel)
-		cx, cy = get_random_coords()
-		map[cy][cx] = CELL_PORTAL
-		cx, cy = get_random_coords()
-		map[cy][cx] = CELL_BORDER
-
 	# 0) initialize char position to None
+	char.c = None
+
 	# 1) initialize entire room to BORDER
 	for cy in range(y1, y2 + 1):
 		for cx in range(x1, x2 + 1):
 			map[cy][cx] = CELL_BORDER
+
 	# 2) place room plates randomly or in good positions, as the number of barrels
 	# 3) place room barrels into the place cells, one barrel per one plate
 	for n in range(num_barrels):
@@ -298,20 +365,120 @@ def generate_barrel_room(x1, y1, x2, y2):
 		barrels.append(barrel)
 
 	# 4) for each room barrel do:
-	#    5) select one of 4 directions and place char to the "adjacent to barrel" cell (prefer empty cells)
-	#    6) if the cell is not empty (BORDER), make it empty (FLOOR with additions)
-	#    7) if the char position is not None, first create empty path to the selected adjacent cell
-	#    8) for each move in random number of moves:
-	#       9) either the move is push (only valid when char is adjacent to barrel), then pull the barrel
-	#	   (make the cell empty if needed, check that there is no other barrel)
-	#       10) or the move is free walk, then select one of 4 directions randomly (prefer empty cells)
+	for barrel in barrels:
+		debug(2, "barrel #%d - starting (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
+		visited_cells = [barrel.c]
+		# 5) make random moves for the barrel until possible
+		while len(visited_cells) < 100:
+			# 6) select one of 4 directions and place char to the "adjacent to barrel" cell (prefer empty cells)
+			best_c = None
+			best_weight = 0
+			for c in get_actor_neighbors(barrel, room_x_range, room_y_range):
+				if c in visited_cells:
+					continue
+				cx, cy = c
+				if is_cell_in_actors(c, barrels):
+					continue
+				new_cx = cx + cx - barrel.cx
+				new_cy = cy + cy - barrel.cy
+				if new_cx not in room_x_range or new_cy not in room_y_range:
+					continue
+				if is_cell_in_actors((new_cx, new_cy), barrels):
+					continue
+				weight = randint(0, 30)
+				if map[cy][cx] != CELL_BORDER:
+					weight += 20
+				if map[cy][cx] == CELL_PLATE:
+					weight += 4
+				if map[new_cy][new_cx] != CELL_BORDER:
+					weight += 10
+				if map[new_cy][new_cx] == CELL_PLATE:
+					weight += 2
+				if weight > best_weight:
+					best_c = c
+					best_weight = weight
+
+			if best_c is None:
+				# can't find free neighbor for barrel, stop
+				break
+
+			visited_cells.append(best_c)
+
+			# 7) if the cell is not empty (BORDER), make it empty (FLOOR with additions)
+			cx, cy = best_c
+			convert_to_floor_if_needed(cx, cy)
+			new_char_cx = cx + (cx - barrel.cx)
+			new_char_cy = cy + (cy - barrel.cy)
+			debug(2, "barrel #%d - best neighbor (%d, %d), next cell (%d, %d)" % (barrels.index(barrel), cx, cy, new_char_cx, new_char_cy))
+			debug_map(2, full=True, clean=True, dual=True)
+			convert_to_floor_if_needed(new_char_cx, new_char_cy)
+
+			# 8) if the char position is not None, first create random free path to the selected adjacent cell
+			if char.c is None:
+				set_actor_coord(char, cx, cy)
+			if not generate_random_free_path(best_c):
+				# can't create free path for char, stop
+				break
+
+			# 9) make anti-push, i.e pull the barrel to the char
+			#    (make the cell empty if needed, check that there is no other barrel)
+			set_actor_coord(barrel, char.cx, char.cy)
+			set_actor_coord(char, new_char_cx, new_char_cy)
+		debug(2, "barrel #%d - finished (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
+
 	# 11) remember the char position, optionally try to move it as far left-top as possible
+	if char.c is None:
+		print("Failed to generate random solvable barrel room")
+		if DEBUG_LEVEL:
+			return
+		else:
+			quit()
+
+	is_char_placed = True
+	while True:
+		for c in get_actor_neighbors(char, room_x_range, room_y_range):
+			cx, cy = c
+			if cx > char.cx or cy > char.cy:
+				continue
+			if not map[cy][cx] in CELL_CHAR_MOVE_OBSTACLES:
+				set_actor_coord(char, cx, cy)
+				break
+		else:
+			break
+
+def generate_random_nonsolvable_barrel_room(x1, y1, x2, y2):
+	global map
+
+	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
+
+	def get_random_coords():
+		return randint(x1, x2), randint(y1, y2)
+
+	for cy in range(y1, y2 + 1):
+		for cx in range(x1, x2 + 1):
+			map[cy][cx] = get_random_floor_cell_type()
+
+	for n in range(num_barrels):
+		while True:
+			cx, cy = get_random_coords()
+			if map[cy][cx] != CELL_PLATE:
+				map[cy][cx] = CELL_PLATE
+				break
+		barrel = create_actor("barrel", cx, cy)
+		barrels.append(barrel)
 
 	while True:
 		cx, cy = get_random_coords()
 		if map[cy][cx] != CELL_PLATE:
-			map[cy][cx] = get_random_floor_cell_type()
+			map[cy][cx] = CELL_PORTAL
 			break
+
+	for n in range(4):
+		while True:
+			cx, cy = get_random_coords()
+			if map[cy][cx] != CELL_PLATE and map[cy][cx] != CELL_PORTAL:
+				map[cy][cx] = CELL_BORDER
+				break
 
 def generate_room(room):
 	global num_bonus_health, num_bonus_attack
@@ -322,7 +489,7 @@ def generate_room(room):
 		generate_random_maze_room(room_x1, room_y1, room_x2, room_y2)
 
 	if is_barrel_puzzle:
-		generate_barrel_room(room_x1, room_y1, room_x2, room_y2)
+		generate_random_solvable_barrel_room(room_x1, room_y1, room_x2, room_y2)
 
 	if is_color_puzzle:
 		set_color_puzzle_vars(room)
