@@ -136,7 +136,14 @@ level_target_timer = 0
 from levels import levels
 level = None
 level_idx = -1
-current_room = None
+
+class Area:
+	# x1, y1, x2, y2, size_x, size_y, x_range, y_range
+	pass
+
+room = Area()
+room_idx = None
+color_puzzle = Area()
 
 def debug(level, str):
 	if DEBUG_LEVEL < level:
@@ -179,57 +186,66 @@ def press_color_puzzle_neighbor_cells(cx, cy):
 def get_color_puzzle_cell(cx, cy):
 	return color_cells[color_map[cy][cx]]
 
-def set_color_puzzle_vars(room):
-	global color_puzzle_size_x, color_puzzle_size_y
-	global color_puzzle_x1, color_puzzle_x2, color_puzzle_y1, color_puzzle_y2
-	global color_puzzle_x_range, color_puzzle_y_range
-
-	color_puzzle_size_x = level["color_puzzle_size"][0] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X[room] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X
-	color_puzzle_size_y = level["color_puzzle_size"][1] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_Y[room] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_Y
-	color_puzzle_x1 = room_x1 + int((room_size_x - color_puzzle_size_x) / 2)
-	color_puzzle_x2 = color_puzzle_x1 + color_puzzle_size_x - 1
-	color_puzzle_y1 = room_y1 + int((room_size_y - color_puzzle_size_y) / 2)
-	color_puzzle_y2 = color_puzzle_y1 + color_puzzle_size_y - 1
-	color_puzzle_x_range = range(color_puzzle_x1, color_puzzle_x2 + 1)
-	color_puzzle_y_range = range(color_puzzle_y1, color_puzzle_y2 + 1)
+def set_color_puzzle(room_idx):
+	color_puzzle.size_x = level["color_puzzle_size"][0] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X[room_idx] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X
+	color_puzzle.size_y = level["color_puzzle_size"][1] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_Y[room_idx] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_Y
+	color_puzzle.x1 = room.x1 + int((room.size_x - color_puzzle.size_x) / 2)
+	color_puzzle.x2 = color_puzzle.x1 + color_puzzle.size_x - 1
+	color_puzzle.y1 = room.y1 + int((room.size_y - color_puzzle.size_y) / 2)
+	color_puzzle.y2 = color_puzzle.y1 + color_puzzle.size_y - 1
+	color_puzzle.x_range = range(color_puzzle.x1, color_puzzle.x2 + 1)
+	color_puzzle.y_range = range(color_puzzle.y1, color_puzzle.y2 + 1)
 
 def is_in_color_puzzle(cx, cy):
-	return is_color_puzzle and cx in color_puzzle_x_range and cy in color_puzzle_y_range
+	return is_color_puzzle and cx in color_puzzle.x_range and cy in color_puzzle.y_range
 
 def is_color_puzzle_plate(cx, cy):
-	return is_in_color_puzzle(cx, cy) and (cx - color_puzzle_x1) % 2 == 1 and (cy - color_puzzle_y1) % 2 == 1
+	return is_in_color_puzzle(cx, cy) and (cx - color_puzzle.x1) % 2 == 1 and (cy - color_puzzle.y1) % 2 == 1
 
 def is_color_puzzle_solved():
-	for cy in color_puzzle_y_range:
-		for cx in color_puzzle_x_range:
+	for cy in color_puzzle.y_range:
+		for cx in color_puzzle.x_range:
 			if not is_color_puzzle_plate(cx, cy) and color_map[cy][cx] != COLOR_PUZZLE_VALUE_GREEN:
 				return False
 	return True
 
-def set_room_vars(room):
-	global room_size_x, room_size_y
-	global room_x1, room_x2, room_y1, room_y2
-	global room_x_range, room_y_range
+def assert_room():
+	if mode != 'game' and mode != 'init':
+		print("Called room function when not inside game or init (mode=%s). Fix this bug" % mode)
+		quit()
 
-	room_size_x = ROOM_SIZE_X[room] if room is not None else PLAY_SIZE_X
-	room_size_y = ROOM_SIZE_Y[room] if room is not None else PLAY_SIZE_Y
-	room_x1 = ROOM_X1[room] if room is not None else PLAY_X1
-	room_x2 = ROOM_X2[room] if room is not None else PLAY_X2
-	room_y1 = ROOM_Y1[room] if room is not None else PLAY_Y1
-	room_y2 = ROOM_Y2[room] if room is not None else PLAY_Y2
-	room_x_range = ROOM_X_RANGE[room] if room is not None else PLAY_X_RANGE
-	room_y_range = ROOM_Y_RANGE[room] if room is not None else PLAY_Y_RANGE
+def set_room(idx):
+	room.size_x = ROOM_SIZE_X[idx] if idx is not None else PLAY_SIZE_X
+	room.size_y = ROOM_SIZE_Y[idx] if idx is not None else PLAY_SIZE_Y
+	room.x1 = ROOM_X1[idx] if idx is not None else PLAY_X1
+	room.x2 = ROOM_X2[idx] if idx is not None else PLAY_X2
+	room.y1 = ROOM_Y1[idx] if idx is not None else PLAY_Y1
+	room.y2 = ROOM_Y2[idx] if idx is not None else PLAY_Y2
+	room.x_range = ROOM_X_RANGE[idx] if idx is not None else PLAY_X_RANGE
+	room.y_range = ROOM_Y_RANGE[idx] if idx is not None else PLAY_Y_RANGE
+
+	if is_color_puzzle:
+		set_color_puzzle(idx)
 
 def is_actor_in_room(actor):
-	set_room_vars(current_room)
+	assert_room()
 
-	return actor.cx >= room_x1 and actor.cx <= room_x2 and actor.cy >= room_y1 and actor.cy <= room_y2
+	return actor.cx >= room.x1 and actor.cx <= room.x2 and actor.cy >= room.y1 and actor.cy <= room.y2
+
+def get_accessible_neighbors(actor, range_x=None, range_y=None):
+	cx, cy = actor.c
+	neighbors = []
+	for diff in ((-1, 0), (+1, 0), (0, -1), (0, +1)):
+		nx = cx + diff[0]
+		ny = cy + diff[1]
+		if (range_x is None or nx in range_x) and (range_y is None or ny in range_y):
+			neighbors.append((nx, ny))
+	debug(3, "* get_actor_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
+	return neighbors
 
 def place_char_in_first_free_spot():
-	set_room_vars(current_room)
-
-	for cy in room_y_range:
-		for cx in room_x_range:
+	for cy in room.y_range:
+		for cx in room.x_range:
 			if map[cy][cx] not in CELL_CHAR_PLACE_OBSTACLES:
 				for actor in enemies + barrels:
 					if actor.cx == cx and actor.cy == cy:
@@ -297,7 +313,7 @@ def generate_random_free_path(target_c, level=0):
 	debug(2, "* [%d] generating free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 
 	weighted_neighbors = []
-	for c in get_actor_neighbors(char, room_x_range, room_y_range):
+	for c in get_actor_neighbors(char, room.x_range, room.y_range):
 		cx, cy = c
 		distance = abs(tx - cx) + abs(ty - cy)
 		if is_cell_in_actors(c, barrels):
@@ -337,20 +353,20 @@ def generate_random_free_path(target_c, level=0):
 	map[oy][ox] = old_cell_type
 	return False
 
-def generate_random_solvable_barrel_room(x1, y1, x2, y2):
+def generate_random_solvable_barrel_room():
 	global map, is_char_placed
 
 	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
 
 	def get_random_coords():
-		return randint(x1, x2), randint(y1, y2)
+		return randint(room.x1, room.x2), randint(room.y1, room.y2)
 
 	# 0) initialize char position to None
 	char.c = None
 
 	# 1) initialize entire room to BORDER
-	for cy in range(y1, y2 + 1):
-		for cx in range(x1, x2 + 1):
+	for cy in room.y_range:
+		for cx in room.x_range:
 			map[cy][cx] = CELL_BORDER
 
 	# 2) place room plates randomly or in good positions, as the number of barrels
@@ -373,7 +389,7 @@ def generate_random_solvable_barrel_room(x1, y1, x2, y2):
 			# 6) select one of 4 directions and place char to the "adjacent to barrel" cell (prefer empty cells)
 			best_c = None
 			best_weight = 0
-			for c in get_actor_neighbors(barrel, room_x_range, room_y_range):
+			for c in get_actor_neighbors(barrel, room.x_range, room.y_range):
 				if c in visited_cells:
 					continue
 				cx, cy = c
@@ -381,7 +397,7 @@ def generate_random_solvable_barrel_room(x1, y1, x2, y2):
 					continue
 				new_cx = cx + cx - barrel.cx
 				new_cy = cy + cy - barrel.cy
-				if new_cx not in room_x_range or new_cy not in room_y_range:
+				if new_cx not in room.x_range or new_cy not in room.y_range:
 					continue
 				if is_cell_in_actors((new_cx, new_cy), barrels):
 					continue
@@ -436,7 +452,7 @@ def generate_random_solvable_barrel_room(x1, y1, x2, y2):
 
 	is_char_placed = True
 	while True:
-		for c in get_actor_neighbors(char, room_x_range, room_y_range):
+		for c in get_actor_neighbors(char, room.x_range, room.y_range):
 			cx, cy = c
 			if cx > char.cx or cy > char.cy:
 				continue
@@ -446,16 +462,16 @@ def generate_random_solvable_barrel_room(x1, y1, x2, y2):
 		else:
 			break
 
-def generate_random_nonsolvable_barrel_room(x1, y1, x2, y2):
+def generate_random_nonsolvable_barrel_room():
 	global map
 
 	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
 
 	def get_random_coords():
-		return randint(x1, x2), randint(y1, y2)
+		return randint(room.x1, room.x2), randint(room.y1, room.y2)
 
-	for cy in range(y1, y2 + 1):
-		for cx in range(x1, x2 + 1):
+	for cy in room.y_range:
+		for cx in room.x_range:
 			map[cy][cx] = get_random_floor_cell_type()
 
 	for n in range(num_barrels):
@@ -480,30 +496,29 @@ def generate_random_nonsolvable_barrel_room(x1, y1, x2, y2):
 				map[cy][cx] = CELL_BORDER
 				break
 
-def generate_room(room):
+def generate_room(idx):
 	global num_bonus_health, num_bonus_attack
 
-	set_room_vars(room)
+	set_room(idx)
 
 	if is_random_maze:
-		generate_random_maze_room(room_x1, room_y1, room_x2, room_y2)
+		generate_random_maze_room(room.x1, room.y1, room.x2, room.y2)
 
 	if is_barrel_puzzle:
-		generate_random_solvable_barrel_room(room_x1, room_y1, room_x2, room_y2)
+		generate_random_solvable_barrel_room()
 
 	if is_color_puzzle:
-		set_color_puzzle_vars(room)
-		for cy in color_puzzle_y_range:
-			for cx in color_puzzle_x_range:
+		for cy in color_puzzle.y_range:
+			for cx in color_puzzle.x_range:
 				color_map[cy][cx] = COLOR_PUZZLE_VALUE_GREEN
 				if is_color_puzzle_plate(cx, cy):
 					map[cy][cx] = CELL_PLATE
 					color_map[cy][cx] = COLOR_PUZZLE_VALUE_PLATE
 		num_tries = 5
 		while num_tries > 0:
-			for n in range(color_puzzle_size_x * color_puzzle_size_y * 3):
-				plate_cx = color_puzzle_x1 + randint(1, int(color_puzzle_size_x / 2)) * 2 - 1
-				plate_cy = color_puzzle_y1 + randint(1, int(color_puzzle_size_y / 2)) * 2 - 1
+			for n in range(color_puzzle.size_x * color_puzzle.size_y * 3):
+				plate_cx = color_puzzle.x1 + randint(1, int(color_puzzle.size_x / 2)) * 2 - 1
+				plate_cy = color_puzzle.y1 + randint(1, int(color_puzzle.size_y / 2)) * 2 - 1
 				for i in range(randint(1, get_num_color_puzzle_values() - 1)):
 					press_color_puzzle_neighbor_cells(plate_cx, plate_cy)
 			if not is_color_puzzle_solved():
@@ -516,8 +531,8 @@ def generate_room(room):
 		num_tries = 10000
 		while not positioned and num_tries > 0:
 			num_tries -= 1
-			cx = randint(room_x1, room_x2)
-			cy = randint(room_y1, room_y2)
+			cx = randint(room.x1, room.x2)
+			cy = randint(room.y1, room.y2)
 			positioned = map[cy][cx] not in CELL_ENEMY_PLACE_OBSTACLES
 			for other in (enemies + hearts + swords + barrels + [char]):
 				if (cx, cy) == other.c:
@@ -535,7 +550,7 @@ def generate_room(room):
 		enemies.append(enemy)
 
 def generate_map():
-	global map, color_map, barrels, is_char_placed
+	global map, color_map, barrels
 
 	map = []
 	for cy in range(0, MAP_SIZE_Y):
@@ -555,19 +570,14 @@ def generate_map():
 
 	barrels = []
 
-	is_char_placed = False
-
 	if is_color_puzzle:
 		color_map = [[COLOR_PUZZLE_VALUE_OUTSIDE] * MAP_SIZE_X for y in range(0, MAP_SIZE_Y)]
 
 	if is_four_rooms:
-		for room in range(4):
-			generate_room(room)
+		for idx in range(4):
+			generate_room(idx)
 	else:
 		generate_room(None)
-
-	if not is_char_placed is None:
-		place_char_in_first_free_spot()
 
 def set_theme(theme_name):
 	global cells, color_cells
@@ -668,7 +678,7 @@ def reset_idle_time():
 def init_new_level(offset=1):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_barrel_puzzle, is_color_puzzle
-	global is_four_rooms, current_room
+	global is_four_rooms, is_char_placed, room_idx
 	global num_bonus_health, num_bonus_attack
 	global enemies, hearts, swords, level_time
 
@@ -691,7 +701,7 @@ def init_new_level(offset=1):
 	is_barrel_puzzle = "barrel_puzzle" in level
 	is_color_puzzle = "color_puzzle" in level
 	is_four_rooms = "four_rooms" in level
-	current_room = 0 if is_four_rooms else None
+	is_char_placed = False
 
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
@@ -712,22 +722,30 @@ def init_new_level(offset=1):
 	reset_idle_time()
 	reset_level_and_target_timer()
 
+	room_idx = 0 if is_four_rooms else None
+	set_room(room_idx)
+
+	if not is_char_placed is None:
+		place_char_in_first_free_spot()
+
 	mode = "game"
 	start_music()
 
 init_new_level()
 
 def init_new_room():
-	global current_room, mode
+	global room_idx, mode
 
 	if is_four_rooms:
-		current_room += 1
+		room_idx += 1
 
-	if not is_four_rooms or current_room == 4:
+	if not is_four_rooms or room_idx == 4:
 		init_new_level()
 	else:
+		set_room(room_idx)
 		place_char_in_first_free_spot()
 		mode = "game"
+
 
 def draw_map():
 	for cy in range(len(map)):
@@ -741,10 +759,15 @@ def draw_map():
 					color_floor = get_color_puzzle_cell(cx, cy)
 					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
 					continue
-				cell = cells[cell_type]
-				cell.left = CELL_W * cx
-				cell.top = CELL_H * cy
-				cell.draw()
+				if cell_type in cells:
+					cell = cells[cell_type]
+					cell.left = CELL_W * cx
+					cell.top = CELL_H * cy
+					cell.draw()
+				else:
+					print("level #%d: cell type %s for cell (%d, %d) is not supported" % (level_idx, cell_type, cx, cy))
+				if DEBUG_LEVEL == 0:
+					quit()
 
 def get_time_str(time):
 	sec = int(time)
@@ -859,7 +882,6 @@ def on_key_down(key):
 
 	if keyboard.space and is_color_puzzle and map[char.cy][char.cx] == CELL_PLATE:
 		press_color_puzzle_neighbor_cells(char.cx, char.cy)
-		set_color_puzzle_vars(current_room)
 		if is_color_puzzle_solved():
 			win_room()
 
