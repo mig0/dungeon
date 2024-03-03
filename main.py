@@ -232,27 +232,60 @@ def is_actor_in_room(actor):
 
 	return actor.cx >= room.x1 and actor.cx <= room.x2 and actor.cy >= room.y1 and actor.cy <= room.y2
 
-def get_accessible_neighbors(actor, range_x=None, range_y=None):
-	cx, cy = actor.c
+def get_distance(cx, cy, tx, ty):
+	return abs(tx - cx) + abs(ty - cy)
+
+def is_cell_accessible(cx, cy, place=False):
+	if map[cy][cx] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
+		return False
+	for actor in enemies + barrels:
+		if actor.cx == cx and actor.cy == cy:
+			return False
+	return True
+
+def get_accessible_neighbors(c):
+	cx, cy = c
 	neighbors = []
-	for diff in ((-1, 0), (+1, 0), (0, -1), (0, +1)):
+	if ALLOW_DIAGONAL_MOVES and False:
+		directions = ((-1, -1), (0, -1), (+1, -1), (-1, 0), (+1, 0), (-1, +1), (0, +1), (+1, +1))
+	else:
+		directions = ((-1, 0), (+1, 0), (0, -1), (0, +1))
+	for diff in directions:
 		nx = cx + diff[0]
 		ny = cy + diff[1]
-		if (range_x is None or nx in range_x) and (range_y is None or ny in range_y):
+		if nx in room.x_range and ny in room.y_range and is_cell_accessible(nx, ny):
 			neighbors.append((nx, ny))
-	debug(3, "* get_actor_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
+	debug(3, "* get_accessible_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
 	return neighbors
+
+def get_all_accessible_cells():
+	accessible_cells = []
+	unprocessed_cells = [(char.cx, char.cy)]
+	while unprocessed_cells:
+		cell = unprocessed_cells.pop(0)
+		accessible_cells.append(cell)
+		neigbours = get_accessible_neighbors(cell)
+		for n in neigbours:
+			if n not in accessible_cells and n not in unprocessed_cells:
+				unprocessed_cells.append(n)
+	return accessible_cells
+
+def place_char_in_closest_accessible_cell(c):
+	best_distance = None
+	best_cell = None
+	for cell in get_all_accessible_cells():
+		distance = get_distance(*cell, *c)
+		if best_distance is None or distance < best_distance:
+			best_distance = distance
+			best_cell = cell
+	set_actor_coord(char, *best_cell)
 
 def place_char_in_first_free_spot():
 	for cy in room.y_range:
 		for cx in room.x_range:
-			if map[cy][cx] not in CELL_CHAR_PLACE_OBSTACLES:
-				for actor in enemies + barrels:
-					if actor.cx == cx and actor.cy == cy:
-						break
-				else:
-					set_actor_coord(char, cx, cy)
-					return
+			if is_cell_accessible(cx, cy, place=True):
+				set_actor_coord(char, cx, cy)
+				return
 
 	print("Was not able to find free spot for char, fix the level or a bug")
 	if DEBUG_LEVEL:
@@ -300,44 +333,40 @@ def generate_random_maze_room(x1, y1, x2, y2):
 def generate_random_free_path(target_c, level=0):
 	global map
 
+	place_char_in_closest_accessible_cell(target_c)
+
 	if char.c == target_c:
 		return True
 
 	ox, oy = char.c
 	tx, ty = target_c
 
-	distance = abs(tx - ox) + abs(ty - oy)
-	if level > distance:
-		return False
-
 	debug(2, "* [%d] generating free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 
+	accessible_cells = get_all_accessible_cells()
 	weighted_neighbors = []
 	for c in get_actor_neighbors(char, room.x_range, room.y_range):
-		cx, cy = c
-		distance = abs(tx - cx) + abs(ty - cy)
+		if c in accessible_cells:
+			continue
 		if is_cell_in_actors(c, barrels):
 			continue
-		if map[cy][cx] == CELL_INTERNAL1:
-			continue
+		cx, cy = c
 		weight = randint(0, 30)
-		if map[cy][cx] != CELL_BORDER:
-			weight += 20
-		if map[cy][cx] == CELL_PLATE:
-			weight += 5
-		weight += (1000 - distance) * 10
+		weight += (1000 - get_distance(cx, cy, tx, ty)) * 10
 		weighted_neighbors.append((weight, c))
 
 	neighbors = [n[1] for n in sorted(weighted_neighbors, reverse=True)]
 
 	if not neighbors:
+		debug(2, "* [%d] failed to generate free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 		return False
-
-	old_cell_type = map[oy][ox]
-	map[oy][ox] = CELL_INTERNAL1
 
 	for neighbor in neighbors:
 		cx, cy = neighbor
+		if map[cy][cx] != CELL_BORDER:
+			print("BUG!")
+			return False
+		convert_to_floor_if_needed(cx, cy)
 		set_actor_coord(char, cx, cy)
 		debug(3, "* [%d] trying to move to (%d, %d)" % (level, cx, cy))
 		debug_map(3, full=True, clean=True, combined=True)
@@ -345,12 +374,11 @@ def generate_random_free_path(target_c, level=0):
 		if is_path_found:
 			debug(2, "* [%d] successfully generated free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 			debug_map(2, full=True, clean=True, combined=True)
-			map[oy][ox] = old_cell_type
-			convert_to_floor_if_needed(ox, oy)
 			return True
+		map[cy][cx] = CELL_BORDER
 
 	set_actor_coord(char, ox, oy)
-	map[oy][ox] = old_cell_type
+
 	return False
 
 def generate_random_solvable_barrel_room():
@@ -430,10 +458,12 @@ def generate_random_solvable_barrel_room():
 			convert_to_floor_if_needed(new_char_cx, new_char_cy)
 
 			# 8) if the char position is not None, first create random free path to the selected adjacent cell
+			old_char_c = char.c
 			if char.c is None:
 				set_actor_coord(char, cx, cy)
 			if not generate_random_free_path(best_c):
 				# can't create free path for char, stop
+				char.c = old_char_c
 				break
 
 			# 9) make anti-push, i.e pull the barrel to the char
@@ -461,40 +491,6 @@ def generate_random_solvable_barrel_room():
 				break
 		else:
 			break
-
-def generate_random_nonsolvable_barrel_room():
-	global map
-
-	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
-
-	def get_random_coords():
-		return randint(room.x1, room.x2), randint(room.y1, room.y2)
-
-	for cy in room.y_range:
-		for cx in room.x_range:
-			map[cy][cx] = get_random_floor_cell_type()
-
-	for n in range(num_barrels):
-		while True:
-			cx, cy = get_random_coords()
-			if map[cy][cx] != CELL_PLATE:
-				map[cy][cx] = CELL_PLATE
-				break
-		barrel = create_actor("barrel", cx, cy)
-		barrels.append(barrel)
-
-	while True:
-		cx, cy = get_random_coords()
-		if map[cy][cx] != CELL_PLATE:
-			map[cy][cx] = CELL_PORTAL
-			break
-
-	for n in range(4):
-		while True:
-			cx, cy = get_random_coords()
-			if map[cy][cx] != CELL_PLATE and map[cy][cx] != CELL_PORTAL:
-				map[cy][cx] = CELL_BORDER
-				break
 
 def generate_room(idx):
 	global num_bonus_health, num_bonus_attack
@@ -765,9 +761,7 @@ def draw_map():
 					cell.top = CELL_H * cy
 					cell.draw()
 				else:
-					print("level #%d: cell type %s for cell (%d, %d) is not supported" % (level_idx, cell_type, cx, cy))
-				if DEBUG_LEVEL == 0:
-					quit()
+					screen.draw.text(cell_type, center=get_map_cell_pos(cx, cy), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
 
 def get_time_str(time):
 	sec = int(time)
