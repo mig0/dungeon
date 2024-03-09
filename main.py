@@ -556,11 +556,9 @@ def generate_map():
 	global map, color_map, barrels
 
 	map = []
-	for cy in range(0, MAP_SIZE_Y):
+	for cy in MAP_Y_RANGE:
 		if cy == 0 or cy == PLAY_SIZE_Y + 1:
 			line = [CELL_BORDER] * MAP_SIZE_X
-		elif cy == MAP_SIZE_Y - 1:
-			line = [CELL_STATUS] * MAP_SIZE_X
 		else:
 			line = [CELL_BORDER]
 			for cx in PLAY_X_RANGE:
@@ -583,10 +581,9 @@ def generate_map():
 		generate_room(None)
 
 def set_theme(theme_name):
-	global cells, color_cells
+	global cells, status_cell, color_cells
 
 	theme_prefix = theme_name + '/'
-	cell0 = Actor(theme_prefix + 'status')
 	cell1 = Actor(theme_prefix + 'border')
 	cell2 = Actor(theme_prefix + 'floor')
 	cell3 = Actor(theme_prefix + 'crack')
@@ -594,6 +591,7 @@ def set_theme(theme_name):
 	cell5 = Actor(theme_prefix + 'rocks')
 	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle else None
 	cell7 = Actor(theme_prefix + 'portal') if is_barrel_puzzle else None
+	status_cell = Actor(theme_prefix + 'status')
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
@@ -605,7 +603,6 @@ def set_theme(theme_name):
 			color_cells.append(color_cell)
 
 	cells = {
-		CELL_STATUS: cell0,
 		CELL_BORDER: cell1,
 		CELL_FLOOR:  cell2,
 		CELL_CRACK:  cell3,
@@ -777,6 +774,11 @@ def get_time_str(time):
 	return "%d:%02d" % (min, sec) if min < 60 else "%d:%02d:%02d" % (min / 60, min % 60, sec)
 
 def draw_status():
+	cy = MAP_SIZE_Y
+	for cx in MAP_X_RANGE:
+		status_cell.left = CELL_W * cx
+		status_cell.top = CELL_H * cy
+		status_cell.draw()
 	status_heart.draw()
 	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
