@@ -209,6 +209,13 @@ def is_color_puzzle_solved():
 				return False
 	return True
 
+def is_barrel_puzzle_solved():
+	room_barrels = [ barrel for barrel in barrels if is_actor_in_room(barrel) ]
+	for barrel in room_barrels:
+		if map[barrel.cy][barrel.cx] != CELL_PLATE:
+			return False
+	return True
+
 def assert_room():
 	if mode != 'game' and mode != 'init':
 		print("Called room function when not inside game or init (mode=%s). Fix this bug" % mode)
@@ -904,6 +911,9 @@ def check_victory():
 		loose_game()
 	elif is_color_puzzle or char.health is None:
 		pass
+	elif is_barrel_puzzle:
+		if is_barrel_puzzle_solved():
+			win_room()
 	elif not room_enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
 		win_room()
 	elif char.health <= MIN_CHAR_HEALTH or "time_limit" in level and level_time > level["time_limit"]:
@@ -911,17 +921,11 @@ def check_victory():
 
 def move_char(diff_x, diff_y):
 	old_char_pos = char.pos
-
 	move_map_actor(char, (diff_x, diff_y))
 
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
-	if enemy_index == -1:
-		new_char_pos = char.pos
-		if is_move_animate_enabled:
-			char.pos = old_char_pos
-			animate(char, duration=ARROW_KEYS_RESOLUTION, pos=new_char_pos)
-	else:
+	if enemy_index >= 0:
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
 		char.health -= enemy.attack
@@ -931,6 +935,7 @@ def move_char(diff_x, diff_y):
 		if enemy.health > 0:
 			play_sound("beat")
 			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
+			return
 		else:
 			play_sound("kill")
 			enemies.remove(enemy)
@@ -944,6 +949,26 @@ def move_char(diff_x, diff_y):
 			enemy.angle = (randint(-1, 1) + 2) * 90
 			killed_enemies.append(enemy)
 			clock.schedule(kill_enemy, 0.3)
+
+	# collision with barrels
+	barrel_index = char.collidelist(barrels)
+	if barrel_index >= 0:
+		barrel = barrels[barrel_index]
+		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
+			move_map_actor(char, (-diff_x, -diff_y))
+			return
+		else:
+			old_barrel_pos = barrel.pos
+			move_map_actor(barrel, (diff_x, diff_y))
+			new_barrel_pos = barrel.pos
+			if is_move_animate_enabled:
+				barrel.pos = old_barrel_pos
+				animate(barrel, duration=ARROW_KEYS_RESOLUTION, pos=new_barrel_pos)
+
+	new_char_pos = char.pos
+	if is_move_animate_enabled:
+		char.pos = old_char_pos
+		animate(char, duration=ARROW_KEYS_RESOLUTION, pos=new_char_pos)
 
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
