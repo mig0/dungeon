@@ -97,6 +97,7 @@ is_music_enabled = True
 is_music_started = False
 is_sound_enabled = True
 is_move_animate_enabled = True
+is_level_intro_enabled = True
 
 mode = "start"
 is_char_placed = False
@@ -669,6 +670,12 @@ def reset_level_and_target_timer():
 	level_title_timer = 4 * 60  # 4 seconds
 	level_target_timer = 3 * 60  # 3 seconds
 
+def clear_level_and_target_timer():
+	global level_title_timer, level_target_timer
+
+	level_title_timer = 0
+	level_target_timer = 0
+
 def reset_idle_time():
 	global idle_time, last_autogeneration_time
 
@@ -687,6 +694,7 @@ def init_new_level(offset=1):
 		return
 
 	stop_music()
+	clear_level_and_target_timer()
 	mode = "init"
 
 	level_idx += offset
@@ -720,7 +728,8 @@ def init_new_level(offset=1):
 
 	level_time = 0
 	reset_idle_time()
-	reset_level_and_target_timer()
+	if is_level_intro_enabled:
+		reset_level_and_target_timer()
 
 	room_idx = 0 if is_four_rooms else None
 	set_room(room_idx)
@@ -837,7 +846,7 @@ def kill_enemy():
 
 def on_key_down(key):
 	global lang
-	global is_move_animate_enabled
+	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled
 
 	reset_idle_time()
 
@@ -851,6 +860,13 @@ def on_key_down(key):
 			lang = 'ru'
 		if keyboard.h:
 			lang = 'he'
+
+		if keyboard.l:
+			is_level_intro_enabled = not is_level_intro_enabled
+			if is_level_intro_enabled:
+				reset_level_and_target_timer()
+			else:
+				clear_level_and_target_timer()
 		return
 
 	if keyboard.k_0:
@@ -877,6 +893,10 @@ def on_key_down(key):
 			disable_music()
 		else:
 			enable_music()
+
+	if keyboard.s:
+		is_sound_enabled = not is_sound_enabled
+
 	if keyboard.a:
 		is_move_animate_enabled = not is_move_animate_enabled
 
