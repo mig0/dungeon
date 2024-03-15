@@ -105,6 +105,7 @@ is_random_maze = False
 is_barrel_puzzle = False
 is_color_puzzle = False
 is_four_rooms = False
+is_cloud_mode = False
 
 game_time = 0
 level_time = 0
@@ -120,6 +121,7 @@ map = []  # will be generated
 color_map = []
 cells = {}  # will be generated
 color_cells = []
+revealed_map = []
 
 enemies = []
 hearts = []
@@ -218,6 +220,23 @@ def is_barrel_puzzle_solved():
 		if map[barrel.cy][barrel.cx] != CELL_PLATE:
 			return False
 	return True
+
+def reveal_map_near_char():
+	if not is_cloud_mode:
+		return
+
+	for (cx, cy) in get_all_neighbors(char.cx, char.cy, include_self=True):
+		revealed_map[cy][cx] = True
+
+def get_revealed_actors(actors):
+	if not is_cloud_mode or level.get("actors_always_revealed", False):
+		return actors
+
+	revealed_actors = []
+	for actor in actors:
+		if revealed_map[actor.cy][actor.cx]:
+			revealed_actors.append(actor)
+	return revealed_actors
 
 def assert_room():
 	if mode != 'game' and mode != 'init':
@@ -556,7 +575,7 @@ def generate_room(idx):
 		enemies.append(enemy)
 
 def generate_map():
-	global map, color_map, barrels
+	global map, color_map, revealed_map, barrels
 
 	map = []
 	for cy in MAP_Y_RANGE:
@@ -584,7 +603,7 @@ def generate_map():
 		generate_room(None)
 
 def set_theme(theme_name):
-	global cells, status_cell, color_cells
+	global cells, status_cell, cloud_cell, color_cells
 
 	theme_prefix = theme_name + '/'
 	cell1 = Actor(theme_prefix + 'border')
@@ -595,6 +614,7 @@ def set_theme(theme_name):
 	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle else None
 	cell7 = Actor(theme_prefix + 'portal') if is_barrel_puzzle else None
 	status_cell = Actor(theme_prefix + 'status')
+	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode else None
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
@@ -687,6 +707,7 @@ def reset_idle_time():
 def init_new_level(offset=1):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_barrel_puzzle, is_color_puzzle
+	global is_cloud_mode, revealed_map
 	global is_four_rooms, is_char_placed, room_idx
 	global num_bonus_health, num_bonus_attack
 	global enemies, hearts, swords, level_time
@@ -711,6 +732,7 @@ def init_new_level(offset=1):
 	is_barrel_puzzle = "barrel_puzzle" in level
 	is_color_puzzle = "color_puzzle" in level
 	is_four_rooms = "four_rooms" in level
+	is_cloud_mode = "cloud_mode" in level
 	is_char_placed = False
 
 	char.health = level["char_health"]
@@ -739,6 +761,10 @@ def init_new_level(offset=1):
 	if not is_char_placed is None:
 		place_char_in_first_free_spot()
 
+	if is_cloud_mode:
+		revealed_map = [[False] * MAP_SIZE_X for y in MAP_Y_RANGE]
+	reveal_map_near_char()
+
 	mode = "game"
 	start_music()
 
@@ -755,6 +781,7 @@ def init_new_room():
 	else:
 		set_room(room_idx)
 		place_char_in_first_free_spot()
+		reveal_map_near_char()
 		mode = "game"
 
 
@@ -766,17 +793,20 @@ def draw_map():
 			if cell_type in CELL_FLOOR_ADDITIONS:
 				cell_types.append(cell_type)
 			for cell_type in cell_types:
-				if is_color_puzzle and cell_type == CELL_FLOOR and color_map[cy][cx] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
+				if is_cloud_mode and not revealed_map[cy][cx]:
+					cell = cloud_cell
+				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cy][cx] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
 					color_floor = get_color_puzzle_cell(cx, cy)
 					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
 					continue
-				if cell_type in cells:
+				elif cell_type in cells:
 					cell = cells[cell_type]
-					cell.left = CELL_W * cx
-					cell.top = CELL_H * cy
-					cell.draw()
 				else:
 					screen.draw.text(cell_type, center=get_map_cell_pos(cx, cy), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
+					continue
+				cell.left = CELL_W * cx
+				cell.top = CELL_H * cy
+				cell.draw()
 
 def get_time_str(time):
 	sec = int(time)
@@ -808,20 +838,22 @@ def draw_central_flash():
 def draw():
 	screen.fill("#2f3542")
 	if mode == "game" or mode == "end" or mode == "next":
+		visible_barrels = get_revealed_actors(barrels)
+		visible_enemies = get_revealed_actors(enemies)
 		draw_map()
 		draw_status()
-		for barrel in barrels:
+		for barrel in visible_barrels:
 			barrel.draw()
 		for enemy in killed_enemies:
 			enemy.draw()
-		for enemy in enemies:
+		for enemy in visible_enemies:
 			enemy.draw()
 		for heart in hearts:
 			heart.draw()
 		for sword in swords:
 			sword.draw()
 		char.draw()
-		for actor in enemies + [char]:
+		for actor in visible_enemies + [char]:
 			if actor.health is None:
 				continue
 			screen.draw.text(str(actor.health), center=get_rel_actor_pos(actor, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
@@ -993,6 +1025,8 @@ def move_char(diff_x, diff_y):
 	if is_move_animate_enabled:
 		char.pos = old_char_pos
 		animate(char, duration=ARROW_KEYS_RESOLUTION, pos=new_char_pos)
+
+	reveal_map_near_char()
 
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack

@@ -7,6 +7,7 @@ levels = [
 		"theme": "classic",
 		"music": "a_new_path",
 		"random_maze": True,
+#		"cloud_mode": True,
 		"char_health": 100,
 	},
 	{
@@ -18,6 +19,7 @@ levels = [
 		"time_limit": 60,
 		"char_health": 150,
 		"target": 'level-target-kill-1-min',
+		"cloud_mode": True,
 	},
 	{
 		"n": 3,
@@ -29,6 +31,7 @@ levels = [
 		"color_puzzle": True,
 		"char_health": None,
 		"target": 'complete-color-puzzle-green',
+#		"cloud_mode": True,
 	},
 	{
 		"n": 4,
@@ -44,6 +47,7 @@ levels = [
 		"char_health": None,
 		"char_health": 100,
 		"target": 'complete-color-puzzle-green',
+#		"cloud_mode": True,
 	},
 	{
 		"n": 5,
@@ -54,6 +58,8 @@ levels = [
 #		"four_rooms": True,
 		"barrel_puzzle": True,
 		"char_health": 150,
+#		"cloud_mode": True,
+#		"actors_always_revealed": True,
 	},
 	{
 		"n": 6,
@@ -61,5 +67,6 @@ levels = [
 		"theme": "modern2",
 		"music": "breath",
 		"char_health": 500,
+#		"cloud_mode": True,
 	},
 ]
