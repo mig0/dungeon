@@ -183,6 +183,8 @@ def press_color_puzzle_cell(cx, cy):
 def press_color_puzzle_neighbor_cells(cx, cy):
 	for (nx, ny) in get_all_neighbors(cx, cy):
 		press_color_puzzle_cell(nx, ny)
+		if "color_puzzle_extended" in level and (nx != cx and ny != cy) ^ (cx % 3 != 0 or cy % 3 != 0):
+			press_color_puzzle_cell(nx, ny)
 
 def get_color_puzzle_cell(cx, cy):
 	return color_cells[color_map[cy][cx]]
@@ -573,7 +575,7 @@ def generate_map():
 	barrels = []
 
 	if is_color_puzzle:
-		color_map = [[COLOR_PUZZLE_VALUE_OUTSIDE] * MAP_SIZE_X for y in range(0, MAP_SIZE_Y)]
+		color_map = [[COLOR_PUZZLE_VALUE_OUTSIDE] * MAP_SIZE_X for y in MAP_Y_RANGE]
 
 	if is_four_rooms:
 		for idx in range(4):
@@ -957,7 +959,6 @@ def move_char(diff_x, diff_y):
 		if enemy.health > 0:
 			play_sound("beat")
 			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
-			return
 		else:
 			play_sound("kill")
 			enemies.remove(enemy)
@@ -971,6 +972,7 @@ def move_char(diff_x, diff_y):
 			enemy.angle = (randint(-1, 1) + 2) * 90
 			killed_enemies.append(enemy)
 			clock.schedule(kill_enemy, 0.3)
+		return
 
 	# collision with barrels
 	barrel_index = char.collidelist(barrels)
