@@ -410,6 +410,90 @@ def generate_random_free_path(target_c, level=0):
 
 	return False
 
+def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
+	idx = barrels.index(barrel)
+	weighted_neighbors = []
+	# sort 4 barrel directions to place char to the "adjacent to barrel" cell for a pull (prefer empty cells)
+	for c in get_actor_neighbors(barrel, room.x_range, room.y_range):
+		if (c, char.c) in visited_cell_pairs:
+			continue
+		cx, cy = c
+		if is_cell_in_actors(c, barrels):
+			continue
+		new_cx = cx + cx - barrel.cx
+		new_cy = cy + cy - barrel.cy
+		if new_cx not in room.x_range or new_cy not in room.y_range:
+			continue
+		if is_cell_in_actors((new_cx, new_cy), barrels):
+			continue
+		weight = randint(0, 30)
+		if map[cy][cx] != CELL_BORDER:
+			weight += 20
+		if map[cy][cx] == CELL_PLATE:
+			weight += 4
+		if map[new_cy][new_cx] != CELL_BORDER:
+			weight += 10
+		if map[new_cy][new_cx] == CELL_PLATE:
+			weight += 2
+		weighted_neighbors.append((weight, c))
+
+	neighbors = [n[1] for n in sorted(weighted_neighbors, reverse=True)]
+
+	if not neighbors:
+		# can't find free neighbor for barrel, stop
+		debug(2, "barrel #%d - failed to find free neighbor for barrel %s (%d left)" % (idx, barrel.c, num_moves))
+		return False
+
+	for neighbor in neighbors:
+		cx, cy = neighbor
+
+		# if the cell is not empty (BORDER), make it empty (FLOOR with additions)
+		was_border1_replaced = False
+		if map[cy][cx] == CELL_BORDER:
+			convert_to_floor_if_needed(cx, cy)
+			was_border1_replaced = True
+		barrel_cx = barrel.cx
+		barrel_cy = barrel.cy
+		new_char_cx = cx + (cx - barrel_cx)
+		new_char_cy = cy + (cy - barrel_cy)
+		debug(2, "barrel #%d - neighbor %s, next cell (%d, %d)" % (idx, neighbor, new_char_cx, new_char_cy))
+		debug_map(2, full=True, clean=True, dual=True)
+		was_border2_replaced = False
+		if map[new_char_cy][new_char_cx] == CELL_BORDER:
+			convert_to_floor_if_needed(new_char_cx, new_char_cy)
+			was_border2_replaced = True
+
+		# if the char position is not None, first create random free path to the selected adjacent cell
+		old_char_c = char.c
+		if char.c is None:
+			set_actor_coord(char, cx, cy)
+		if generate_random_free_path(neighbor):
+			# pull the barrel to the char
+			set_actor_coord(barrel, char.cx, char.cy)
+			set_actor_coord(char, new_char_cx, new_char_cy)
+
+			visited_cell_pairs.append((neighbor, char.c))
+
+			if num_moves <= 1:
+				return True
+
+			if pull_barrel_randomly(barrel, visited_cell_pairs, num_moves - 1):
+				return True
+			else:
+				debug(2, "barrel #%d - failed to pull barrel (%d moves left)" % (idx, num_moves - 1))
+		else:
+			debug(2, "barrel #%d - failed to generate random free path to neighbor %s" % (idx, neighbor))
+
+		# can't create free path for char or can't pull barrel, restore the original state
+		char.c = old_char_c
+		set_actor_coord(barrel, barrel_cx, barrel_cy)
+		if was_border1_replaced:
+			map[cy][cx] = CELL_BORDER
+		if was_border2_replaced:
+			map[new_char_cy][new_char_cx] = CELL_BORDER
+
+	return False
+
 def generate_random_solvable_barrel_room():
 	global map, is_char_placed
 
@@ -440,65 +524,10 @@ def generate_random_solvable_barrel_room():
 	# 4) for each room barrel do:
 	for barrel in barrels:
 		debug(2, "barrel #%d - starting (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
-		visited_cells = [barrel.c]
+		visited_cell_pairs = [(barrel.c, char.c)]
 		# 5) make random moves for the barrel until possible
-		while len(visited_cells) < 100:
-			# 6) select one of 4 directions and place char to the "adjacent to barrel" cell (prefer empty cells)
-			best_c = None
-			best_weight = 0
-			for c in get_actor_neighbors(barrel, room.x_range, room.y_range):
-				if c in visited_cells:
-					continue
-				cx, cy = c
-				if is_cell_in_actors(c, barrels):
-					continue
-				new_cx = cx + cx - barrel.cx
-				new_cy = cy + cy - barrel.cy
-				if new_cx not in room.x_range or new_cy not in room.y_range:
-					continue
-				if is_cell_in_actors((new_cx, new_cy), barrels):
-					continue
-				weight = randint(0, 30)
-				if map[cy][cx] != CELL_BORDER:
-					weight += 20
-				if map[cy][cx] == CELL_PLATE:
-					weight += 4
-				if map[new_cy][new_cx] != CELL_BORDER:
-					weight += 10
-				if map[new_cy][new_cx] == CELL_PLATE:
-					weight += 2
-				if weight > best_weight:
-					best_c = c
-					best_weight = weight
-
-			if best_c is None:
-				# can't find free neighbor for barrel, stop
-				break
-
-			visited_cells.append(best_c)
-
-			# 7) if the cell is not empty (BORDER), make it empty (FLOOR with additions)
-			cx, cy = best_c
-			convert_to_floor_if_needed(cx, cy)
-			new_char_cx = cx + (cx - barrel.cx)
-			new_char_cy = cy + (cy - barrel.cy)
-			debug(2, "barrel #%d - best neighbor (%d, %d), next cell (%d, %d)" % (barrels.index(barrel), cx, cy, new_char_cx, new_char_cy))
-			debug_map(2, full=True, clean=True, dual=True)
-			convert_to_floor_if_needed(new_char_cx, new_char_cy)
-
-			# 8) if the char position is not None, first create random free path to the selected adjacent cell
-			old_char_c = char.c
-			if char.c is None:
-				set_actor_coord(char, cx, cy)
-			if not generate_random_free_path(best_c):
-				# can't create free path for char, stop
-				char.c = old_char_c
-				break
-
-			# 9) make anti-push, i.e pull the barrel to the char
-			#    (make the cell empty if needed, check that there is no other barrel)
-			set_actor_coord(barrel, char.cx, char.cy)
-			set_actor_coord(char, new_char_cx, new_char_cy)
+		num_moves = randint(10, 80)
+		pull_barrel_randomly(barrel, visited_cell_pairs, num_moves)
 		debug(2, "barrel #%d - finished (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
 
 	# 11) remember the char position, optionally try to move it as far left-top as possible

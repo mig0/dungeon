@@ -51,7 +51,8 @@ levels = [
 	},
 	{
 		"n": 5,
-		"num_enemies": 4,
+		"num_enemies": 0,
+		"num_barrels": 10,
 		"theme": "modern1",
 		"music": "adventures",
 #		"random_maze": True,
