@@ -106,6 +106,8 @@ is_barrel_puzzle = False
 is_color_puzzle = False
 is_four_rooms = False
 is_cloud_mode = False
+is_gate_puzzle = False
+has_portal_end = False
 
 game_time = 0
 level_time = 0
@@ -175,6 +177,9 @@ def debug_map(level, full=False, clean=False, combined=False, dual=False, endl=F
 		print()
 	if endl:
 		print()
+
+def clone_map(map):
+	return [[map[y][x] for x in MAP_X_RANGE] for y in MAP_Y_RANGE]
 
 def get_num_color_puzzle_values():
 	return level["color_puzzle_values"] if "color_puzzle_values" in level else MAX_COLOR_PUZZLE_VALUES
@@ -299,6 +304,22 @@ def get_all_accessible_cells():
 				unprocessed_cells.append(n)
 	return accessible_cells
 
+def find_path(start_cell, target_cell, visited_cells=[]):
+	visited_cells.append(start_cell)
+	path_cells = None
+	for neigh_cell in get_accessible_neighbors(start_cell):
+		if neigh_cell == target_cell:
+			path_cells = [target_cell]
+			break
+		if neigh_cell in visited_cells:
+			continue
+		path_cells = find_path(neigh_cell, target_cell, visited_cells)
+		if path_cells:
+			path_cells.insert(0, neigh_cell)
+			break
+	visited_cells.pop()
+	return path_cells
+
 def place_char_in_closest_accessible_cell(c):
 	best_distance = None
 	best_cell = None
@@ -329,10 +350,22 @@ def convert_to_floor_if_needed(cx, cy):
 	if map[cy][cx] == CELL_BORDER or map[cy][cx] == CELL_INTERNAL1:
 		map[cy][cx] = get_random_floor_cell_type()
 
+def get_num_gate_puzzle_plates():
+	return level["num_gate_puzzle_plates"] if "num_gate_puzzle_plates" in level else DEFAULT_NUM_GATE_PUZZLE_PLATES
+
+def get_num_gate_puzzle_gates():
+	return level["num_gate_puzzle_gates"] if "num_gate_puzzle_gates" in level else DEFAULT_NUM_GATE_PUZZLE_GATES
+
+def toggle_gate_puzzle_gate(cx, cy):
+	map[cy][cx] = CELL_GATE1 if map[cy][cx] == CELL_GATE0 else CELL_GATE0
+
+def check_gate_puzzle_solution():
+	return True
+
 def get_random_even_point(a1, a2):
 	return a1 + randint(0, int((a2 - a1) / 2)) * 2
 
-def generate_random_maze_room(x1, y1, x2, y2):
+def generate_random_maze_area(x1, y1, x2, y2):
 	if x2 - x1 <= 1 or y2 - y1 <= 1:
 		return
 
@@ -354,10 +387,69 @@ def generate_random_maze_room(x1, y1, x2, y2):
 	if skipped_wall != 3: map[get_random_even_point(random_y + 1, y2)][random_x] = get_random_floor_cell_type()
 
 	# recurse into 4 sub-areas
-	generate_random_maze_room(x1, y1, random_x - 1, random_y - 1)
-	generate_random_maze_room(random_x + 1, y1, x2, random_y - 1)
-	generate_random_maze_room(x1, random_y + 1, random_x - 1, y2)
-	generate_random_maze_room(random_x + 1, random_y + 1, x2, y2)
+	generate_random_maze_area(x1, y1, random_x - 1, random_y - 1)
+	generate_random_maze_area(random_x + 1, y1, x2, random_y - 1)
+	generate_random_maze_area(x1, random_y + 1, random_x - 1, y2)
+	generate_random_maze_area(random_x + 1, random_y + 1, x2, y2)
+
+def generate_random_maze_room():
+	global is_char_placed
+	global map, gate_puzzle_attached_plate_gates
+
+	generate_random_maze_area(room.x1, room.y1, room.x2, room.y2)
+
+	if has_portal_end or is_gate_puzzle:
+		set_actor_coord(char, room.x1, room.y1)
+		is_char_placed = True
+		accessible_cells = get_all_accessible_cells()
+		portal_cell = accessible_cells[-1]
+		map[portal_cell[1]][portal_cell[0]] = CELL_PORTAL
+
+	if is_gate_puzzle:
+		origin_map = clone_map(map)
+
+		def select_random_gates_attached_to_plate(num_gates):
+			num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
+			if num_attached_gates > num_gates:
+				num_attached_gates = num_gates
+			attached_gate_idxs = []
+			while len(attached_gate_idxs) < num_attached_gates:
+				gate_idx = randint(0, num_gates - 1)
+				if gate_idx in attached_gate_idxs:
+					continue
+				attached_gate_idxs.append(gate_idx)
+			return attached_gate_idxs
+
+		num_tries = 10000
+		while num_tries > 0:
+			gate_puzzle_attached_plate_gates = {}
+			gates = []
+			for j in range(get_num_gate_puzzle_gates()):
+				while True:
+					cell = accessible_cells[randint(1, len(accessible_cells) - 2)]
+					if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
+						continue
+					map[cell[1]][cell[0]] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
+					gates.append(cell)
+					break
+			for j in range(get_num_gate_puzzle_plates()):
+				while True:
+					cell = accessible_cells[randint(1, len(accessible_cells) - 2)]
+					if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
+						continue
+					map[cell[1]][cell[0]] = CELL_PLATE
+					gate_idxs = select_random_gates_attached_to_plate(len(gates))
+					gate_puzzle_attached_plate_gates[cell] = [ gates[i] for i in gate_idxs ]
+					break
+
+			if check_gate_puzzle_solution():
+				break
+
+			map = clone_map(origin_map)
+			num_tries -= 1
+		else:
+			print("Can't generate gate puzzle, sorry")
+			quit()
 
 def generate_random_free_path(target_c, level=0):
 	global map
@@ -556,7 +648,7 @@ def generate_room(idx):
 	set_room(idx)
 
 	if is_random_maze:
-		generate_random_maze_room(room.x1, room.y1, room.x2, room.y2)
+		generate_random_maze_room()
 
 	if is_barrel_puzzle:
 		generate_random_solvable_barrel_room()
@@ -640,8 +732,10 @@ def set_theme(theme_name):
 	cell3 = Actor(theme_prefix + 'crack')
 	cell4 = Actor(theme_prefix + 'bones')
 	cell5 = Actor(theme_prefix + 'rocks')
-	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle else None
-	cell7 = Actor(theme_prefix + 'portal') if is_barrel_puzzle else None
+	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
+	cell7 = Actor(theme_prefix + 'portal') if has_portal_end else None
+	cell8 = Actor(theme_prefix + 'gate0') if is_gate_puzzle else None
+	cell9 = Actor(theme_prefix + 'gate1') if is_gate_puzzle else None
 	status_cell = Actor(theme_prefix + 'status')
 	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode else None
 
@@ -662,6 +756,8 @@ def set_theme(theme_name):
 		CELL_ROCKS:  cell5,
 		CELL_PLATE:  cell6,
 		CELL_PORTAL: cell7,
+		CELL_GATE0:  cell8,
+		CELL_GATE1:  cell9,
 	}
 
 def start_music():
@@ -736,6 +832,7 @@ def reset_idle_time():
 def init_new_level(offset=1):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_barrel_puzzle, is_color_puzzle
+	global is_gate_puzzle, has_portal_end
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, is_char_placed, room_idx
 	global num_bonus_health, num_bonus_attack
@@ -762,6 +859,8 @@ def init_new_level(offset=1):
 	is_color_puzzle = "color_puzzle" in level
 	is_four_rooms = "four_rooms" in level
 	is_cloud_mode = "cloud_mode" in level
+	is_gate_puzzle = "gate_puzzle" in level
+	has_portal_end = "portal_end" in level
 	is_char_placed = False
 
 	char.health = level["char_health"]
@@ -787,7 +886,7 @@ def init_new_level(offset=1):
 	room_idx = 0 if is_four_rooms else None
 	set_room(room_idx)
 
-	if not is_char_placed is None:
+	if not is_char_placed:
 		place_char_in_first_free_spot()
 
 	if is_cloud_mode:
@@ -971,6 +1070,10 @@ def on_key_down(key):
 		if is_color_puzzle_solved():
 			win_room()
 
+	if keyboard.space and is_gate_puzzle and map[char.cy][char.cx] == CELL_PLATE:
+		for gate_cell in gate_puzzle_attached_plate_gates[(char.cx, char.cy)]:
+			toggle_gate_puzzle_gate(*gate_cell)
+
 def loose_game():
 	global mode, is_game_won
 
@@ -998,6 +1101,9 @@ def check_victory():
 		pass
 	elif is_barrel_puzzle:
 		if is_barrel_puzzle_solved():
+			win_room()
+	elif has_portal_end:
+		if map[char.cy][char.cx] == CELL_PORTAL:
 			win_room()
 	elif not room_enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:
 		win_room()

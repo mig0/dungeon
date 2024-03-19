@@ -23,6 +23,17 @@ levels = [
 	},
 	{
 		"n": 3,
+		"num_enemies": 5,
+		"theme": "classic",
+		"music": "a_new_path",
+		"random_maze": True,
+		"gate_puzzle": True,
+		"portal_end": True,
+		"target": "reach-portal",
+		"char_health": 100,
+	},
+	{
+		"n": 4,
 		"num_enemies": 0,
 		"theme": "modern1",
 		"music": "adventures",
@@ -34,7 +45,7 @@ levels = [
 #		"cloud_mode": True,
 	},
 	{
-		"n": 4,
+		"n": 5,
 		"num_enemies": 0,
 		"num_enemies": 6,
 		"theme": "modern1",
@@ -50,7 +61,7 @@ levels = [
 #		"cloud_mode": True,
 	},
 	{
-		"n": 5,
+		"n": 6,
 		"num_enemies": 0,
 		"num_barrels": 10,
 		"theme": "modern1",
@@ -63,7 +74,7 @@ levels = [
 #		"actors_always_revealed": True,
 	},
 	{
-		"n": 6,
+		"n": 7,
 		"num_enemies": int(PLAY_SIZE_X * PLAY_SIZE_Y / 2),
 		"theme": "modern2",
 		"music": "breath",
