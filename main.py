@@ -642,9 +642,20 @@ def generate_random_solvable_barrel_room():
 		else:
 			break
 
-def generate_room(idx):
+def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 	global num_bonus_health, num_bonus_attack
 
+	enemy = create_actor("skeleton", cx, cy)
+	enemy.health = health if health is not None else randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
+	enemy.attack = attack if attack is not None else randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
+	enemy.bonus  = bonus  if bonus  is not None else randint(0, 2)
+	if enemy.bonus == BONUS_HEALTH:
+		num_bonus_health += 1
+	elif enemy.bonus == BONUS_ATTACK:
+		num_bonus_attack += 1
+	return enemy
+
+def generate_room(idx):
 	set_room(idx)
 
 	if is_random_maze:
@@ -685,15 +696,7 @@ def generate_room(idx):
 					positioned = False
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
-		enemy = create_actor("skeleton", cx, cy)
-		enemy.health = randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
-		enemy.attack = randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
-		enemy.bonus = randint(0, 2)
-		if enemy.bonus == BONUS_HEALTH:
-			num_bonus_health += 1
-		elif enemy.bonus == BONUS_ATTACK:
-			num_bonus_attack += 1
-		enemies.append(enemy)
+		enemies.append(create_enemy(cx, cy))
 
 def generate_map():
 	global map, color_map, revealed_map, barrels
@@ -829,14 +832,19 @@ def reset_idle_time():
 	idle_time = 0
 	last_autogeneration_time = 0
 
-def init_new_level(offset=1):
+def init_new_level(offset=1, reload_stored=False):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_barrel_puzzle, is_color_puzzle
 	global is_gate_puzzle, has_portal_end
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, is_char_placed, room_idx
 	global num_bonus_health, num_bonus_attack
-	global enemies, hearts, swords, level_time
+	global enemies, killed_enemies, hearts, swords, level_time
+	global map, stored_level
+
+	if reload_stored and offset != 0:
+		print("Can't reload a non-current level")
+		quit()
 
 	if level_idx + offset < 0 or level_idx + offset > len(levels):
 		print("Requested level is out of range")
@@ -869,10 +877,16 @@ def init_new_level(offset=1):
 	hearts = []
 	swords = []
 	enemies = []
+	killed_enemies = []
 	num_bonus_health = 0
 	num_bonus_attack = 0
 
-	generate_map()
+	if reload_stored:
+		map = stored_level["map"]
+		for enemy_info in stored_level["enemy_infos"]:
+			enemies.append(create_enemy(*enemy_info))
+	else:
+		generate_map()
 	set_theme(level["theme"])
 
 	if "target" not in level:
@@ -886,7 +900,9 @@ def init_new_level(offset=1):
 	room_idx = 0 if is_four_rooms else None
 	set_room(room_idx)
 
-	if not is_char_placed:
+	if reload_stored:
+		set_actor_coord(char, *stored_level["char_cell"])
+	elif not is_char_placed:
 		place_char_in_first_free_spot()
 
 	if is_cloud_mode:
@@ -895,6 +911,12 @@ def init_new_level(offset=1):
 
 	mode = "game"
 	start_music()
+
+	stored_level = {
+		"map": deepcopy(map),
+		"char_cell": char.c,
+		"enemy_infos": tuple((enemy.cx, enemy.cy, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
+	}
 
 init_new_level()
 
@@ -911,7 +933,6 @@ def init_new_room():
 		place_char_in_first_free_spot()
 		reveal_map_near_char()
 		mode = "game"
-
 
 def draw_map():
 	for cy in range(len(map)):
@@ -1043,7 +1064,7 @@ def on_key_down(key):
 	if keyboard.p:
 		init_new_level(-1)
 	if keyboard.r:
-		init_new_level(0)
+		init_new_level(0, bool(keyboard.lalt))
 	if keyboard.n:
 		init_new_level(+1)
 
