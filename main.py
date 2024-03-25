@@ -155,9 +155,11 @@ def debug(level, str):
 		return
 	print(str)
 
-def debug_map(level, full=False, clean=False, combined=False, dual=False, endl=False):
+def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=False, endl=False):
 	if DEBUG_LEVEL < level:
 		return
+	if descr:
+		print(descr)
 	for cy in MAP_Y_RANGE if full else PLAY_Y_RANGE:
 		if not combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
@@ -187,7 +189,7 @@ def get_num_color_puzzle_values():
 def press_color_puzzle_cell(cx, cy):
 	color_map[cy][cx] = (color_map[cy][cx] + 1) % get_num_color_puzzle_values()
 
-def press_color_puzzle_neighbor_cells(cx, cy):
+def press_color_puzzle_plate(cx, cy):
 	for (nx, ny) in get_all_neighbors(cx, cy):
 		press_color_puzzle_cell(nx, ny)
 		if "color_puzzle_extended" in level and (nx != cx and ny != cy) ^ (cx % 3 != 0 or cy % 3 != 0):
@@ -277,7 +279,7 @@ def is_cell_accessible(cx, cy, place=False):
 			return False
 	return True
 
-def get_accessible_neighbors(c):
+def get_accessible_neighbors(c, allow_closed_gate=False):
 	cx, cy = c
 	neighbors = []
 	if ALLOW_DIAGONAL_MOVES and False:
@@ -287,7 +289,7 @@ def get_accessible_neighbors(c):
 	for diff in directions:
 		nx = cx + diff[0]
 		ny = cy + diff[1]
-		if nx in room.x_range and ny in room.y_range and is_cell_accessible(nx, ny):
+		if nx in room.x_range and ny in room.y_range and (allow_closed_gate and map[ny][nx] == CELL_GATE0 or is_cell_accessible(nx, ny)):
 			neighbors.append((nx, ny))
 	debug(3, "* get_accessible_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
 	return neighbors
@@ -358,6 +360,10 @@ def get_num_gate_puzzle_gates():
 
 def toggle_gate_puzzle_gate(cx, cy):
 	map[cy][cx] = CELL_GATE1 if map[cy][cx] == CELL_GATE0 else CELL_GATE0
+
+def press_gate_puzzle_plate():
+	for gate in gate_puzzle_attached_plate_gates[char.c]:
+		toggle_gate_puzzle_gate(*gate)
 
 def check_gate_puzzle_solution():
 	return True
@@ -677,7 +683,7 @@ def generate_room(idx):
 				plate_cx = color_puzzle.x1 + randint(1, int(color_puzzle.size_x / 2)) * 2 - 1
 				plate_cy = color_puzzle.y1 + randint(1, int(color_puzzle.size_y / 2)) * 2 - 1
 				for i in range(randint(1, get_num_color_puzzle_values() - 1)):
-					press_color_puzzle_neighbor_cells(plate_cx, plate_cy)
+					press_color_puzzle_plate(plate_cx, plate_cy)
 			if not is_color_puzzle_solved():
 				break
 			num_tries -= 1
@@ -736,7 +742,7 @@ def set_theme(theme_name):
 	cell4 = Actor(theme_prefix + 'bones')
 	cell5 = Actor(theme_prefix + 'rocks')
 	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
-	cell7 = Actor(theme_prefix + 'portal') if has_portal_end else None
+	cell7 = Actor(theme_prefix + 'portal') if has_portal_end or is_gate_puzzle else None
 	cell8 = Actor(theme_prefix + 'gate0') if is_gate_puzzle else None
 	cell9 = Actor(theme_prefix + 'gate1') if is_gate_puzzle else None
 	status_cell = Actor(theme_prefix + 'status')
@@ -863,11 +869,11 @@ def init_new_level(offset=1, reload_stored=False):
 
 	level = levels[level_idx]
 	is_random_maze = "random_maze" in level
-	is_barrel_puzzle = "barrel_puzzle" in level
-	is_color_puzzle = "color_puzzle" in level
+	is_barrel_puzzle = "barrel_puzzle" in level and not is_random_maze
+	is_color_puzzle = "color_puzzle" in level and not is_random_maze and not is_barrel_puzzle
 	is_four_rooms = "four_rooms" in level
 	is_cloud_mode = "cloud_mode" in level
-	is_gate_puzzle = "gate_puzzle" in level
+	is_gate_puzzle = "gate_puzzle" in level and is_random_maze
 	has_portal_end = "portal_end" in level
 	is_char_placed = False
 
@@ -1087,13 +1093,12 @@ def on_key_down(key):
 		quit()
 
 	if keyboard.space and is_color_puzzle and map[char.cy][char.cx] == CELL_PLATE:
-		press_color_puzzle_neighbor_cells(char.cx, char.cy)
+		press_color_puzzle_plate(char.cx, char.cy)
 		if is_color_puzzle_solved():
 			win_room()
 
 	if keyboard.space and is_gate_puzzle and map[char.cy][char.cx] == CELL_PLATE:
-		for gate_cell in gate_puzzle_attached_plate_gates[(char.cx, char.cy)]:
-			toggle_gate_puzzle_gate(*gate_cell)
+		press_gate_puzzle_plate()
 
 def loose_game():
 	global mode, is_game_won
@@ -1123,7 +1128,7 @@ def check_victory():
 	elif is_barrel_puzzle:
 		if is_barrel_puzzle_solved():
 			win_room()
-	elif has_portal_end:
+	elif has_portal_end or is_gate_puzzle:
 		if map[char.cy][char.cx] == CELL_PORTAL:
 			win_room()
 	elif not room_enemies and not killed_enemies and char.health > MIN_CHAR_HEALTH:

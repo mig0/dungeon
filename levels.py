@@ -28,7 +28,7 @@ levels = [
 		"music": "a_new_path",
 		"random_maze": True,
 		"gate_puzzle": True,
-		"portal_end": True,
+#		"portal_end": True,
 		"target": "reach-portal",
 		"char_health": 100,
 	},
