@@ -306,6 +306,26 @@ def get_all_accessible_cells():
 				unprocessed_cells.append(n)
 	return accessible_cells
 
+def get_num_accessible_target_directions(start_cell, target_cells):
+	num_accessible_directions = 0
+
+	for neigh in get_accessible_neighbors(start_cell, allow_closed_gate=True):
+		unprocessed_cells = [ neigh ]
+		accessible_cells = [ start_cell, neigh ]
+
+		while unprocessed_cells:
+			cell = unprocessed_cells.pop(0)
+			if cell in target_cells:
+				num_accessible_directions += 1
+				break
+			for new_neigh in get_accessible_neighbors(cell, allow_closed_gate=True):
+				if new_neigh in accessible_cells:
+					continue
+				accessible_cells.append(new_neigh)
+				unprocessed_cells.append(new_neigh)
+
+	return num_accessible_directions
+
 def find_path(start_cell, target_cell, visited_cells=[]):
 	visited_cells.append(start_cell)
 	path_cells = None
@@ -321,6 +341,16 @@ def find_path(start_cell, target_cell, visited_cells=[]):
 			break
 	visited_cells.pop()
 	return path_cells
+
+def is_path_found(start_cell, target_cell):
+	return find_path(start_cell, target_cell) is not None
+
+def get_passed_gates(start_cell, target_cell):
+	passed_gates = []
+	for cell in find_path(start_cell, target_cell) or ():
+		if map[cell[1]][cell[0]] == CELL_GATE1:
+			passed_gates.append(cell)
+	return passed_gates
 
 def place_char_in_closest_accessible_cell(c):
 	best_distance = None
@@ -365,8 +395,80 @@ def press_gate_puzzle_plate():
 	for gate in gate_puzzle_attached_plate_gates[char.c]:
 		toggle_gate_puzzle_gate(*gate)
 
-def check_gate_puzzle_solution():
-	return True
+def check_gate_puzzle_solution(portal_cell, gates, depth=0, visited_plate_gate_states=None):
+	global map
+
+	if depth == 0:
+		debug_map(2, descr="Map initially")
+		visited_plate_gate_states = {}
+
+	char_cell = char.c
+
+	if is_path_found(char_cell, portal_cell):
+		if depth == 0:
+			return False
+		else:
+			return {
+				'used_plates': [],
+				'open_gates': [],
+				'passed_gates': get_passed_gates(char_cell, portal_cell),
+			}
+
+	best_solution = None
+	best_plate = None
+
+	plates = [ *gate_puzzle_attached_plate_gates ]
+	gate_states = tuple(map[gate[1]][gate[0]] for gate in gates)
+
+	for plate in plates:
+		if char_cell != plate and is_path_found(char_cell, plate):
+			plate_gate_states = (plate, gate_states)
+			if plate_gate_states in visited_plate_gate_states:
+				solution = visited_plate_gate_states[plate_gate_states]
+			else:
+				visited_plate_gate_states[plate_gate_states] = None
+				set_actor_coord(char, *plate)
+				press_gate_puzzle_plate()
+
+				solution = check_gate_puzzle_solution(portal_cell, gates, depth + 1, visited_plate_gate_states)
+
+				press_gate_puzzle_plate()
+				set_actor_coord(char, *char_cell)
+				visited_plate_gate_states[plate_gate_states] = solution
+
+			if solution and (not best_solution or len(solution["used_plates"]) < len(best_solution["used_plates"]) \
+					or len(solution["used_plates"]) == len(best_solution["used_plates"]) and best_plate not in solution["used_plates"]):
+				best_solution = solution
+				best_plate = plate
+
+	if best_solution:
+		used_plates = best_solution["used_plates"].copy()
+		if best_plate not in used_plates:
+			used_plates.append(best_plate)
+
+		open_gates = best_solution["open_gates"].copy()
+		for gate in gate_puzzle_attached_plate_gates[best_plate]:
+			if map[gate[1]][gate[0]] == CELL_GATE0 and gate not in open_gates:
+				open_gates.append(gate)
+
+		passed_gates = best_solution["passed_gates"].copy()
+		for gate in get_passed_gates(char_cell, best_plate):
+			if gate not in passed_gates:
+				passed_gates.append(gate)
+
+		if depth == 0:
+			return \
+				len(used_plates)  >= get_num_gate_puzzle_plates() and \
+				len(open_gates)   >= get_num_gate_puzzle_gates()  and \
+				len(passed_gates) >= get_num_gate_puzzle_gates()
+		else:
+			return {
+				'used_plates': used_plates,
+				'open_gates': open_gates,
+				'passed_gates': passed_gates,
+			}
+
+	return False if depth == 0 else None
 
 def get_random_even_point(a1, a2):
 	return a1 + randint(0, int((a2 - a1) / 2)) * 2
@@ -399,63 +501,7 @@ def generate_random_maze_area(x1, y1, x2, y2):
 	generate_random_maze_area(random_x + 1, random_y + 1, x2, y2)
 
 def generate_random_maze_room():
-	global is_char_placed
-	global map, gate_puzzle_attached_plate_gates
-
 	generate_random_maze_area(room.x1, room.y1, room.x2, room.y2)
-
-	if has_portal_end or is_gate_puzzle:
-		set_actor_coord(char, room.x1, room.y1)
-		is_char_placed = True
-		accessible_cells = get_all_accessible_cells()
-		portal_cell = accessible_cells[-1]
-		map[portal_cell[1]][portal_cell[0]] = CELL_PORTAL
-
-	if is_gate_puzzle:
-		origin_map = clone_map(map)
-
-		def select_random_gates_attached_to_plate(num_gates):
-			num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
-			if num_attached_gates > num_gates:
-				num_attached_gates = num_gates
-			attached_gate_idxs = []
-			while len(attached_gate_idxs) < num_attached_gates:
-				gate_idx = randint(0, num_gates - 1)
-				if gate_idx in attached_gate_idxs:
-					continue
-				attached_gate_idxs.append(gate_idx)
-			return attached_gate_idxs
-
-		num_tries = 10000
-		while num_tries > 0:
-			gate_puzzle_attached_plate_gates = {}
-			gates = []
-			for j in range(get_num_gate_puzzle_gates()):
-				while True:
-					cell = accessible_cells[randint(1, len(accessible_cells) - 2)]
-					if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
-						continue
-					map[cell[1]][cell[0]] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
-					gates.append(cell)
-					break
-			for j in range(get_num_gate_puzzle_plates()):
-				while True:
-					cell = accessible_cells[randint(1, len(accessible_cells) - 2)]
-					if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
-						continue
-					map[cell[1]][cell[0]] = CELL_PLATE
-					gate_idxs = select_random_gates_attached_to_plate(len(gates))
-					gate_puzzle_attached_plate_gates[cell] = [ gates[i] for i in gate_idxs ]
-					break
-
-			if check_gate_puzzle_solution():
-				break
-
-			map = clone_map(origin_map)
-			num_tries -= 1
-		else:
-			print("Can't generate gate puzzle, sorry")
-			quit()
 
 def generate_random_free_path(target_c, level=0):
 	global map
@@ -662,6 +708,9 @@ def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 	return enemy
 
 def generate_room(idx):
+	global is_char_placed
+	global map, gate_puzzle_attached_plate_gates
+
 	set_room(idx)
 
 	if is_random_maze:
@@ -669,6 +718,70 @@ def generate_room(idx):
 
 	if is_barrel_puzzle:
 		generate_random_solvable_barrel_room()
+
+	if has_portal_end or is_gate_puzzle:
+		set_actor_coord(char, room.x1, room.y1)
+		is_char_placed = True
+		accessible_cells = get_all_accessible_cells()
+		portal_cell = accessible_cells[-1]
+		map[portal_cell[1]][portal_cell[0]] = CELL_PORTAL
+
+	if is_gate_puzzle:
+		origin_map = clone_map(map)
+
+		def select_random_gates_attached_to_plate(num_gates):
+			num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
+			if num_attached_gates > num_gates:
+				num_attached_gates = num_gates
+			attached_gate_idxs = []
+			while len(attached_gate_idxs) < num_attached_gates:
+				gate_idx = randint(0, num_gates - 1)
+				if gate_idx in attached_gate_idxs:
+					continue
+				attached_gate_idxs.append(gate_idx)
+			return attached_gate_idxs
+
+		num_tries = 100000
+		while num_tries > 0:
+			plates = []
+			for p in range(get_num_gate_puzzle_plates()):
+				while True:
+					cell = accessible_cells[randint(1, len(accessible_cells) - 2)]
+					if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
+						continue
+					map[cell[1]][cell[0]] = CELL_PLATE
+					plates.append(cell)
+					break
+
+			target_cells = [char.c, portal_cell, *plates]
+
+			gates = []
+			for g in range(get_num_gate_puzzle_gates()):
+				while True:
+					cell = accessible_cells[randint(1, len(accessible_cells) - 2)]
+					if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
+						continue
+					if get_num_accessible_target_directions(cell, target_cells) < 2:
+						continue
+					target_cells.append(cell)
+					map[cell[1]][cell[0]] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
+					gates.append(cell)
+					break
+
+			gate_puzzle_attached_plate_gates = {}
+			for plate in plates:
+				gate_idxs = select_random_gates_attached_to_plate(len(gates))
+				gate_puzzle_attached_plate_gates[plate] = [ gates[i] for i in gate_idxs ]
+
+			debug_map(4, descr="Generating gate puzzle - tries left: %d" % num_tries)
+			if check_gate_puzzle_solution(portal_cell, gates):
+				break
+
+			map = clone_map(origin_map)
+			num_tries -= 1
+		else:
+			print("Can't generate gate puzzle, sorry")
+			quit()
 
 	if is_color_puzzle:
 		for cy in color_puzzle.y_range:
