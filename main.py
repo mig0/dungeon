@@ -101,6 +101,9 @@ is_level_intro_enabled = True
 
 mode = "start"
 is_random_maze = False
+is_spiral_maze = False
+is_grid_maze = False
+is_any_maze = False
 is_barrel_puzzle = False
 is_color_puzzle = False
 is_four_rooms = False
@@ -559,6 +562,36 @@ def generate_random_maze_area(x1, y1, x2, y2):
 	generate_random_maze_area(x1, random_y + 1, random_x - 1, y2)
 	generate_random_maze_area(random_x + 1, random_y + 1, x2, y2)
 
+def generate_grid_maze():
+	for cx in room.x_range:
+		for cy in room.y_range:
+			if (cx - room.x1 - 1) % 2 == 0 and (cy - room.y1 - 1) % 2 == 0:
+				map[cy][cx] = CELL_BORDER
+
+def generate_spiral_maze():
+	if randint(0, 1) == 0:
+		pointer = [room.x1 - 1, room.y1 + 1]
+		steps = ((1, 0), (0, 1), (-1, 0), (0, -1))
+		len = [room.x2 - room.x1, room.y2 - room.y1]
+	else:
+		pointer = [room.x1 + 1, room.y1 - 1]
+		steps = ((0, 1), (1, 0), (0, -1), (-1, 0))
+		len = [room.y2 - room.y1, room.x2 - room.x1]
+
+	dir = 0
+
+	while len[dir % 2] > 0:
+		step = steps[dir]
+		for i in range(len[dir % 2]):
+			pointer[0] += step[0]
+			pointer[1] += step[1]
+			map[pointer[1]][pointer[0]] = CELL_BORDER
+
+		if dir % 2 == 0:
+			len[0] -= 2
+			len[1] -= 2
+		dir = (dir + 1) % 4
+
 def generate_random_maze_room():
 	generate_random_maze_area(room.x1, room.y1, room.x2, room.y2)
 
@@ -779,6 +812,12 @@ def generate_room(idx):
 	if is_random_maze:
 		generate_random_maze_room()
 
+	if is_spiral_maze:
+		generate_spiral_maze()
+
+	if is_grid_maze:
+		generate_grid_maze()
+
 	if is_barrel_puzzle:
 		generate_random_solvable_barrel_room()
 
@@ -964,7 +1003,8 @@ def reset_idle_time():
 
 def init_new_level(offset=1, reload_stored=False):
 	global level_idx, level, level_time, mode, is_game_won
-	global is_random_maze, is_barrel_puzzle, is_color_puzzle
+	global is_random_maze, is_spiral_maze, is_grid_maze, is_any_maze
+	global is_barrel_puzzle, is_color_puzzle
 	global is_gate_puzzle, has_portal_end
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
@@ -993,11 +1033,14 @@ def init_new_level(offset=1, reload_stored=False):
 
 	level = levels[level_idx]
 	is_random_maze = "random_maze" in level
-	is_barrel_puzzle = "barrel_puzzle" in level and not is_random_maze
-	is_color_puzzle = "color_puzzle" in level and not is_random_maze and not is_barrel_puzzle
+	is_spiral_maze = "spiral_maze" in level
+	is_grid_maze = "grid_maze" in level
+	is_any_maze = is_random_maze or is_spiral_maze or is_grid_maze
+	is_barrel_puzzle = "barrel_puzzle" in level and not is_any_maze
+	is_color_puzzle = "color_puzzle" in level and not is_any_maze and not is_barrel_puzzle
 	is_four_rooms = "four_rooms" in level
 	is_cloud_mode = "cloud_mode" in level
-	is_gate_puzzle = "gate_puzzle" in level and is_random_maze
+	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
 	has_portal_end = "portal_end" in level
 	char_cell = None
 
