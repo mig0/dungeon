@@ -863,7 +863,7 @@ def generate_room(idx):
 		enemies.append(create_enemy(cx, cy))
 
 def generate_map():
-	global map, color_map, revealed_map, barrels
+	global map, color_map
 
 	# currently python3-numpy-1.24.4 has a bug that requires copy() call here
 	map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=str).copy()
@@ -877,8 +877,6 @@ def generate_map():
 				else:
 					cell_type = get_random_floor_cell_type()
 			map[cx, cy] = cell_type
-
-	barrels = []
 
 	if is_color_puzzle:
 		color_map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=int)
@@ -1004,8 +1002,8 @@ def init_new_level(offset=1, reload_stored=False):
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
 	global num_bonus_health, num_bonus_attack
-	global enemies, killed_enemies, hearts, swords, level_time
-	global map, stored_level
+	global enemies, barrels, killed_enemies, hearts, swords, level_time
+	global map, color_map, stored_level
 
 	if reload_stored and offset != 0:
 		print("Can't reload a non-current level")
@@ -1044,6 +1042,7 @@ def init_new_level(offset=1, reload_stored=False):
 
 	hearts = []
 	swords = []
+	barrels = []
 	enemies = []
 	killed_enemies = []
 	num_bonus_health = 0
@@ -1051,8 +1050,11 @@ def init_new_level(offset=1, reload_stored=False):
 
 	if reload_stored:
 		map = stored_level["map"]
+		color_map = stored_level["color_map"]
 		for enemy_info in stored_level["enemy_infos"]:
 			enemies.append(create_enemy(*enemy_info))
+		for barrel_info in stored_level["barrel_infos"]:
+			barrels.append(create_actor("barrel", *barrel_info))
 	else:
 		generate_map()
 	set_theme(level["theme"])
@@ -1085,8 +1087,10 @@ def init_new_level(offset=1, reload_stored=False):
 
 	stored_level = {
 		"map": map.copy(),
+		"color_map": color_map.copy() if is_color_puzzle else None,
 		"char_cell": char.c,
 		"enemy_infos": tuple((enemy.cx, enemy.cy, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
+		"barrel_infos": tuple((barrel.cx, barrel.cy) for barrel in barrels),
 	}
 
 def init_new_room():
