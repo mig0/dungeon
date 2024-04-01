@@ -2,6 +2,7 @@
 
 import random
 import pygame
+from numpy import ndarray
 from copy import deepcopy
 from random import randint
 from constants import *
@@ -36,13 +37,14 @@ def get_map_cell_pos(cx, cy):
 def get_actor_pos(actor):
 	return get_map_cell_pos(*actor.c)
 
-def get_rel_map_cell_pos(c, pos):
-	pos_x1, pos_y1 = get_map_cell_pos(*c)
-	pos_x2, pos_y2 = pos
-	return (pos_x1 + pos_x2, pos_y1 + pos_y2)
+def apply_diff(orig, diff):
+	return (orig[0] + diff[0], orig[1] + diff[1])
 
-def get_rel_actor_pos(actor, pos):
-	return get_rel_map_cell_pos(actor.c, pos)
+def apply_map_cell_pos_diff(c, diff):
+	return apply_diff(get_map_cell_pos(*c), diff)
+
+def apply_actor_pos_diff(actor, pos):
+	return apply_map_cell_pos_diff(actor.c, pos)
 
 def set_actor_coord(actor, cx, cy):
 	actor.c = (cx, cy)
@@ -50,30 +52,30 @@ def set_actor_coord(actor, cx, cy):
 	actor.cy = cy
 	actor.x, actor.y = get_map_cell_pos(cx, cy)
 
+def move_actor(actor, diff):
+	set_actor_coord(actor, *apply_diff(actor.c, diff))
+
 def create_actor(image_name, cx, cy):
 	actor = Actor(image_name)
 	set_actor_coord(actor, cx, cy)
 	return actor
 
-def is_cell_in_actors(c, actors):
+def is_cell_in_actors(cell, actors):
 	for actor in actors:
-		if c == actor.c:
+		if cell == actor.c:
 			return True
 	return False
 
-def move_map_actor(actor, diff_c):
-	diff_cx, diff_cy = diff_c
-	set_actor_coord(actor, actor.cx + diff_cx, actor.cy + diff_cy)
+def is_cell_in_area(cell, x_range, y_range):
+	return cell[0] in x_range and cell[1] in y_range
 
-def get_actor_neighbors(actor, range_x=None, range_y=None):
-	cx, cy = actor.c
+def get_actor_neighbors(actor, x_range=None, y_range=None):
 	neighbors = []
 	for diff in ((-1, 0), (+1, 0), (0, -1), (0, +1)):
-		nx = cx + diff[0]
-		ny = cy + diff[1]
-		if (range_x is None or nx in range_x) and (range_y is None or ny in range_y):
-			neighbors.append((nx, ny))
-	debug(3, "* get_actor_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
+		neigh = apply_diff(actor.c, diff)
+		if x_range is None or y_range is None or is_cell_in_area(neigh, x_range, y_range):
+			neighbors.append(neigh)
+	debug(3, "* get_actor_neighbors %s - %s" % (str(actor.c), neighbors))
 	return neighbors
 
 def get_all_neighbors(cx, cy, include_self=False):
@@ -121,11 +123,11 @@ last_time_arrow_keys_processed = 0
 pressed_arrow_keys = []
 last_processed_arrow_keys = []
 
-map = []  # will be generated
-color_map = []
+map = None  # will be generated
+color_map = None
 cells = {}  # will be generated
 color_cells = []
-revealed_map = []
+revealed_map = None
 
 enemies = []
 hearts = []
@@ -165,12 +167,12 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 	for cy in MAP_Y_RANGE if full else PLAY_Y_RANGE:
 		if not combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
-				print(CELL_FLOOR if clean and map[cy][cx] in CELL_FLOOR_ADDITIONS_RANDGEN else map[cy][cx], end="")
+				print(CELL_FLOOR if clean and map[cx, cy] in CELL_FLOOR_ADDITIONS_RANDGEN else map[cx, cy], end="")
 		if dual:
 			print("    ", end="")
 		if dual or combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
-				cell_ch = CELL_FLOOR if clean and map[cy][cx] in CELL_FLOOR_ADDITIONS_RANDGEN else map[cy][cx]
+				cell_ch = CELL_FLOOR if clean and map[cx, cy] in CELL_FLOOR_ADDITIONS_RANDGEN else map[cx, cy]
 				if is_cell_in_actors((cx, cy), enemies):
 					cell_ch = '&'
 				if is_cell_in_actors((cx, cy), barrels):
@@ -182,14 +184,11 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 	if endl:
 		print()
 
-def clone_map(map):
-	return [[map[y][x] for x in MAP_X_RANGE] for y in MAP_Y_RANGE]
-
 def get_num_color_puzzle_values():
 	return level["color_puzzle_values"] if "color_puzzle_values" in level else MAX_COLOR_PUZZLE_VALUES
 
 def press_color_puzzle_cell(cx, cy):
-	color_map[cy][cx] = (color_map[cy][cx] + 1) % get_num_color_puzzle_values()
+	color_map[cx, cy] = (color_map[cx, cy] + 1) % get_num_color_puzzle_values()
 
 def press_color_puzzle_plate(cx, cy):
 	for (nx, ny) in get_all_neighbors(cx, cy):
@@ -198,7 +197,7 @@ def press_color_puzzle_plate(cx, cy):
 			press_color_puzzle_cell(nx, ny)
 
 def get_color_puzzle_cell(cx, cy):
-	return color_cells[color_map[cy][cx]]
+	return color_cells[color_map[cx, cy]]
 
 def set_color_puzzle():
 	color_puzzle.size_x = level["color_puzzle_size"][0] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X[room.idx] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X
@@ -219,14 +218,14 @@ def is_color_puzzle_plate(cx, cy):
 def is_color_puzzle_solved():
 	for cy in color_puzzle.y_range:
 		for cx in color_puzzle.x_range:
-			if not is_color_puzzle_plate(cx, cy) and color_map[cy][cx] != COLOR_PUZZLE_VALUE_GREEN:
+			if not is_color_puzzle_plate(cx, cy) and color_map[cx, cy] != COLOR_PUZZLE_VALUE_GREEN:
 				return False
 	return True
 
 def is_barrel_puzzle_solved():
 	room_barrels = [ barrel for barrel in barrels if is_actor_in_room(barrel) ]
 	for barrel in room_barrels:
-		if map[barrel.cy][barrel.cx] != CELL_PLATE:
+		if map[barrel.c] != CELL_PLATE:
 			return False
 	return True
 
@@ -235,7 +234,7 @@ def reveal_map_near_char():
 		return
 
 	for (cx, cy) in get_all_neighbors(char.cx, char.cy, include_self=True):
-		revealed_map[cy][cx] = True
+		revealed_map[cx, cy] = True
 
 def get_revealed_actors(actors):
 	if not is_cloud_mode or level.get("actors_always_revealed", False):
@@ -243,7 +242,7 @@ def get_revealed_actors(actors):
 
 	revealed_actors = []
 	for actor in actors:
-		if revealed_map[actor.cy][actor.cx]:
+		if revealed_map[actor.c]:
 			revealed_actors.append(actor)
 	return revealed_actors
 
@@ -275,31 +274,29 @@ def get_distance(cx, cy, tx, ty):
 	return abs(tx - cx) + abs(ty - cy)
 
 def is_cell_accessible(cx, cy, place=False):
-	if map[cy][cx] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
+	if map[cx, cy] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
 		return False
 	for actor in enemies + barrels:
 		if actor.cx == cx and actor.cy == cy:
 			return False
 	return True
 
-def get_accessible_neighbors(c, allow_closed_gate=False):
-	cx, cy = c
+def get_accessible_neighbors(cell, allow_closed_gate=False):
 	neighbors = []
 	if ALLOW_DIAGONAL_MOVES and False:
 		directions = ((-1, -1), (0, -1), (+1, -1), (-1, 0), (+1, 0), (-1, +1), (0, +1), (+1, +1))
 	else:
 		directions = ((-1, 0), (+1, 0), (0, -1), (0, +1))
 	for diff in directions:
-		nx = cx + diff[0]
-		ny = cy + diff[1]
-		if nx in room.x_range and ny in room.y_range and (allow_closed_gate and map[ny][nx] == CELL_GATE0 or is_cell_accessible(nx, ny)):
-			neighbors.append((nx, ny))
-	debug(3, "* get_accessible_neighbors (%d, %d) - %s" % (cx, cy, neighbors))
+		neigh = apply_diff(cell, diff)
+		if is_cell_in_area(neigh, room.x_range, room.y_range) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(*neigh)):
+			neighbors.append(neigh)
+	debug(3, "* get_accessible_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
 
 def get_all_accessible_cells():
 	accessible_cells = []
-	unprocessed_cells = [(char.cx, char.cy)]
+	unprocessed_cells = [char.c]
 	while unprocessed_cells:
 		cell = unprocessed_cells.pop(0)
 		accessible_cells.append(cell)
@@ -351,7 +348,7 @@ def is_path_found(start_cell, target_cell):
 def get_passed_gates(start_cell, target_cell):
 	passed_gates = []
 	for cell in find_path(start_cell, target_cell) or ():
-		if map[cell[1]][cell[0]] == CELL_GATE1:
+		if map[cell] == CELL_GATE1:
 			passed_gates.append(cell)
 	return passed_gates
 
@@ -382,8 +379,8 @@ def get_random_floor_cell_type():
 	return CELL_FLOOR_ADDITIONS_FREQUENT[randint(0, len(CELL_FLOOR_ADDITIONS_FREQUENT) - 1)]
 
 def convert_to_floor_if_needed(cx, cy):
-	if map[cy][cx] == CELL_BORDER or map[cy][cx] == CELL_INTERNAL1:
-		map[cy][cx] = get_random_floor_cell_type()
+	if map[cx, cy] == CELL_BORDER or map[cx, cy] == CELL_INTERNAL1:
+		map[cx, cy] = get_random_floor_cell_type()
 
 def get_num_gate_puzzle_plates():
 	return level["num_gate_puzzle_plates"] if "num_gate_puzzle_plates" in level else DEFAULT_NUM_GATE_PUZZLE_PLATES
@@ -392,7 +389,7 @@ def get_num_gate_puzzle_gates():
 	return level["num_gate_puzzle_gates"] if "num_gate_puzzle_gates" in level else DEFAULT_NUM_GATE_PUZZLE_GATES
 
 def toggle_gate_puzzle_gate(cx, cy):
-	map[cy][cx] = CELL_GATE1 if map[cy][cx] == CELL_GATE0 else CELL_GATE0
+	map[cx, cy] = CELL_GATE1 if map[cx, cy] == CELL_GATE0 else CELL_GATE0
 
 def press_gate_puzzle_plate():
 	for gate in gate_puzzle_attached_plate_gates[char.c]:
@@ -421,7 +418,7 @@ def check_gate_puzzle_solution(portal_cell, gates, depth=0, visited_plate_gate_s
 	best_plate = None
 
 	plates = [ *gate_puzzle_attached_plate_gates ]
-	gate_states = tuple(map[gate[1]][gate[0]] for gate in gates)
+	gate_states = tuple(map[gate] for gate in gates)
 
 	for plate in plates:
 		if char_cell != plate and is_path_found(char_cell, plate):
@@ -451,7 +448,7 @@ def check_gate_puzzle_solution(portal_cell, gates, depth=0, visited_plate_gate_s
 
 		open_gates = best_solution["open_gates"].copy()
 		for gate in gate_puzzle_attached_plate_gates[best_plate]:
-			if map[gate[1]][gate[0]] == CELL_GATE0 and gate not in open_gates:
+			if map[gate] == CELL_GATE0 and gate not in open_gates:
 				open_gates.append(gate)
 
 		passed_gates = best_solution["passed_gates"].copy()
@@ -476,7 +473,7 @@ def check_gate_puzzle_solution(portal_cell, gates, depth=0, visited_plate_gate_s
 def generate_random_solvable_gate_room(accessible_cells, portal_cell):
 	global map, gate_puzzle_attached_plate_gates
 
-	origin_map = clone_map(map)
+	origin_map = map.copy()
 
 	def select_random_gates_attached_to_plate(num_gates):
 		num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
@@ -496,9 +493,9 @@ def generate_random_solvable_gate_room(accessible_cells, portal_cell):
 		for p in range(get_num_gate_puzzle_plates()):
 			while True:
 				cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-				if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
+				if map[cell] in CELL_CHAR_PLACE_OBSTACLES:
 					continue
-				map[cell[1]][cell[0]] = CELL_PLATE
+				map[cell] = CELL_PLATE
 				plates.append(cell)
 				break
 
@@ -508,12 +505,12 @@ def generate_random_solvable_gate_room(accessible_cells, portal_cell):
 		for g in range(get_num_gate_puzzle_gates()):
 			while True:
 				cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-				if map[cell[1]][cell[0]] in CELL_CHAR_PLACE_OBSTACLES:
+				if map[cell] in CELL_CHAR_PLACE_OBSTACLES:
 					continue
 				if get_num_accessible_target_directions(cell, target_cells) < 2:
 					continue
 				target_cells.append(cell)
-				map[cell[1]][cell[0]] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
+				map[cell] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
 				gates.append(cell)
 				break
 
@@ -526,7 +523,7 @@ def generate_random_solvable_gate_room(accessible_cells, portal_cell):
 		if check_gate_puzzle_solution(portal_cell, gates):
 			break
 
-		map = clone_map(origin_map)
+		map = origin_map.copy()
 		num_tries -= 1
 	else:
 		print("Can't generate gate puzzle, sorry")
@@ -545,16 +542,16 @@ def generate_random_maze_area(x1, y1, x2, y2):
 
 	# create the horizontal and vertical border wall via this point
 	for x in range(x1, x2 + 1):
-		map[random_y][x] = CELL_BORDER
+		map[x, random_y] = CELL_BORDER
 	for y in range(y1, y2 + 1):
-		map[y][random_x] = CELL_BORDER
+		map[random_x, y] = CELL_BORDER
 
 	# select 3 random holes on the 4 just created border walls
 	skipped_wall = randint(0, 3)
-	if skipped_wall != 0: map[random_y][get_random_even_point(x1, random_x - 1)] = get_random_floor_cell_type()
-	if skipped_wall != 1: map[get_random_even_point(y1, random_y - 1)][random_x] = get_random_floor_cell_type()
-	if skipped_wall != 2: map[random_y][get_random_even_point(random_x + 1, x2)] = get_random_floor_cell_type()
-	if skipped_wall != 3: map[get_random_even_point(random_y + 1, y2)][random_x] = get_random_floor_cell_type()
+	if skipped_wall != 0: map[get_random_even_point(x1, random_x - 1), random_y] = get_random_floor_cell_type()
+	if skipped_wall != 1: map[random_x, get_random_even_point(y1, random_y - 1)] = get_random_floor_cell_type()
+	if skipped_wall != 2: map[get_random_even_point(random_x + 1, x2), random_y] = get_random_floor_cell_type()
+	if skipped_wall != 3: map[random_x, get_random_even_point(random_y + 1, y2)] = get_random_floor_cell_type()
 
 	# recurse into 4 sub-areas
 	generate_random_maze_area(x1, y1, random_x - 1, random_y - 1)
@@ -563,18 +560,18 @@ def generate_random_maze_area(x1, y1, x2, y2):
 	generate_random_maze_area(random_x + 1, random_y + 1, x2, y2)
 
 def generate_grid_maze():
-	for cx in room.x_range:
-		for cy in room.y_range:
+	for cy in room.y_range:
+		for cx in room.x_range:
 			if (cx - room.x1 - 1) % 2 == 0 and (cy - room.y1 - 1) % 2 == 0:
-				map[cy][cx] = CELL_BORDER
+				map[cx, cy] = CELL_BORDER
 
 def generate_spiral_maze():
 	if randint(0, 1) == 0:
-		pointer = [room.x1 - 1, room.y1 + 1]
+		pointer = (room.x1 - 1, room.y1 + 1)
 		steps = ((1, 0), (0, 1), (-1, 0), (0, -1))
 		len = [room.x2 - room.x1, room.y2 - room.y1]
 	else:
-		pointer = [room.x1 + 1, room.y1 - 1]
+		pointer = (room.x1 + 1, room.y1 - 1)
 		steps = ((0, 1), (1, 0), (0, -1), (-1, 0))
 		len = [room.y2 - room.y1, room.x2 - room.x1]
 
@@ -583,9 +580,8 @@ def generate_spiral_maze():
 	while len[dir % 2] > 0:
 		step = steps[dir]
 		for i in range(len[dir % 2]):
-			pointer[0] += step[0]
-			pointer[1] += step[1]
-			map[pointer[1]][pointer[0]] = CELL_BORDER
+			pointer = apply_diff(pointer, step)
+			map[pointer] = CELL_BORDER
 
 		if dir % 2 == 0:
 			len[0] -= 2
@@ -610,15 +606,15 @@ def generate_random_free_path(target_c, level=0):
 
 	accessible_cells = get_all_accessible_cells()
 	weighted_neighbors = []
-	for c in get_actor_neighbors(char, room.x_range, room.y_range):
-		if c in accessible_cells:
+	for cell in get_actor_neighbors(char, room.x_range, room.y_range):
+		if cell in accessible_cells:
 			continue
-		if is_cell_in_actors(c, barrels):
+		if is_cell_in_actors(cell, barrels):
 			continue
-		cx, cy = c
+		cx, cy = cell
 		weight = randint(0, 30)
 		weight += (1000 - get_distance(cx, cy, tx, ty)) * 10
-		weighted_neighbors.append((weight, c))
+		weighted_neighbors.append((weight, cell))
 
 	neighbors = [n[1] for n in sorted(weighted_neighbors, reverse=True)]
 
@@ -626,21 +622,20 @@ def generate_random_free_path(target_c, level=0):
 		debug(2, "* [%d] failed to generate free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 		return False
 
-	for neighbor in neighbors:
-		cx, cy = neighbor
-		if map[cy][cx] != CELL_BORDER:
+	for neigh in neighbors:
+		if map[neigh] != CELL_BORDER:
 			print("BUG!")
 			return False
-		convert_to_floor_if_needed(cx, cy)
+		convert_to_floor_if_needed(*neigh)
 		set_actor_coord(char, cx, cy)
-		debug(3, "* [%d] trying to move to (%d, %d)" % (level, cx, cy))
+		debug(3, "* [%d] trying to move to %s" % (level, str(neigh)))
 		debug_map(3, full=True, clean=True, combined=True)
 		is_path_found = generate_random_free_path(target_c, level + 1)
 		if is_path_found:
 			debug(2, "* [%d] successfully generated free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 			debug_map(2, full=True, clean=True, combined=True)
 			return True
-		map[cy][cx] = CELL_BORDER
+		map[neigh] = CELL_BORDER
 
 	set_actor_coord(char, ox, oy)
 
@@ -663,13 +658,13 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 		if is_cell_in_actors((new_cx, new_cy), barrels):
 			continue
 		weight = randint(0, 30)
-		if map[cy][cx] != CELL_BORDER:
+		if map[cx, cy] != CELL_BORDER:
 			weight += 20
-		if map[cy][cx] == CELL_PLATE:
+		if map[cx, cy] == CELL_PLATE:
 			weight += 4
-		if map[new_cy][new_cx] != CELL_BORDER:
+		if map[new_cx, new_cy] != CELL_BORDER:
 			weight += 10
-		if map[new_cy][new_cx] == CELL_PLATE:
+		if map[new_cx, new_cy] == CELL_PLATE:
 			weight += 2
 		weighted_neighbors.append((weight, c))
 
@@ -685,7 +680,7 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 
 		# if the cell is not empty (BORDER), make it empty (FLOOR with additions)
 		was_border1_replaced = False
-		if map[cy][cx] == CELL_BORDER:
+		if map[cx, cy] == CELL_BORDER:
 			convert_to_floor_if_needed(cx, cy)
 			was_border1_replaced = True
 		barrel_cx = barrel.cx
@@ -695,7 +690,7 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 		debug(2, "barrel #%d - neighbor %s, next cell (%d, %d)" % (idx, neighbor, new_char_cx, new_char_cy))
 		debug_map(2, full=True, clean=True, dual=True)
 		was_border2_replaced = False
-		if map[new_char_cy][new_char_cx] == CELL_BORDER:
+		if map[new_char_cx, new_char_cy] == CELL_BORDER:
 			convert_to_floor_if_needed(new_char_cx, new_char_cy)
 			was_border2_replaced = True
 
@@ -724,9 +719,9 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 		char.c = old_char_c
 		set_actor_coord(barrel, barrel_cx, barrel_cy)
 		if was_border1_replaced:
-			map[cy][cx] = CELL_BORDER
+			map[cx, cy] = CELL_BORDER
 		if was_border2_replaced:
-			map[new_char_cy][new_char_cx] = CELL_BORDER
+			map[new_char_cx, new_char_cy] = CELL_BORDER
 
 	return False
 
@@ -744,15 +739,15 @@ def generate_random_solvable_barrel_room():
 	# 1) initialize entire room to BORDER
 	for cy in room.y_range:
 		for cx in room.x_range:
-			map[cy][cx] = CELL_BORDER
+			map[cx, cy] = CELL_BORDER
 
 	# 2) place room plates randomly or in good positions, as the number of barrels
 	# 3) place room barrels into the place cells, one barrel per one plate
 	for n in range(num_barrels):
 		while True:
 			cx, cy = get_random_coords()
-			if map[cy][cx] != CELL_PLATE:
-				map[cy][cx] = CELL_PLATE
+			if map[cx, cy] != CELL_PLATE:
+				map[cx, cy] = CELL_PLATE
 				break
 		barrel = create_actor("barrel", cx, cy)
 		barrels.append(barrel)
@@ -779,7 +774,7 @@ def generate_random_solvable_barrel_room():
 			cx, cy = c
 			if cx > char.cx or cy > char.cy:
 				continue
-			if not map[cy][cx] in CELL_CHAR_MOVE_OBSTACLES:
+			if not map[cx, cy] in CELL_CHAR_MOVE_OBSTACLES:
 				set_actor_coord(char, cx, cy)
 				if room.idx:
 					char_cell = char.c
@@ -828,7 +823,7 @@ def generate_room(idx):
 		accessible_cells = get_all_accessible_cells()
 		accessible_cells.pop(0)  # remove char cell
 		portal_cell = accessible_cells.pop()
-		map[portal_cell[1]][portal_cell[0]] = CELL_PORTAL
+		map[portal_cell] = CELL_PORTAL
 
 	if is_gate_puzzle:
 		generate_random_solvable_gate_room(accessible_cells, portal_cell)
@@ -836,10 +831,10 @@ def generate_room(idx):
 	if is_color_puzzle:
 		for cy in color_puzzle.y_range:
 			for cx in color_puzzle.x_range:
-				color_map[cy][cx] = COLOR_PUZZLE_VALUE_GREEN
+				color_map[cx, cy] = COLOR_PUZZLE_VALUE_GREEN
 				if is_color_puzzle_plate(cx, cy):
-					map[cy][cx] = CELL_PLATE
-					color_map[cy][cx] = COLOR_PUZZLE_VALUE_PLATE
+					map[cx, cy] = CELL_PLATE
+					color_map[cx, cy] = COLOR_PUZZLE_VALUE_PLATE
 		num_tries = 5
 		while num_tries > 0:
 			for n in range(color_puzzle.size_x * color_puzzle.size_y * 3):
@@ -859,7 +854,7 @@ def generate_room(idx):
 			num_tries -= 1
 			cx = randint(room.x1, room.x2)
 			cy = randint(room.y1, room.y2)
-			positioned = map[cy][cx] not in CELL_ENEMY_PLACE_OBSTACLES
+			positioned = map[cx, cy] not in CELL_ENEMY_PLACE_OBSTACLES
 			for other in (enemies + hearts + swords + barrels + [char]):
 				if (cx, cy) == other.c:
 					positioned = False
@@ -870,24 +865,24 @@ def generate_room(idx):
 def generate_map():
 	global map, color_map, revealed_map, barrels
 
-	map = []
+	# currently python3-numpy-1.24.4 has a bug that requires copy() call here
+	map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=str).copy()
 	for cy in MAP_Y_RANGE:
-		if cy == 0 or cy == PLAY_SIZE_Y + 1:
-			line = [CELL_BORDER] * MAP_SIZE_X
-		else:
-			line = [CELL_BORDER]
-			for cx in PLAY_X_RANGE:
-				cell_type = get_random_floor_cell_type()
+		for cx in MAP_X_RANGE:
+			if cx == 0 or cx == PLAY_SIZE_X + 1 or cy == 0 or cy == PLAY_SIZE_Y + 1:
+				cell_type = CELL_BORDER
+			else:
 				if is_four_rooms and (cx == ROOM_BORDER_X or cy == ROOM_BORDER_Y):
 					cell_type = CELL_BORDER
-				line.append(cell_type)
-			line.append(CELL_BORDER)
-		map.append(line)
+				else:
+					cell_type = get_random_floor_cell_type()
+			map[cx, cy] = cell_type
 
 	barrels = []
 
 	if is_color_puzzle:
-		color_map = [[COLOR_PUZZLE_VALUE_OUTSIDE] * MAP_SIZE_X for y in MAP_Y_RANGE]
+		color_map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=int)
+		color_map.fill(COLOR_PUZZLE_VALUE_OUTSIDE)
 
 	if is_four_rooms:
 		for idx in range(4):
@@ -1081,14 +1076,15 @@ def init_new_level(offset=1, reload_stored=False):
 		place_char_in_first_free_spot()
 
 	if is_cloud_mode:
-		revealed_map = [[False] * MAP_SIZE_X for y in MAP_Y_RANGE]
+		revealed_map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=bool)
+		revealed_map.fill(False)
 	reveal_map_near_char()
 
 	mode = "game"
 	start_music()
 
 	stored_level = {
-		"map": deepcopy(map),
+		"map": map.copy(),
 		"char_cell": char.c,
 		"enemy_infos": tuple((enemy.cx, enemy.cy, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
 	}
@@ -1108,16 +1104,16 @@ def init_new_room():
 		mode = "game"
 
 def draw_map():
-	for cy in range(len(map)):
-		for cx in range(len(map[0])):
-			cell_type = map[cy][cx]
+	for cy in range(len(map[0])):
+		for cx in range(len(map)):
+			cell_type = map[cx, cy]
 			cell_types = [CELL_FLOOR if cell_type in CELL_FLOOR_ADDITIONS else cell_type]
 			if cell_type in CELL_FLOOR_ADDITIONS:
 				cell_types.append(cell_type)
 			for cell_type in cell_types:
-				if is_cloud_mode and not revealed_map[cy][cx]:
+				if is_cloud_mode and not revealed_map[cx, cy]:
 					cell = cloud_cell
-				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cy][cx] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
+				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cx, cy] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
 					color_floor = get_color_puzzle_cell(cx, cy)
 					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
 					continue
@@ -1178,8 +1174,8 @@ def draw():
 		for actor in visible_enemies + [char]:
 			if actor.health is None:
 				continue
-			screen.draw.text(str(actor.health), center=get_rel_actor_pos(actor, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
-			screen.draw.text(str(actor.attack), center=get_rel_actor_pos(actor, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			screen.draw.text(str(actor.health), center=apply_actor_pos_diff(actor, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			screen.draw.text(str(actor.attack), center=apply_actor_pos_diff(actor, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 
 	if mode == "end":
 		end_line = _('victory-text') if is_game_won else _('defeat-text')
@@ -1263,12 +1259,12 @@ def on_key_down(key):
 	if keyboard.q:
 		quit()
 
-	if keyboard.space and is_color_puzzle and map[char.cy][char.cx] == CELL_PLATE:
-		press_color_puzzle_plate(char.cx, char.cy)
+	if keyboard.space and is_color_puzzle and map[char.c] == CELL_PLATE:
+		press_color_puzzle_plate(*char.c)
 		if is_color_puzzle_solved():
 			win_room()
 
-	if keyboard.space and is_gate_puzzle and map[char.cy][char.cx] == CELL_PLATE:
+	if keyboard.space and is_gate_puzzle and map[char.c] == CELL_PLATE:
 		press_gate_puzzle_plate()
 
 def loose_game():
@@ -1298,7 +1294,7 @@ def check_victory():
 		if is_barrel_puzzle_solved():
 			win_room()
 	elif has_portal_end or is_gate_puzzle:
-		if map[char.cy][char.cx] == CELL_PORTAL:
+		if map[char.c] == CELL_PORTAL:
 			win_room()
 	elif is_color_puzzle:
 		pass
@@ -1307,7 +1303,7 @@ def check_victory():
 
 def move_char(diff_x, diff_y):
 	old_char_pos = char.pos
-	move_map_actor(char, (diff_x, diff_y))
+	move_actor(char, (diff_x, diff_y))
 
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
@@ -1316,8 +1312,8 @@ def move_char(diff_x, diff_y):
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		enemy.pos = get_actor_pos(enemy)
-		move_map_actor(char, (-diff_x, -diff_y))
-		enemy.pos = get_rel_actor_pos(enemy, (diff_x * 12, diff_y * 12))
+		move_actor(char, (-diff_x, -diff_y))
+		enemy.pos = apply_actor_pos_diff(enemy, (diff_x * 12, diff_y * 12))
 		if enemy.health > 0:
 			play_sound("beat")
 			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
@@ -1341,11 +1337,11 @@ def move_char(diff_x, diff_y):
 	if barrel_index >= 0:
 		barrel = barrels[barrel_index]
 		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
-			move_map_actor(char, (-diff_x, -diff_y))
+			move_actor(char, (-diff_x, -diff_y))
 			return
 		else:
 			old_barrel_pos = barrel.pos
-			move_map_actor(barrel, (diff_x, diff_y))
+			move_actor(barrel, (diff_x, diff_y))
 			new_barrel_pos = barrel.pos
 			if is_move_animate_enabled:
 				barrel.pos = old_barrel_pos
@@ -1419,7 +1415,7 @@ def update(dt):
 		if not ALLOW_DIAGONAL_MOVES and last_processed_arrow_keys:
 			return
 		pressed_arrow_keys.remove(key)
-		if map[char.cy + diff[1]][char.cx + diff[0]] not in CELL_CHAR_MOVE_OBSTACLES:
+		if map[char.cx + diff[0], char.cy + diff[1]] not in CELL_CHAR_MOVE_OBSTACLES:
 			last_processed_arrow_keys.append(key)
 
 	for key in list(pressed_arrow_keys):
