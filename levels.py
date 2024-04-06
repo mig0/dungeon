@@ -2,6 +2,17 @@ from config import *
 
 levels = [
 	{
+		"n": 0,
+		"num_enemies": 0,
+		"theme": "stoneage1",
+		"music": "stoneage/01_stardust_falling",
+		"spiral_maze": True,
+		"stoneage_puzzle": True,
+		"gate_puzzle": True,
+		"bg_image": "bg/remains_of_a_threat.jpg",
+		"char_health": None,
+	},
+	{
 		"n": 1,
 		"num_enemies": 5,
 		"theme": "classic",
@@ -20,6 +31,7 @@ levels = [
 		"time_limit": 60,
 		"char_health": 150,
 		"target": 'level-target-kill-1-min',
+		"bg_image": "bg/stonehenge.jpg",
 		"cloud_mode": True,
 	},
 	{

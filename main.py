@@ -111,7 +111,10 @@ is_color_puzzle = False
 is_four_rooms = False
 is_cloud_mode = False
 is_gate_puzzle = False
+is_stoneage_puzzle = False
 has_portal_end = False
+
+bg_image = None
 
 game_time = 0
 level_time = 0
@@ -782,6 +785,32 @@ def generate_random_solvable_barrel_room():
 		else:
 			break
 
+def generate_random_nonsolvable_stoneage_room():
+	global map
+
+	def get_random_coords():
+		return randint(room.x1, room.x2), randint(room.y1, room.y2)
+
+	for n in range(60):
+		cell = get_random_coords()
+		map[cell] = CELL_VOID
+
+	for n in range(3):
+		cell = get_random_coords()
+		map[cell] = CELL_PORTAL
+
+	for n in range(3):
+		while True:
+			cell = get_random_coords()
+			if map[cell] != CELL_VOID and map[cell] != CELL_PORTAL:
+				map[cell] = CELL_GATE0
+				break
+		while True:
+			cell = get_random_coords()
+			if map[cell] != CELL_VOID and map[cell] != CELL_PORTAL and map[cell] != CELL_GATE0:
+				map[cell] = CELL_GATE1
+				break
+
 def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 	global num_bonus_health, num_bonus_attack
 
@@ -812,6 +841,9 @@ def generate_room(idx):
 
 	if is_grid_maze:
 		generate_grid_maze()
+
+	if is_stoneage_puzzle:
+		generate_random_nonsolvable_stoneage_room()
 
 	if is_barrel_puzzle:
 		generate_random_solvable_barrel_room()
@@ -898,11 +930,11 @@ def set_theme(theme_name):
 	cell4 = Actor(theme_prefix + 'bones')
 	cell5 = Actor(theme_prefix + 'rocks')
 	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
-	cell7 = Actor(theme_prefix + 'portal') if has_portal_end or is_gate_puzzle else None
-	cell8 = Actor(theme_prefix + 'gate0') if is_gate_puzzle else None
-	cell9 = Actor(theme_prefix + 'gate1') if is_gate_puzzle else None
+	cell7 = Actor(theme_prefix + 'portal') if has_portal_end or is_stoneage_puzzle or is_gate_puzzle else None
+	cell8 = Actor(theme_prefix + 'gate0') if is_stoneage_puzzle or is_gate_puzzle else None
+	cell9 = Actor(theme_prefix + 'gate1') if is_stoneage_puzzle or is_gate_puzzle else None
 	status_cell = Actor(theme_prefix + 'status')
-	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode else None
+	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode and not bg_image else None
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
@@ -997,8 +1029,9 @@ def reset_idle_time():
 def init_new_level(offset=1, reload_stored=False):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_spiral_maze, is_grid_maze, is_any_maze
-	global is_barrel_puzzle, is_color_puzzle
+	global is_stoneage_puzzle, is_barrel_puzzle, is_color_puzzle
 	global is_gate_puzzle, has_portal_end
+	global bg_image
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
 	global num_bonus_health, num_bonus_attack
@@ -1029,14 +1062,20 @@ def init_new_level(offset=1, reload_stored=False):
 	is_spiral_maze = "spiral_maze" in level
 	is_grid_maze = "grid_maze" in level
 	is_any_maze = is_random_maze or is_spiral_maze or is_grid_maze
-	is_barrel_puzzle = "barrel_puzzle" in level and not is_any_maze
-	is_color_puzzle = "color_puzzle" in level and not is_any_maze and not is_barrel_puzzle
+	is_stoneage_puzzle = "stoneage_puzzle" in level and not is_any_maze
+	is_barrel_puzzle = "barrel_puzzle" in level and not is_any_maze and not is_stoneage_puzzle
+	is_color_puzzle = "color_puzzle" in level and not is_any_maze and not is_barrel_puzzle and not is_stoneage_puzzle
 	is_four_rooms = "four_rooms" in level
 	is_cloud_mode = "cloud_mode" in level
 	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
 	has_portal_end = "portal_end" in level
-	char_cell = None
 
+	bg_image = None
+	if "bg_image" in level:
+		bg_image = pygame.image.load(level["bg_image"]).convert()
+		bg_image = pygame.transform.scale(bg_image, (MAP_W, MAP_H))
+
+	char_cell = None
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
 
@@ -1116,7 +1155,11 @@ def draw_map():
 				cell_types.append(cell_type)
 			for cell_type in cell_types:
 				if is_cloud_mode and not revealed_map[cx, cy]:
+					if bg_image:
+						continue
 					cell = cloud_cell
+				elif cell_type == CELL_VOID:
+					continue
 				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cx, cy] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
 					color_floor = get_color_puzzle_cell(cx, cy)
 					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
@@ -1159,6 +1202,8 @@ def draw_central_flash():
 
 def draw():
 	screen.fill("#2f3542")
+	if bg_image:
+		screen.blit(bg_image, (MAP_POS_X1, MAP_POS_Y1))
 	if mode == "game" or mode == "end" or mode == "next":
 		visible_barrels = get_revealed_actors(barrels)
 		visible_enemies = get_revealed_actors(enemies)
@@ -1237,6 +1282,10 @@ def on_key_down(key):
 		set_theme("modern1")
 	if keyboard.k_3:
 		set_theme("modern2")
+	if keyboard.k_4:
+		set_theme("stoneage1")
+	if keyboard.k_5:
+		set_theme("stoneage2")
 
 	if keyboard.p:
 		init_new_level(-1)
@@ -1300,7 +1349,7 @@ def check_victory():
 	elif has_portal_end or is_gate_puzzle:
 		if map[char.c] == CELL_PORTAL:
 			win_room()
-	elif is_color_puzzle:
+	elif is_stoneage_puzzle or is_color_puzzle:
 		pass
 	elif not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
 		win_room()
