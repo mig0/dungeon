@@ -810,6 +810,7 @@ def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_FINISH)
 	replace_random_floor_cell(CELL_GATE0, 3)
 	replace_random_floor_cell(CELL_GATE1, 3)
+	replace_random_floor_cell(CELL_SAND, 10)
 
 def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 	global num_bonus_health, num_bonus_attack
@@ -935,6 +936,7 @@ def set_theme(theme_name):
 	cell9 = Actor(theme_prefix + 'portal') if is_stoneage_puzzle else None
 	cell10 = Actor(theme_prefix + 'gate0') if is_stoneage_puzzle or is_gate_puzzle else None
 	cell11 = Actor(theme_prefix + 'gate1') if is_stoneage_puzzle or is_gate_puzzle else None
+	cell12 = Actor(theme_prefix + 'sand') if is_stoneage_puzzle else None
 	status_cell = Actor(theme_prefix + 'status')
 	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode and not bg_image else None
 
@@ -959,6 +961,7 @@ def set_theme(theme_name):
 		CELL_PORTAL: cell9,
 		CELL_GATE0:  cell10,
 		CELL_GATE1:  cell11,
+		CELL_SAND:   cell12,
 	}
 
 def start_music():
@@ -1362,6 +1365,8 @@ def check_victory():
 
 def move_char(diff_x, diff_y):
 	old_char_pos = char.pos
+	old_char_cell = char.c
+	# try to move forward, and prepare to cancel if the move is impossible
 	move_actor(char, (diff_x, diff_y))
 
 	# collision with enemies
@@ -1371,7 +1376,9 @@ def move_char(diff_x, diff_y):
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		enemy.pos = get_actor_pos(enemy)
+		# can't move if we face enemy, cancel the move
 		move_actor(char, (-diff_x, -diff_y))
+		# animate beat or kill
 		enemy.pos = apply_actor_pos_diff(enemy, (diff_x * 12, diff_y * 12))
 		if enemy.health > 0:
 			play_sound("beat")
@@ -1396,9 +1403,11 @@ def move_char(diff_x, diff_y):
 	if barrel_index >= 0:
 		barrel = barrels[barrel_index]
 		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
+			# can't push, cancel the move
 			move_actor(char, (-diff_x, -diff_y))
 			return
 		else:
+			# can push, animate the push
 			old_barrel_pos = barrel.pos
 			move_actor(barrel, (diff_x, diff_y))
 			new_barrel_pos = barrel.pos
@@ -1406,10 +1415,14 @@ def move_char(diff_x, diff_y):
 				barrel.pos = old_barrel_pos
 				animate(barrel, duration=ARROW_KEYS_RESOLUTION, pos=new_barrel_pos)
 
+	# can move, animate the move
 	new_char_pos = char.pos
 	if is_move_animate_enabled:
 		char.pos = old_char_pos
 		animate(char, duration=ARROW_KEYS_RESOLUTION, pos=new_char_pos)
+
+	if map[old_char_cell] == CELL_SAND:
+		map[old_char_cell] = CELL_VOID
 
 	reveal_map_near_char()
 
