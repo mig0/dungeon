@@ -274,7 +274,12 @@ def is_actor_in_room(actor):
 
 	return actor.cx >= room.x1 and actor.cx <= room.x2 and actor.cy >= room.y1 and actor.cy <= room.y2
 
-def get_distance(cx, cy, tx, ty):
+def is_cell_in_room(cell):
+	return is_cell_in_area(cell, room.x_range, room.y_range)
+
+def get_distance(cx, cy, tx=None, ty=None):
+	if type(cx) is tuple and type(cy) is tuple:
+		return get_distance(*cx, *cy)
 	return abs(tx - cx) + abs(ty - cy)
 
 def is_cell_accessible(cx, cy, place=False):
@@ -293,7 +298,7 @@ def get_accessible_neighbors(cell, allow_closed_gate=False):
 		directions = ((-1, 0), (+1, 0), (0, -1), (0, +1))
 	for diff in directions:
 		neigh = apply_diff(cell, diff)
-		if is_cell_in_area(neigh, room.x_range, room.y_range) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(*neigh)):
+		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(*neigh)):
 			neighbors.append(neigh)
 	debug(3, "* get_accessible_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
@@ -360,7 +365,7 @@ def place_char_in_closest_accessible_cell(c):
 	best_distance = None
 	best_cell = None
 	for cell in get_all_accessible_cells():
-		distance = get_distance(*cell, *c)
+		distance = get_distance(cell, c)
 		if best_distance is None or distance < best_distance:
 			best_distance = distance
 			best_cell = cell
@@ -803,7 +808,7 @@ def generate_random_nonsolvable_stoneage_room():
 			if num == 1:
 				return cell
 
-	replace_random_floor_cell(CELL_VOID, 60)
+	replace_random_floor_cell(CELL_VOID, 70)
 	replace_random_floor_cell(CELL_PORTAL, 3)
 	char_cell = \
 	replace_random_floor_cell(CELL_START)
@@ -811,6 +816,24 @@ def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_GATE0, 3)
 	replace_random_floor_cell(CELL_GATE1, 3)
 	replace_random_floor_cell(CELL_SAND, 10)
+	replace_random_floor_cell(CELL_LIFT, 5)
+	replace_random_floor_cell(CELL_LIFTH, 2)
+	replace_random_floor_cell(CELL_LIFTV, 2)
+	replace_random_floor_cell(CELL_LIFTU)
+	replace_random_floor_cell(CELL_LIFTD)
+	replace_random_floor_cell(CELL_LIFTL)
+	replace_random_floor_cell(CELL_LIFTR)
+
+def get_lift_target(cell, diff):
+	cell_type = map[cell]
+	if cell_type not in LIFT_TYPES or diff not in LIFT_TYPE_DIRECTIONS[cell_type]:
+		return None
+	returned_cell = None
+	while True:
+		next_cell = apply_diff(cell, diff)
+		if not is_cell_in_room(next_cell) or map[next_cell] != CELL_VOID:
+			return returned_cell
+		returned_cell = cell = next_cell
 
 def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 	global num_bonus_health, num_bonus_attack
@@ -937,6 +960,13 @@ def set_theme(theme_name):
 	cell10 = Actor(theme_prefix + 'gate0') if is_stoneage_puzzle or is_gate_puzzle else None
 	cell11 = Actor(theme_prefix + 'gate1') if is_stoneage_puzzle or is_gate_puzzle else None
 	cell12 = Actor(theme_prefix + 'sand') if is_stoneage_puzzle else None
+	cell13 = Actor(theme_prefix + 'lift') if is_stoneage_puzzle else None
+	cell14 = Actor(theme_prefix + 'lifth') if is_stoneage_puzzle else None
+	cell15 = Actor(theme_prefix + 'liftv') if is_stoneage_puzzle else None
+	cell16 = Actor(theme_prefix + 'liftu') if is_stoneage_puzzle else None
+	cell17 = Actor(theme_prefix + 'liftd') if is_stoneage_puzzle else None
+	cell18 = Actor(theme_prefix + 'liftl') if is_stoneage_puzzle else None
+	cell19 = Actor(theme_prefix + 'liftr') if is_stoneage_puzzle else None
 	status_cell = Actor(theme_prefix + 'status')
 	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode and not bg_image else None
 
@@ -962,6 +992,13 @@ def set_theme(theme_name):
 		CELL_GATE0:  cell10,
 		CELL_GATE1:  cell11,
 		CELL_SAND:   cell12,
+		CELL_LIFT:   cell13,
+		CELL_LIFTH:  cell14,
+		CELL_LIFTV:  cell15,
+		CELL_LIFTU:  cell16,
+		CELL_LIFTD:  cell17,
+		CELL_LIFTL:  cell18,
+		CELL_LIFTR:  cell19,
 	}
 
 def start_music():
@@ -1364,10 +1401,13 @@ def check_victory():
 		win_room()
 
 def move_char(diff_x, diff_y):
+	diff = (diff_x, diff_y)
+	undo_diff = (-diff_x, -diff_y)
+
 	old_char_pos = char.pos
 	old_char_cell = char.c
 	# try to move forward, and prepare to cancel if the move is impossible
-	move_actor(char, (diff_x, diff_y))
+	move_actor(char, diff)
 
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
@@ -1377,7 +1417,7 @@ def move_char(diff_x, diff_y):
 		char.health -= enemy.attack
 		enemy.pos = get_actor_pos(enemy)
 		# can't move if we face enemy, cancel the move
-		move_actor(char, (-diff_x, -diff_y))
+		move_actor(char, undo_diff)
 		# animate beat or kill
 		enemy.pos = apply_actor_pos_diff(enemy, (diff_x * 12, diff_y * 12))
 		if enemy.health > 0:
@@ -1404,22 +1444,35 @@ def move_char(diff_x, diff_y):
 		barrel = barrels[barrel_index]
 		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
 			# can't push, cancel the move
-			move_actor(char, (-diff_x, -diff_y))
+			move_actor(char, undo_diff)
 			return
 		else:
 			# can push, animate the push
 			old_barrel_pos = barrel.pos
-			move_actor(barrel, (diff_x, diff_y))
+			move_actor(barrel, diff)
 			new_barrel_pos = barrel.pos
 			if is_move_animate_enabled:
 				barrel.pos = old_barrel_pos
 				animate(barrel, duration=ARROW_KEYS_RESOLUTION, pos=new_barrel_pos)
 
 	# can move, animate the move
+	animate_time_factor = 1
+
+	# process lift movement if available
+	if lift_target := get_lift_target(old_char_cell, diff):
+		distance = get_distance(old_char_cell, lift_target)
+		for i in range(1, distance):
+			move_actor(char, diff)
+		map[lift_target] = map[old_char_cell]
+		map[old_char_cell] = CELL_VOID
+		if is_move_animate_enabled:
+			pass
+		animate_time_factor = distance - (distance - 1) / 2
+
 	new_char_pos = char.pos
 	if is_move_animate_enabled:
 		char.pos = old_char_pos
-		animate(char, duration=ARROW_KEYS_RESOLUTION, pos=new_char_pos)
+		animate(char, duration=animate_time_factor * ARROW_KEYS_RESOLUTION, pos=new_char_pos)
 
 	if map[old_char_cell] == CELL_SAND:
 		map[old_char_cell] = CELL_VOID
@@ -1487,7 +1540,7 @@ def update(dt):
 		if not ALLOW_DIAGONAL_MOVES and last_processed_arrow_keys:
 			return
 		pressed_arrow_keys.remove(key)
-		if map[char.cx + diff[0], char.cy + diff[1]] not in CELL_CHAR_MOVE_OBSTACLES:
+		if map[char.cx + diff[0], char.cy + diff[1]] not in CELL_CHAR_MOVE_OBSTACLES or get_lift_target(char.c, diff):
 			last_processed_arrow_keys.append(key)
 
 	for key in list(pressed_arrow_keys):
