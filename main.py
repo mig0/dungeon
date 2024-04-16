@@ -60,11 +60,14 @@ def create_actor(image_name, cx, cy):
 	set_actor_coord(actor, cx, cy)
 	return actor
 
-def is_cell_in_actors(cell, actors):
+def get_actor_on_cell(cell, actors):
 	for actor in actors:
 		if cell == actor.c:
-			return True
-	return False
+			return actor
+	return None
+
+def is_cell_in_actors(cell, actors):
+	return get_actor_on_cell(cell, actors) is not None
 
 def is_cell_in_area(cell, x_range, y_range):
 	return cell[0] in x_range and cell[1] in y_range
@@ -129,9 +132,10 @@ last_processed_arrow_keys = []
 
 map = None  # will be generated
 color_map = None
-cells = {}  # will be generated
-color_cells = []
+cell_images = {}  # will be generated
+color_cell_images = []
 revealed_map = None
+theme_prefix = None
 
 enemies = []
 hearts = []
@@ -188,6 +192,15 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 	if endl:
 		print()
 
+def get_theme_image_name(image_name):
+	return theme_prefix + image_name
+
+def create_theme_image(image_name):
+	return Actor(get_theme_image_name(image_name))
+
+def create_theme_actor(image_name, cell):
+	return create_actor(get_theme_image_name(image_name), *cell)
+
 def get_num_color_puzzle_values():
 	return level["color_puzzle_values"] if "color_puzzle_values" in level else MAX_COLOR_PUZZLE_VALUES
 
@@ -200,8 +213,8 @@ def press_color_puzzle_plate(cx, cy):
 		if "color_puzzle_extended" in level and (nx != cx and ny != cy) ^ (cx % 3 != 0 or cy % 3 != 0):
 			press_color_puzzle_cell(nx, ny)
 
-def get_color_puzzle_cell(cx, cy):
-	return color_cells[color_map[cx, cy]]
+def get_color_puzzle_image(cx, cy):
+	return color_cell_images[color_map[cx, cy]]
 
 def set_color_puzzle():
 	color_puzzle.size_x = level["color_puzzle_size"][0] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X[room.idx] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X
@@ -360,6 +373,11 @@ def get_passed_gates(start_cell, target_cell):
 		if map[cell] == CELL_GATE1:
 			passed_gates.append(cell)
 	return passed_gates
+
+def set_char_cell(cell):
+	global char_cell
+
+	char_cell = cell
 
 def place_char_in_closest_accessible_cell(c):
 	best_distance = None
@@ -650,6 +668,12 @@ def generate_random_free_path(target_c, level=0):
 
 	return False
 
+def create_barrel(cell):
+	global barrels
+
+	barrel = create_theme_actor("barrel", cell)
+	barrels.append(barrel)
+
 def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 	idx = barrels.index(barrel)
 	weighted_neighbors = []
@@ -735,12 +759,12 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 	return False
 
 def generate_random_solvable_barrel_room():
-	global map, char_cell
+	global map
 
 	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
 
-	def get_random_coords():
-		return randint(room.x1, room.x2), randint(room.y1, room.y2)
+	def get_random_cell():
+		return (randint(room.x1, room.x2), randint(room.y1, room.y2))
 
 	# 0) initialize char position to None
 	char.c = None
@@ -754,12 +778,11 @@ def generate_random_solvable_barrel_room():
 	# 3) place room barrels into the place cells, one barrel per one plate
 	for n in range(num_barrels):
 		while True:
-			cx, cy = get_random_coords()
-			if map[cx, cy] != CELL_PLATE:
-				map[cx, cy] = CELL_PLATE
+			cell = get_random_cell()
+			if map[cell] != CELL_PLATE:
+				map[cell] = CELL_PLATE
 				break
-		barrel = create_actor("barrel", cx, cy)
-		barrels.append(barrel)
+		create_barrel(cell)
 
 	# 4) for each room barrel do:
 	for barrel in barrels:
@@ -786,14 +809,13 @@ def generate_random_solvable_barrel_room():
 			if not map[cx, cy] in CELL_CHAR_MOVE_OBSTACLES:
 				set_actor_coord(char, cx, cy)
 				if room.idx:
-					char_cell = char.c
+					set_char_cell(char.c)
 				break
 		else:
 			break
 
 def generate_random_nonsolvable_stoneage_room():
 	global map
-	global char_cell
 
 	def get_random_floor_cell():
 		while True:
@@ -801,17 +823,19 @@ def generate_random_nonsolvable_stoneage_room():
 			if map[cell] in CELL_FLOOR_TYPES:
 				return cell
 
-	def replace_random_floor_cell(cell_type, num=1):
+	def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None):
 		for n in range(num):
 			cell = get_random_floor_cell()
 			map[cell] = cell_type
-			if num == 1:
-				return cell
+			if callback:
+				if extra:
+					callback(cell, extra)
+				else:
+					callback(cell)
 
 	replace_random_floor_cell(CELL_VOID, 70)
 	replace_random_floor_cell(CELL_PORTAL, 3)
-	char_cell = \
-	replace_random_floor_cell(CELL_START)
+	replace_random_floor_cell(CELL_START, 1, set_char_cell)
 	replace_random_floor_cell(CELL_FINISH)
 	replace_random_floor_cell(CELL_GATE0, 3)
 	replace_random_floor_cell(CELL_GATE1, 3)
@@ -849,8 +873,6 @@ def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 	return enemy
 
 def generate_room(idx):
-	global char_cell
-
 	set_room(idx)
 
 	if is_barrel_puzzle or is_gate_puzzle:
@@ -875,7 +897,7 @@ def generate_room(idx):
 	if has_finish or is_gate_puzzle:
 		set_actor_coord(char, room.x1, room.y1)
 		if room.idx == 0:
-			char_cell = char.c
+			set_char_cell(char.c)
 		accessible_cells = get_all_accessible_cells()
 		accessible_cells.pop(0)  # remove char cell
 		finish_cell = accessible_cells.pop()
@@ -945,60 +967,61 @@ def generate_map():
 		generate_room(None)
 
 def set_theme(theme_name):
-	global cells, status_cell, cloud_cell, color_cells
+	global cell_images, status_image, cloud_image, color_cell_images
+	global theme_prefix
 
 	theme_prefix = theme_name + '/'
-	cell1 = Actor(theme_prefix + 'border')
-	cell2 = Actor(theme_prefix + 'floor')
-	cell3 = Actor(theme_prefix + 'crack')
-	cell4 = Actor(theme_prefix + 'bones')
-	cell5 = Actor(theme_prefix + 'rocks')
-	cell6 = Actor(theme_prefix + 'plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
-	cell7 = Actor(theme_prefix + 'start') if has_start or is_stoneage_puzzle else None
-	cell8 = Actor(theme_prefix + 'finish') if has_finish or is_stoneage_puzzle or is_gate_puzzle else None
-	cell9 = Actor(theme_prefix + 'portal') if is_stoneage_puzzle else None
-	cell10 = Actor(theme_prefix + 'gate0') if is_stoneage_puzzle or is_gate_puzzle else None
-	cell11 = Actor(theme_prefix + 'gate1') if is_stoneage_puzzle or is_gate_puzzle else None
-	cell12 = Actor(theme_prefix + 'sand') if is_stoneage_puzzle else None
-	cell13 = Actor(theme_prefix + 'lift') if is_stoneage_puzzle else None
-	cell14 = Actor(theme_prefix + 'lifth') if is_stoneage_puzzle else None
-	cell15 = Actor(theme_prefix + 'liftv') if is_stoneage_puzzle else None
-	cell16 = Actor(theme_prefix + 'liftu') if is_stoneage_puzzle else None
-	cell17 = Actor(theme_prefix + 'liftd') if is_stoneage_puzzle else None
-	cell18 = Actor(theme_prefix + 'liftl') if is_stoneage_puzzle else None
-	cell19 = Actor(theme_prefix + 'liftr') if is_stoneage_puzzle else None
-	status_cell = Actor(theme_prefix + 'status')
-	cloud_cell = Actor(theme_prefix + 'cloud') if is_cloud_mode and not bg_image else None
+	image1 = create_theme_image('border')
+	image2 = create_theme_image('floor')
+	image3 = create_theme_image('crack')
+	image4 = create_theme_image('bones')
+	image5 = create_theme_image('rocks')
+	image6 = create_theme_image('plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
+	image7 = create_theme_image('start') if has_start or is_stoneage_puzzle else None
+	image8 = create_theme_image('finish') if has_finish or is_stoneage_puzzle or is_gate_puzzle else None
+	image9 = create_theme_image('portal') if is_stoneage_puzzle else None
+	image10 = create_theme_image('gate0') if is_stoneage_puzzle or is_gate_puzzle else None
+	image11 = create_theme_image('gate1') if is_stoneage_puzzle or is_gate_puzzle else None
+	image12 = create_theme_image('sand') if is_stoneage_puzzle else None
+	image13 = Actor(theme_prefix + 'lift') if is_stoneage_puzzle else None
+	image14 = Actor(theme_prefix + 'lifth') if is_stoneage_puzzle else None
+	image15 = Actor(theme_prefix + 'liftv') if is_stoneage_puzzle else None
+	image16 = Actor(theme_prefix + 'liftu') if is_stoneage_puzzle else None
+	image17 = Actor(theme_prefix + 'liftd') if is_stoneage_puzzle else None
+	image18 = Actor(theme_prefix + 'liftl') if is_stoneage_puzzle else None
+	image19 = Actor(theme_prefix + 'liftr') if is_stoneage_puzzle else None
+	status_image = create_theme_image('status')
+	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
 	if is_color_puzzle:
 		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
-		color_cells = []
+		color_cell_images = []
 		for color in COLOR_PUZZLE_RGB_VALUES:
-			color_cell = pygame.Surface((CELL_W, CELL_H))
-			color_cell.fill(color)
-			color_cell.blit(gray_alpha_image, (0, 0))
-			color_cells.append(color_cell)
+			color_cell_image = pygame.Surface((CELL_W, CELL_H))
+			color_cell_image.fill(color)
+			color_cell_image.blit(gray_alpha_image, (0, 0))
+			color_cell_images.append(color_cell_image)
 
-	cells = {
-		CELL_BORDER: cell1,
-		CELL_FLOOR:  cell2,
-		CELL_CRACK:  cell3,
-		CELL_BONES:  cell4,
-		CELL_ROCKS:  cell5,
-		CELL_PLATE:  cell6,
-		CELL_START:  cell7,
-		CELL_FINISH: cell8,
-		CELL_PORTAL: cell9,
-		CELL_GATE0:  cell10,
-		CELL_GATE1:  cell11,
-		CELL_SAND:   cell12,
-		CELL_LIFT:   cell13,
-		CELL_LIFTH:  cell14,
-		CELL_LIFTV:  cell15,
-		CELL_LIFTU:  cell16,
-		CELL_LIFTD:  cell17,
-		CELL_LIFTL:  cell18,
-		CELL_LIFTR:  cell19,
+	cell_images = {
+		CELL_BORDER: image1,
+		CELL_FLOOR:  image2,
+		CELL_CRACK:  image3,
+		CELL_BONES:  image4,
+		CELL_ROCKS:  image5,
+		CELL_PLATE:  image6,
+		CELL_START:  image7,
+		CELL_FINISH: image8,
+		CELL_PORTAL: image9,
+		CELL_GATE0:  image10,
+		CELL_GATE1:  image11,
+		CELL_SAND:   image12,
+		CELL_LIFT:   image13,
+		CELL_LIFTH:  image14,
+		CELL_LIFTV:  image15,
+		CELL_LIFTU:  image16,
+		CELL_LIFTD:  image17,
+		CELL_LIFTL:  image18,
+		CELL_LIFTR:  image19,
 	}
 
 def start_music():
@@ -1133,16 +1156,16 @@ def init_new_level(offset=1, reload_stored=False):
 	num_bonus_health = 0
 	num_bonus_attack = 0
 
+	set_theme(level["theme"])
 	if reload_stored:
 		map = stored_level["map"]
 		color_map = stored_level["color_map"]
 		for enemy_info in stored_level["enemy_infos"]:
 			enemies.append(create_enemy(*enemy_info))
-		for barrel_info in stored_level["barrel_infos"]:
-			barrels.append(create_actor("barrel", *barrel_info))
+		for barrel_cell in stored_level["barrel_cells"]:
+			create_barrel(barrel_cell)
 	else:
 		generate_map()
-	set_theme(level["theme"])
 
 	if "target" not in level:
 		level["target"] = "default-level-target"
@@ -1175,7 +1198,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"color_map": color_map.copy() if is_color_puzzle else None,
 		"char_cell": char.c,
 		"enemy_infos": tuple((enemy.cx, enemy.cy, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
-		"barrel_infos": tuple((barrel.cx, barrel.cy) for barrel in barrels),
+		"barrel_cells": tuple(barrel.c for barrel in barrels),
 	}
 
 def init_new_room():
@@ -1203,21 +1226,21 @@ def draw_map():
 				if is_cloud_mode and not revealed_map[cx, cy]:
 					if bg_image:
 						continue
-					cell = cloud_cell
+					cell_image = cloud_image
 				elif cell_type == CELL_VOID:
 					continue
 				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cx, cy] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
-					color_floor = get_color_puzzle_cell(cx, cy)
+					color_floor = get_color_puzzle_image(cx, cy)
 					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
 					continue
-				elif cell_type in cells:
-					cell = cells[cell_type]
+				elif cell_type in cell_images:
+					cell_image = cell_images[cell_type]
 				else:
 					screen.draw.text(cell_type, center=get_map_cell_pos(cx, cy), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
 					continue
-				cell.left = CELL_W * cx
-				cell.top = CELL_H * cy
-				cell.draw()
+				cell_image.left = CELL_W * cx
+				cell_image.top = CELL_H * cy
+				cell_image.draw()
 
 def get_time_str(time):
 	sec = int(time)
@@ -1228,9 +1251,9 @@ def get_time_str(time):
 def draw_status():
 	cy = MAP_SIZE_Y
 	for cx in MAP_X_RANGE:
-		status_cell.left = CELL_W * cx
-		status_cell.top = CELL_H * cy
-		status_cell.draw()
+		status_image.left = CELL_W * cx
+		status_image.top = CELL_H * cy
+		status_image.draw()
 	status_heart.draw()
 	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
