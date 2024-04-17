@@ -1292,8 +1292,8 @@ def draw():
 		for actor in visible_enemies + [char]:
 			if actor.health is None:
 				continue
-			screen.draw.text(str(actor.health), center=apply_actor_pos_diff(actor, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
-			screen.draw.text(str(actor.attack), center=apply_actor_pos_diff(actor, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			screen.draw.text(str(actor.health), center=apply_diff(actor.pos, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			screen.draw.text(str(actor.attack), center=apply_diff(actor.pos, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 
 	if mode == "end":
 		end_line = _('victory-text') if is_game_won else _('defeat-text')
