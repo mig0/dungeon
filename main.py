@@ -141,6 +141,7 @@ enemies = []
 hearts = []
 swords = []
 barrels = []
+lifts = []
 
 num_bonus_health = 0
 num_bonus_attack = 0
@@ -814,25 +815,23 @@ def generate_random_solvable_barrel_room():
 		else:
 			break
 
+def get_random_floor_cell():
+	while True:
+		cell = randint(room.x1, room.x2), randint(room.y1, room.y2)
+		if map[cell] in CELL_FLOOR_TYPES:
+			return cell
+
+def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None):
+	for n in range(num):
+		cell = get_random_floor_cell()
+		map[cell] = cell_type
+		if callback:
+			if extra:
+				callback(cell, extra)
+			else:
+				callback(cell)
+
 def generate_random_nonsolvable_stoneage_room():
-	global map
-
-	def get_random_floor_cell():
-		while True:
-			cell = randint(room.x1, room.x2), randint(room.y1, room.y2)
-			if map[cell] in CELL_FLOOR_TYPES:
-				return cell
-
-	def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None):
-		for n in range(num):
-			cell = get_random_floor_cell()
-			map[cell] = cell_type
-			if callback:
-				if extra:
-					callback(cell, extra)
-				else:
-					callback(cell)
-
 	replace_random_floor_cell(CELL_VOID, 70)
 	replace_random_floor_cell(CELL_PORTAL, 3)
 	replace_random_floor_cell(CELL_START, 1, set_char_cell)
@@ -840,22 +839,31 @@ def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_GATE0, 3)
 	replace_random_floor_cell(CELL_GATE1, 3)
 	replace_random_floor_cell(CELL_SAND, 10)
-	replace_random_floor_cell(CELL_LIFT, 5)
-	replace_random_floor_cell(CELL_LIFTH, 2)
-	replace_random_floor_cell(CELL_LIFTV, 2)
-	replace_random_floor_cell(CELL_LIFTU)
-	replace_random_floor_cell(CELL_LIFTD)
-	replace_random_floor_cell(CELL_LIFTL)
-	replace_random_floor_cell(CELL_LIFTR)
+
+	replace_random_floor_cell(CELL_VOID, 5, create_lift, LIFT_A)
+	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_H)
+	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_V)
+	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_L)
+	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_R)
+	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_U)
+	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_D)
+
+def create_lift(cell, type):
+	global lifts
+
+	image_name = "lift" + ("" if type == LIFT_A else type)
+	lift = create_theme_actor(image_name, cell)
+	lift.type = type
+	lifts.append(lift)
 
 def get_lift_target(cell, diff):
-	cell_type = map[cell]
-	if cell_type not in LIFT_TYPES or diff not in LIFT_TYPE_DIRECTIONS[cell_type]:
+	lift = get_actor_on_cell(cell, lifts)
+	if not lift or diff not in LIFT_TYPE_DIRECTIONS[lift.type]:
 		return None
 	returned_cell = None
 	while True:
 		next_cell = apply_diff(cell, diff)
-		if not is_cell_in_room(next_cell) or map[next_cell] != CELL_VOID:
+		if not is_cell_in_room(next_cell) or map[next_cell] != CELL_VOID or is_cell_in_actors(next_cell, lifts):
 			return returned_cell
 		returned_cell = cell = next_cell
 
@@ -983,13 +991,6 @@ def set_theme(theme_name):
 	image10 = create_theme_image('gate0') if is_stoneage_puzzle or is_gate_puzzle else None
 	image11 = create_theme_image('gate1') if is_stoneage_puzzle or is_gate_puzzle else None
 	image12 = create_theme_image('sand') if is_stoneage_puzzle else None
-	image13 = Actor(theme_prefix + 'lift') if is_stoneage_puzzle else None
-	image14 = Actor(theme_prefix + 'lifth') if is_stoneage_puzzle else None
-	image15 = Actor(theme_prefix + 'liftv') if is_stoneage_puzzle else None
-	image16 = Actor(theme_prefix + 'liftu') if is_stoneage_puzzle else None
-	image17 = Actor(theme_prefix + 'liftd') if is_stoneage_puzzle else None
-	image18 = Actor(theme_prefix + 'liftl') if is_stoneage_puzzle else None
-	image19 = Actor(theme_prefix + 'liftr') if is_stoneage_puzzle else None
 	status_image = create_theme_image('status')
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
@@ -1015,13 +1016,6 @@ def set_theme(theme_name):
 		CELL_GATE0:  image10,
 		CELL_GATE1:  image11,
 		CELL_SAND:   image12,
-		CELL_LIFT:   image13,
-		CELL_LIFTH:  image14,
-		CELL_LIFTV:  image15,
-		CELL_LIFTU:  image16,
-		CELL_LIFTD:  image17,
-		CELL_LIFTL:  image18,
-		CELL_LIFTR:  image19,
 	}
 
 def start_music():
@@ -1103,7 +1097,8 @@ def init_new_level(offset=1, reload_stored=False):
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
 	global num_bonus_health, num_bonus_attack
-	global enemies, barrels, killed_enemies, hearts, swords, level_time
+	global enemies, barrels, killed_enemies, lifts
+	global hearts, swords, level_time
 	global map, color_map, stored_level
 
 	if reload_stored and offset != 0:
@@ -1152,6 +1147,7 @@ def init_new_level(offset=1, reload_stored=False):
 	swords = []
 	barrels = []
 	enemies = []
+	lifts = []
 	killed_enemies = []
 	num_bonus_health = 0
 	num_bonus_attack = 0
@@ -1164,6 +1160,8 @@ def init_new_level(offset=1, reload_stored=False):
 			enemies.append(create_enemy(*enemy_info))
 		for barrel_cell in stored_level["barrel_cells"]:
 			create_barrel(barrel_cell)
+		for lift_info in stored_level["lift_infos"]:
+			create_lift(*lift_info)
 	else:
 		generate_map()
 
@@ -1199,6 +1197,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"char_cell": char.c,
 		"enemy_infos": tuple((enemy.cx, enemy.cy, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
+		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 	}
 
 def init_new_room():
@@ -1278,6 +1277,8 @@ def draw():
 		visible_enemies = get_revealed_actors(enemies)
 		draw_map()
 		draw_status()
+		for lift in lifts:
+			lift.draw()
 		for barrel in visible_barrels:
 			barrel.draw()
 		for enemy in killed_enemies:
@@ -1479,20 +1480,24 @@ def move_char(diff_x, diff_y):
 				animate(barrel, duration=ARROW_KEYS_RESOLUTION, pos=new_barrel_pos)
 
 	# can move, animate the move
-	animate_time_factor = 1
+	new_char_pos = char.pos
+	if is_move_animate_enabled:
+		animate_time_factor = 1
 
 	# process lift movement if available
 	if lift_target := get_lift_target(old_char_cell, diff):
 		distance = get_distance(old_char_cell, lift_target)
+		lift = get_actor_on_cell(old_char_cell, lifts)
+		move_actor(lift, diff)
 		for i in range(1, distance):
 			move_actor(char, diff)
-		map[lift_target] = map[old_char_cell]
-		map[old_char_cell] = CELL_VOID
+			move_actor(lift, diff)
+			new_char_pos = char.pos
 		if is_move_animate_enabled:
-			pass
-		animate_time_factor = distance - (distance - 1) / 2
+			animate_time_factor = distance - (distance - 1) / 2
+			lift.pos = old_char_pos
+			animate(lift, duration=animate_time_factor * ARROW_KEYS_RESOLUTION, pos=new_char_pos)
 
-	new_char_pos = char.pos
 	if is_move_animate_enabled:
 		char.pos = old_char_pos
 		animate(char, duration=animate_time_factor * ARROW_KEYS_RESOLUTION, pos=new_char_pos)
@@ -1563,7 +1568,8 @@ def update(dt):
 		if not ALLOW_DIAGONAL_MOVES and last_processed_arrow_keys:
 			return
 		pressed_arrow_keys.remove(key)
-		if map[char.cx + diff[0], char.cy + diff[1]] not in CELL_CHAR_MOVE_OBSTACLES or get_lift_target(char.c, diff):
+		next_cell = apply_diff(char.c, diff)
+		if map[next_cell] not in CELL_CHAR_MOVE_OBSTACLES or is_cell_in_actors(next_cell, lifts) or get_lift_target(char.c, diff):
 			last_processed_arrow_keys.append(key)
 
 	for key in list(pressed_arrow_keys):

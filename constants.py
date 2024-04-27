@@ -36,13 +36,6 @@ CELL_START  = 'S'
 CELL_FINISH = 'F'
 CELL_PORTAL = 'O'
 CELL_SAND   = '-'
-CELL_LIFT   = '+'
-CELL_LIFTH  = 'h'
-CELL_LIFTV  = 'v'
-CELL_LIFTL  = 'l'
-CELL_LIFTR  = 'r'
-CELL_LIFTU  = 'u'
-CELL_LIFTD  = 'd'
 CELL_VOID   = ' '
 CELL_INTERNAL1 = '1'
 
@@ -54,14 +47,22 @@ CELL_ENEMY_PLACE_OBSTACLES = (CELL_BORDER, CELL_PORTAL, CELL_GATE0, CELL_GATE1, 
 CELL_CHAR_PLACE_OBSTACLES = (CELL_BORDER, CELL_PLATE, CELL_PORTAL, CELL_GATE0, CELL_GATE1, CELL_SAND, CELL_VOID)
 CELL_CHAR_MOVE_OBSTACLES  = (CELL_BORDER, CELL_GATE0, CELL_VOID)
 
+LIFT_A = '+'
+LIFT_H = 'h'
+LIFT_V = 'v'
+LIFT_L = 'l'
+LIFT_R = 'r'
+LIFT_U = 'u'
+LIFT_D = 'd'
+
 LIFT_TYPE_DIRECTIONS = {
-	CELL_LIFT:  [(-1, 0), (+1, 0), (0, -1), (0, +1)],
-	CELL_LIFTH: [(-1, 0), (+1, 0)],
-	CELL_LIFTV: [(0, -1), (0, +1)],
-	CELL_LIFTL: [(-1, 0)],
-	CELL_LIFTR: [(+1, 0)],
-	CELL_LIFTU: [(0, -1)],
-	CELL_LIFTD: [(0, +1)],
+	LIFT_A:  [(-1, 0), (+1, 0), (0, -1), (0, +1)],
+	LIFT_H: [(-1, 0), (+1, 0)],
+	LIFT_V: [(0, -1), (0, +1)],
+	LIFT_L: [(-1, 0)],
+	LIFT_R: [(+1, 0)],
+	LIFT_U: [(0, -1)],
+	LIFT_D: [(0, +1)],
 }
 LIFT_TYPES = *LIFT_TYPE_DIRECTIONS,
 
