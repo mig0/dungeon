@@ -1343,17 +1343,17 @@ def on_key_down(key):
 				clear_level_and_target_timer()
 		return
 
-	if keyboard.k_0:
+	if keyboard.f1:
 		set_theme("classic")
-	if keyboard.k_1:
+	if keyboard.f2:
 		set_theme("ancient1")
-	if keyboard.k_2:
+	if keyboard.f3:
 		set_theme("modern1")
-	if keyboard.k_3:
+	if keyboard.f4:
 		set_theme("modern2")
-	if keyboard.k_4:
+	if keyboard.f5:
 		set_theme("stoneage1")
-	if keyboard.k_5:
+	if keyboard.f6:
 		set_theme("stoneage2")
 
 	if keyboard.p:
@@ -1415,7 +1415,7 @@ def check_victory():
 	elif is_barrel_puzzle:
 		if is_barrel_puzzle_solved():
 			win_room()
-	elif has_finish or is_gate_puzzle:
+	elif has_finish or is_gate_puzzle or is_stoneage_puzzle:
 		if map[char.c] == CELL_FINISH:
 			win_room()
 	elif is_stoneage_puzzle or is_color_puzzle:
