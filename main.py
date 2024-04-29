@@ -283,6 +283,9 @@ def set_room(idx):
 	if is_color_puzzle:
 		set_color_puzzle()
 
+def get_max_room_distance():
+	return get_distance((room.x1, room.y1), (room.x2, room.y2))
+
 def is_actor_in_room(actor):
 	assert_room()
 
@@ -317,9 +320,9 @@ def get_accessible_neighbors(cell, allow_closed_gate=False):
 	debug(3, "* get_accessible_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
 
-def get_all_accessible_cells():
+def get_accessible_cells(start_cell):
 	accessible_cells = []
-	unprocessed_cells = [char.c]
+	unprocessed_cells = [start_cell]
 	while unprocessed_cells:
 		cell = unprocessed_cells.pop(0)
 		accessible_cells.append(cell)
@@ -328,6 +331,24 @@ def get_all_accessible_cells():
 			if n not in accessible_cells and n not in unprocessed_cells:
 				unprocessed_cells.append(n)
 	return accessible_cells
+
+def get_accessible_cell_distances(start_cell):
+	accessible_cells = []
+	accessible_cell_distances = {start_cell: 0}
+	unprocessed_cells = [start_cell]
+	while unprocessed_cells:
+		cell = unprocessed_cells.pop(0)
+		accessible_distance = accessible_cell_distances[cell]
+		accessible_cells.append(cell)
+		neigbours = get_accessible_neighbors(cell)
+		for n in neigbours:
+			if n not in accessible_cells and n not in unprocessed_cells:
+				unprocessed_cells.append(n)
+				accessible_cell_distances[n] = accessible_distance + 1
+	return accessible_cell_distances
+
+def get_all_accessible_cells():
+	return get_accessible_cells(char.c)
 
 def get_num_accessible_target_directions(start_cell, target_cells):
 	num_accessible_directions = 0
@@ -349,24 +370,25 @@ def get_num_accessible_target_directions(start_cell, target_cells):
 
 	return num_accessible_directions
 
-def find_path(start_cell, target_cell, visited_cells=[]):
-	visited_cells.append(start_cell)
-	path_cells = None
-	for neigh_cell in get_accessible_neighbors(start_cell):
-		if neigh_cell == target_cell:
-			path_cells = [target_cell]
-			break
-		if neigh_cell in visited_cells:
-			continue
-		path_cells = find_path(neigh_cell, target_cell, visited_cells)
-		if path_cells:
-			path_cells.insert(0, neigh_cell)
-			break
-	visited_cells.pop()
+def find_path(start_cell, target_cell):
+	accessible_cell_distances = get_accessible_cell_distances(start_cell)
+	accessible_distance = accessible_cell_distances.get(target_cell)
+	if accessible_distance is None:
+		return None
+	path_cells = [target_cell]
+	current_cell = target_cell
+	while accessible_distance > 1:
+		accessible_distance -= 1
+		for neigh_cell in get_accessible_neighbors(current_cell):
+			neigh_distance = accessible_cell_distances.get(neigh_cell)
+			if neigh_distance == accessible_distance:
+				current_cell = neigh_cell
+				path_cells.insert(0, neigh_cell)
+				break
 	return path_cells
 
 def is_path_found(start_cell, target_cell):
-	return find_path(start_cell, target_cell) is not None
+	return target_cell in get_accessible_cells(start_cell)
 
 def get_passed_gates(start_cell, target_cell):
 	passed_gates = []
@@ -407,7 +429,7 @@ def get_random_floor_cell_type():
 	return CELL_FLOOR_TYPES_FREQUENT[randint(0, len(CELL_FLOOR_TYPES_FREQUENT) - 1)]
 
 def convert_to_floor_if_needed(cx, cy):
-	if map[cx, cy] == CELL_BORDER or map[cx, cy] == CELL_INTERNAL1:
+	if map[cx, cy] in (CELL_BORDER, CELL_VOID, CELL_INTERNAL1):
 		map[cx, cy] = get_random_floor_cell_type()
 
 def get_num_gate_puzzle_plates():
@@ -619,10 +641,11 @@ def generate_spiral_maze():
 def generate_random_maze_room():
 	generate_random_maze_area(room.x1, room.y1, room.x2, room.y2)
 
-def generate_random_free_path(target_c, level=0):
+def generate_random_free_path(target_c, deviation=0, level=0):
 	global map
 
-	place_char_in_closest_accessible_cell(target_c)
+	if randint(0, deviation) == 0:
+		place_char_in_closest_accessible_cell(target_c)
 
 	if char.c == target_c:
 		return True
@@ -632,6 +655,8 @@ def generate_random_free_path(target_c, level=0):
 
 	debug(2, "* [%d] generating free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
 
+	max_distance = get_max_room_distance()
+
 	accessible_cells = get_all_accessible_cells()
 	weighted_neighbors = []
 	for cell in get_actor_neighbors(char, room.x_range, room.y_range):
@@ -640,8 +665,10 @@ def generate_random_free_path(target_c, level=0):
 		if is_cell_in_actors(cell, barrels):
 			continue
 		cx, cy = cell
-		weight = randint(0, 30)
-		weight += (1000 - get_distance(cx, cy, tx, ty)) * 10
+		weight = randint(0, max_distance)
+		weight -= get_distance(cx, cy, tx, ty)
+		if map[cell] in CELL_FLOOR_TYPES:
+			weight -= randint(0, max_distance)
 		weighted_neighbors.append((weight, cell))
 
 	neighbors = [n[1] for n in sorted(weighted_neighbors, reverse=True)]
@@ -651,19 +678,21 @@ def generate_random_free_path(target_c, level=0):
 		return False
 
 	for neigh in neighbors:
-		if map[neigh] != CELL_BORDER:
+		old_cell_type = map[neigh]
+		if old_cell_type not in (CELL_BORDER, CELL_VOID):
 			print("BUG!")
 			return False
 		convert_to_floor_if_needed(*neigh)
-		set_actor_coord(char, cx, cy)
+		set_actor_coord(char, *neigh)
 		debug(3, "* [%d] trying to move to %s" % (level, str(neigh)))
 		debug_map(3, full=True, clean=True, combined=True)
-		is_path_found = generate_random_free_path(target_c, level + 1)
+		is_path_found = generate_random_free_path(target_c, deviation, level + 1)
 		if is_path_found:
 			debug(2, "* [%d] successfully generated free path from (%d, %d) to (%d, %d)" % (level, ox, oy, tx, ty))
-			debug_map(2, full=True, clean=True, combined=True)
+			if level == 0:
+				debug_map(2, full=True, clean=True, combined=True)
 			return True
-		map[neigh] = CELL_BORDER
+		map[neigh] = old_cell_type
 
 	set_actor_coord(char, ox, oy)
 
@@ -848,6 +877,27 @@ def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_U)
 	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_D)
 
+def generate_random_solvable_stoneage_room():
+	global start_cell
+
+	while True:
+		start_cell = get_random_floor_cell()
+		finish_cell = get_random_floor_cell()
+		if get_distance(start_cell, finish_cell) > get_max_room_distance() / 2:
+			break
+
+	map[start_cell] = CELL_START
+	map[finish_cell] = CELL_FINISH
+	set_char_cell(start_cell)
+
+	replace_random_floor_cell(CELL_VOID, (room.x2 - room.x1 + 1) * (room.y2 - room.y1 + 1) - 2)
+	set_actor_coord(char, *char_cell)
+	generate_random_free_path(finish_cell, deviation=4)
+
+	path_cells = find_path(start_cell, finish_cell)[:-1]
+	for i in range(int(randint(0, 60) * len(path_cells) / 100), int(randint(40, 100) * len(path_cells) / 100)):
+		map[path_cells[i]] = CELL_SAND
+
 def create_lift(cell, type):
 	global lifts
 
@@ -897,7 +947,7 @@ def generate_room(idx):
 		generate_grid_maze()
 
 	if is_stoneage_puzzle:
-		generate_random_nonsolvable_stoneage_room()
+		generate_random_solvable_stoneage_room()
 
 	if is_barrel_puzzle:
 		generate_random_solvable_barrel_room()
