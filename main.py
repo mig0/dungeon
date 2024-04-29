@@ -2,7 +2,7 @@
 
 import random
 import pygame
-from numpy import ndarray
+from numpy import ndarray, chararray
 from copy import deepcopy
 from random import randint
 from constants import *
@@ -181,7 +181,7 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 			print("    ", end="")
 		if dual or combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
-				cell_ch = CELL_FLOOR if clean and map[cx, cy] in CELL_FLOOR_TYPES else map[cx, cy]
+				cell_ch = CELL_FLOOR if clean and map[cx, cy] in CELL_FLOOR_TYPES else map[cx, cy] or ' '
 				if is_cell_in_actors((cx, cy), enemies):
 					cell_ch = '&'
 				if is_cell_in_actors((cx, cy), barrels):
@@ -951,8 +951,7 @@ def generate_room(idx):
 def generate_map():
 	global map, color_map
 
-	# currently python3-numpy-1.24.4 has a bug that requires copy() call here
-	map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=str).copy()
+	map = chararray((MAP_SIZE_X, MAP_SIZE_Y), itemsize=5, unicode=True)
 	for cy in MAP_Y_RANGE:
 		for cx in MAP_X_RANGE:
 			if cx == 0 or cx == PLAY_SIZE_X + 1 or cy == 0 or cy == PLAY_SIZE_Y + 1:
