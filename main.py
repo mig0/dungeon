@@ -7,6 +7,7 @@ from copy import deepcopy
 from random import randint
 from constants import *
 from translations import *
+from cellactor import *
 
 lang = 'en'
 
@@ -31,33 +32,9 @@ def _(str_key):
 
 autodetect_lang()
 
-def get_map_cell_pos(cx, cy):
-	return (CELL_W * (cx + 0.5), CELL_H * (cy + 0.5))
-
-def get_actor_pos(actor):
-	return get_map_cell_pos(*actor.c)
-
-def apply_diff(orig, diff):
-	return (orig[0] + diff[0], orig[1] + diff[1])
-
-def apply_map_cell_pos_diff(c, diff):
-	return apply_diff(get_map_cell_pos(*c), diff)
-
-def apply_actor_pos_diff(actor, pos):
-	return apply_map_cell_pos_diff(actor.c, pos)
-
-def set_actor_coord(actor, cx, cy):
-	actor.c = (cx, cy)
-	actor.cx = cx
-	actor.cy = cy
-	actor.x, actor.y = get_map_cell_pos(cx, cy)
-
-def move_actor(actor, diff):
-	set_actor_coord(actor, *apply_diff(actor.c, diff))
-
-def create_actor(image_name, cx, cy):
-	actor = Actor(image_name)
-	set_actor_coord(actor, cx, cy)
+def create_actor(image_name, cell):
+	actor = CellActor(image_name)
+	actor.c = cell
 	return actor
 
 def get_actor_on_cell(cell, actors):
@@ -91,10 +68,10 @@ def get_all_neighbors(cx, cy, include_self=False):
 	return neighbors
 
 # game sprites
-char = create_actor('stand', 1, 1)
+char = CellActor('stand')
 
-status_heart = Actor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
-status_sword = Actor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
+status_heart = CellActor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
+status_sword = CellActor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
 
 # game variables
 is_game_won = False
@@ -197,10 +174,10 @@ def get_theme_image_name(image_name):
 	return theme_prefix + image_name
 
 def create_theme_image(image_name):
-	return Actor(get_theme_image_name(image_name))
+	return CellActor(get_theme_image_name(image_name))
 
 def create_theme_actor(image_name, cell):
-	return create_actor(get_theme_image_name(image_name), *cell)
+	return create_actor(get_theme_image_name(image_name), cell)
 
 def get_num_color_puzzle_values():
 	return level["color_puzzle_values"] if "color_puzzle_values" in level else MAX_COLOR_PUZZLE_VALUES
@@ -410,18 +387,18 @@ def place_char_in_closest_accessible_cell(c):
 		if best_distance is None or distance < best_distance:
 			best_distance = distance
 			best_cell = cell
-	set_actor_coord(char, *best_cell)
+	char.c = best_cell
 
 def place_char_in_first_free_spot():
 	for cy in room.y_range:
 		for cx in room.x_range:
 			if is_cell_accessible(cx, cy, place=True):
-				set_actor_coord(char, cx, cy)
+				char.c = (cx, cy)
 				return
 
 	print("Was not able to find free spot for char, fix the level or a bug")
 	if DEBUG_LEVEL:
-		set_actor_coord(char, 0, 0)
+		char.c = (0, 0)
 	else:
 		quit()
 
@@ -477,13 +454,13 @@ def check_gate_puzzle_solution(finish_cell, gates, depth=0, visited_plate_gate_s
 				solution = visited_plate_gate_states[plate_gate_states]
 			else:
 				visited_plate_gate_states[plate_gate_states] = None
-				set_actor_coord(char, *plate)
+				char.c = plate
 				press_gate_puzzle_plate()
 
 				solution = check_gate_puzzle_solution(finish_cell, gates, depth + 1, visited_plate_gate_states)
 
 				press_gate_puzzle_plate()
-				set_actor_coord(char, *start_cell)
+				char.c = start_cell
 				visited_plate_gate_states[plate_gate_states] = solution
 
 			if solution and (not best_solution or len(solution["used_plates"]) < len(best_solution["used_plates"]) \
@@ -683,7 +660,7 @@ def generate_random_free_path(target_c, deviation=0, level=0):
 			print("BUG!")
 			return False
 		convert_to_floor_if_needed(*neigh)
-		set_actor_coord(char, *neigh)
+		char.c = neigh
 		debug(3, "* [%d] trying to move to %s" % (level, str(neigh)))
 		debug_map(3, full=True, clean=True, combined=True)
 		is_path_found = generate_random_free_path(target_c, deviation, level + 1)
@@ -694,7 +671,7 @@ def generate_random_free_path(target_c, deviation=0, level=0):
 			return True
 		map[neigh] = old_cell_type
 
-	set_actor_coord(char, ox, oy)
+	char.c = (ox, oy)
 
 	return False
 
@@ -760,11 +737,11 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 		# if the char position is not None, first create random free path to the selected adjacent cell
 		old_char_c = char.c
 		if char.c is None:
-			set_actor_coord(char, cx, cy)
+			char.c = (cx, cy)
 		if generate_random_free_path(neighbor):
 			# pull the barrel to the char
-			set_actor_coord(barrel, char.cx, char.cy)
-			set_actor_coord(char, new_char_cx, new_char_cy)
+			barrel.c = char.c
+			char.c = (new_char_cx, new_char_cy)
 
 			visited_cell_pairs.append((neighbor, char.c))
 
@@ -780,7 +757,7 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 
 		# can't create free path for char or can't pull barrel, restore the original state
 		char.c = old_char_c
-		set_actor_coord(barrel, barrel_cx, barrel_cy)
+		barrel.c = (barrel_cx, barrel_cy)
 		if was_border1_replaced:
 			map[cx, cy] = CELL_BORDER
 		if was_border2_replaced:
@@ -836,10 +813,10 @@ def generate_random_solvable_barrel_room():
 			cx, cy = c
 			if cx > char.cx or cy > char.cy:
 				continue
-			if not map[cx, cy] in CELL_CHAR_MOVE_OBSTACLES:
-				set_actor_coord(char, cx, cy)
+			if not map[c] in CELL_CHAR_MOVE_OBSTACLES:
+				char.c = c
 				if room.idx:
-					set_char_cell(char.c)
+					set_char_cell(c)
 				break
 		else:
 			break
@@ -891,7 +868,7 @@ def generate_random_solvable_stoneage_room():
 	set_char_cell(start_cell)
 
 	replace_random_floor_cell(CELL_VOID, (room.x2 - room.x1 + 1) * (room.y2 - room.y1 + 1) - 2)
-	set_actor_coord(char, *char_cell)
+	char.c = char_cell
 	generate_random_free_path(finish_cell, deviation=4)
 
 	path_cells = find_path(start_cell, finish_cell)[:-1]
@@ -917,10 +894,10 @@ def get_lift_target(cell, diff):
 			return returned_cell
 		returned_cell = cell = next_cell
 
-def create_enemy(cx, cy, health=None, attack=None, bonus=None):
-	global num_bonus_health, num_bonus_attack
+def create_enemy(cell, health=None, attack=None, bonus=None):
+	global enemies, num_bonus_health, num_bonus_attack
 
-	enemy = create_actor("skeleton", cx, cy)
+	enemy = create_actor("skeleton", cell)
 	enemy.health = health if health is not None else randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
 	enemy.attack = attack if attack is not None else randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
 	enemy.bonus  = bonus  if bonus  is not None else randint(0, 2)
@@ -928,7 +905,7 @@ def create_enemy(cx, cy, health=None, attack=None, bonus=None):
 		num_bonus_health += 1
 	elif enemy.bonus == BONUS_ATTACK:
 		num_bonus_attack += 1
-	return enemy
+	enemies.append(enemy)
 
 def generate_room(idx):
 	set_room(idx)
@@ -953,7 +930,7 @@ def generate_room(idx):
 		generate_random_solvable_barrel_room()
 
 	if has_finish or is_gate_puzzle:
-		set_actor_coord(char, room.x1, room.y1)
+		char.c = (room.x1, room.y1)
 		if room.idx == 0:
 			set_char_cell(char.c)
 		accessible_cells = get_all_accessible_cells()
@@ -996,7 +973,7 @@ def generate_room(idx):
 					positioned = False
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
-		enemies.append(create_enemy(cx, cy))
+		create_enemy((cx, cy))
 
 def generate_map():
 	global map, color_map
@@ -1206,7 +1183,7 @@ def init_new_level(offset=1, reload_stored=False):
 		map = stored_level["map"]
 		color_map = stored_level["color_map"]
 		for enemy_info in stored_level["enemy_infos"]:
-			enemies.append(create_enemy(*enemy_info))
+			create_enemy(*enemy_info)
 		for barrel_cell in stored_level["barrel_cells"]:
 			create_barrel(barrel_cell)
 		for lift_info in stored_level["lift_infos"]:
@@ -1228,7 +1205,7 @@ def init_new_level(offset=1, reload_stored=False):
 	if reload_stored:
 		char_cell = stored_level["char_cell"]
 	if char_cell:
-		set_actor_coord(char, *char_cell)
+		char.c = char_cell
 	else:
 		place_char_in_first_free_spot()
 
@@ -1237,6 +1214,10 @@ def init_new_level(offset=1, reload_stored=False):
 		revealed_map.fill(False)
 	reveal_map_near_char()
 
+	char.reset_inplace_animation()
+	if map[char.c] == CELL_START:
+		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(180, 720), flip=(True, True, 1))
+
 	mode = "game"
 	start_music()
 
@@ -1244,7 +1225,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"map": map.copy(),
 		"color_map": color_map.copy() if is_color_puzzle else None,
 		"char_cell": char.c,
-		"enemy_infos": tuple((enemy.cx, enemy.cy, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
+		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 	}
@@ -1284,7 +1265,7 @@ def draw_map():
 				elif cell_type in cell_images:
 					cell_image = cell_images[cell_type]
 				else:
-					screen.draw.text(cell_type, center=get_map_cell_pos(cx, cy), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
+					screen.draw.text(cell_type, center=cell_to_pos((cx, cy)), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
 					continue
 				cell_image.left = CELL_W * cx
 				cell_image.top = CELL_H * cy
@@ -1475,6 +1456,7 @@ def check_victory():
 			win_room()
 	elif has_finish or is_gate_puzzle or is_stoneage_puzzle:
 		if map[char.c] == CELL_FINISH:
+			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
 			win_room()
 	elif is_stoneage_puzzle or is_color_puzzle:
 		pass
@@ -1488,7 +1470,7 @@ def move_char(diff_x, diff_y):
 	old_char_pos = char.pos
 	old_char_cell = char.c
 	# try to move forward, and prepare to cancel if the move is impossible
-	move_actor(char, diff)
+	char.move(diff)
 
 	# collision with enemies
 	enemy_index = char.collidelist(enemies)
@@ -1496,27 +1478,26 @@ def move_char(diff_x, diff_y):
 		enemy = enemies[enemy_index]
 		enemy.health -= char.attack
 		char.health -= enemy.attack
-		enemy.pos = get_actor_pos(enemy)
 		# can't move if we face enemy, cancel the move
-		move_actor(char, undo_diff)
+		char.move(undo_diff)
 		# animate beat or kill
-		enemy.pos = apply_actor_pos_diff(enemy, (diff_x * 12, diff_y * 12))
 		if enemy.health > 0:
+			enemy.move_pos((diff_x * 12, diff_y * 12))
 			play_sound("beat")
-			animate(enemy, tween='bounce_end', duration=0.4, pos=get_actor_pos(enemy))
+			animate(enemy, tween='bounce_end', duration=0.4, pos=enemy.get_pos())
 		else:
 			play_sound("kill")
 			enemies.remove(enemy)
 			# fallen bonuses upon enemy death
 			if enemy.bonus == BONUS_HEALTH:
-				heart = create_actor('heart', *enemy.c)
+				heart = create_actor('heart', enemy.c)
 				hearts.append(heart)
 			elif enemy.bonus == BONUS_ATTACK:
-				sword = create_actor('sword', *enemy.c)
+				sword = create_actor('sword', enemy.c)
 				swords.append(sword)
-			enemy.angle = (randint(-1, 1) + 2) * 90
+			enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
 			killed_enemies.append(enemy)
-			clock.schedule(kill_enemy, 0.3)
+			clock.schedule(kill_enemy, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
 		return
 
 	# collision with barrels
@@ -1525,12 +1506,12 @@ def move_char(diff_x, diff_y):
 		barrel = barrels[barrel_index]
 		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
 			# can't push, cancel the move
-			move_actor(char, undo_diff)
+			char.move(undo_diff)
 			return
 		else:
 			# can push, animate the push
 			old_barrel_pos = barrel.pos
-			move_actor(barrel, diff)
+			barrel.move(diff)
 			new_barrel_pos = barrel.pos
 			if is_move_animate_enabled:
 				barrel.pos = old_barrel_pos
@@ -1545,10 +1526,10 @@ def move_char(diff_x, diff_y):
 	if lift_target := get_lift_target(old_char_cell, diff):
 		distance = get_distance(old_char_cell, lift_target)
 		lift = get_actor_on_cell(old_char_cell, lifts)
-		move_actor(lift, diff)
+		lift.move(diff)
 		for i in range(1, distance):
-			move_actor(char, diff)
-			move_actor(lift, diff)
+			char.move(diff)
+			lift.move(diff)
 			new_char_pos = char.pos
 		if is_move_animate_enabled:
 			animate_time_factor = distance - (distance - 1) / 2
@@ -1576,6 +1557,9 @@ def update(dt):
 	game_time += dt
 	level_time += dt
 	idle_time += dt
+
+	for actor in active_inplace_animation_actors:
+		actor.update_inplace_animation(level_time)
 
 	if level_title_timer > 0:
 		level_title_timer -= 1
