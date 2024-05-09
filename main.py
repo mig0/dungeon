@@ -1406,6 +1406,14 @@ def on_key_down(key):
 	if keyboard.f6:
 		set_theme("stoneage2")
 
+	if keyboard.f11:
+		pygame.display.toggle_fullscreen()
+		# workaround for pygame bug similar to #2380; this set_mode should not be needed
+		if not pygame.display.is_fullscreen():
+			pygame.display.set_mode((WIDTH, HEIGHT))
+	if keyboard.f12:
+		pygame.mouse.set_visible(not pygame.mouse.get_visible())
+
 	if keyboard.p:
 		init_new_level(-1)
 	if keyboard.r:
