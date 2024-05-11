@@ -1,5 +1,6 @@
 import pygame
 from pgzero.actor import Actor, POS_TOPLEFT, ANCHOR_CENTER, transform_anchor
+from pgzero.animation import animate
 from typing import Union, Tuple
 from constants import CELL_W, CELL_H
 
@@ -16,6 +17,9 @@ def cell_to_pos(cell):
 class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, **kwargs):
 		self.reset_inplace()
+		self.unset_inplace_animation()
+		self._unset_animation()
+
 		image_str = None
 		if isinstance(image, str):
 			image_str = image
@@ -102,6 +106,9 @@ class CellActor(Actor):
 		self._inplace_animation_scale   = None
 		self._inplace_animation_angle   = None
 		self._inplace_animation_flip    = None
+		self._inplace_animation_start_time  = None
+		self._inplace_animation_duration    = None
+		self._inplace_animation_on_finished = None
 
 	def reset_inplace_animation(self, hard=True):
 		self.unset_inplace_animation()
@@ -121,7 +128,7 @@ class CellActor(Actor):
 		if is_changed:
 			self.transform_surf()
 
-	def activate_inplace_animation(self, start_time, duration, opacity:Tuple[float, float]=None, scale:Tuple[float, float]=None, angle:Tuple[float, float]=None, flip:Tuple[bool, bool, int]=None):
+	def activate_inplace_animation(self, start_time, duration, opacity:Tuple[float, float]=None, scale:Tuple[float, float]=None, angle:Tuple[float, float]=None, flip:Tuple[bool, bool, int]=None, on_finished=None):
 		self.unset_inplace_animation()
 
 		is_defined = False
@@ -144,8 +151,9 @@ class CellActor(Actor):
 			print("activate_inplace_animation called without opacity, scale or angle or flip, skipping")
 			return
 
-		self._inplace_animation_start_time = start_time
-		self._inplace_animation_duration   = duration
+		self._inplace_animation_start_time  = start_time
+		self._inplace_animation_duration    = duration
+		self._inplace_animation_on_finished = on_finished
 
 		self.transform_surf()
 
@@ -177,4 +185,24 @@ class CellActor(Actor):
 		self.transform_surf()
 
 		if factor == 1:
+			on_finished = self._inplace_animation_on_finished
 			self.unset_inplace_animation()
+			if on_finished:
+				on_finished()
+
+	def _unset_animation(self, on_finished=None):
+		self.animation = None
+		if on_finished:
+			on_finished()
+
+	def animate(self, duration, tween="linear", pos=None, on_finished=None):
+		if pos is None:
+			pos = self.get_pos()
+		self.animation = animate(self, tween=tween, duration=duration, pos=pos, on_finished=lambda: self._unset_animation(on_finished))
+
+	def is_animated_external(self):
+		return self.animation is not None
+
+	def is_animated(self):
+		return self.is_inplace_animation_active() or self.is_animated_external()
+

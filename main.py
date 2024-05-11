@@ -106,6 +106,7 @@ last_autogeneration_time = 0
 last_time_arrow_keys_processed = 0
 pressed_arrow_keys = []
 last_processed_arrow_keys = []
+last_processed_arrow_diff = (0, 0)
 
 map = None  # will be generated
 color_map = None
@@ -119,6 +120,8 @@ hearts = []
 swords = []
 barrels = []
 lifts = []
+
+portal_destinations = {}
 
 num_bonus_health = 0
 num_bonus_attack = 0
@@ -827,24 +830,31 @@ def get_random_floor_cell():
 		if map[cell] in CELL_FLOOR_TYPES:
 			return cell
 
-def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None):
+def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None, extra_num=None):
 	for n in range(num):
 		cell = get_random_floor_cell()
 		map[cell] = cell_type
+		extra_cells = []
+		if extra_num:
+			for i in range(extra_num):
+				extra_cell = get_random_floor_cell()
+				map[extra_cell] = cell_type
+				extra_cells.append(extra_cell)
 		if callback:
 			if extra:
-				callback(cell, extra)
+				callback(cell, *extra, *extra_cells)
 			else:
-				callback(cell)
+				callback(cell, *extra_cells)
 
 def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_VOID, 70)
-	replace_random_floor_cell(CELL_PORTAL, 3)
 	replace_random_floor_cell(CELL_START, 1, set_char_cell)
 	replace_random_floor_cell(CELL_FINISH)
 	replace_random_floor_cell(CELL_GATE0, 3)
 	replace_random_floor_cell(CELL_GATE1, 3)
 	replace_random_floor_cell(CELL_SAND, 10)
+
+	replace_random_floor_cell(CELL_PORTAL, 2, create_portal_pair, extra_num=1)
 
 	replace_random_floor_cell(CELL_VOID, 5, create_lift, LIFT_A)
 	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_H)
@@ -874,6 +884,16 @@ def generate_random_solvable_stoneage_room():
 	path_cells = find_path(start_cell, finish_cell)[:-1]
 	for i in range(int(randint(0, 60) * len(path_cells) / 100), int(randint(40, 100) * len(path_cells) / 100)):
 		map[path_cells[i]] = CELL_SAND
+
+	replace_random_floor_cell(CELL_PORTAL, 1, create_portal_pair, extra_num=1)
+
+def create_portal_pair(cell1, cell2):
+	if cell1 == cell2:
+		print("BUG: Portal pair can't be the same cell, exiting")
+		quit()
+
+	portal_destinations[cell1] = cell2
+	portal_destinations[cell2] = cell1
 
 def create_lift(cell, type):
 	global lifts
@@ -1428,6 +1448,9 @@ def on_key_down(key):
 	if keyboard.space and is_gate_puzzle and map[char.c] == CELL_PLATE:
 		press_gate_puzzle_plate()
 
+	if keyboard.space and map[char.c] == CELL_PORTAL:
+		teleport_char()
+
 def loose_game():
 	global mode, is_game_won
 
@@ -1463,6 +1486,14 @@ def check_victory():
 	elif not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
 		win_room()
 
+def teleport_char():
+	if map[char.c] == CELL_PORTAL:
+		if char._scale != 0:
+			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0), angle=(0, 540), on_finished=teleport_char)
+		else:
+			char.c = portal_destinations[char.c]
+			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(540, 0))
+
 def move_char(diff_x, diff_y):
 	diff = (diff_x, diff_y)
 	undo_diff = (-diff_x, -diff_y)
@@ -1482,9 +1513,9 @@ def move_char(diff_x, diff_y):
 		char.move(undo_diff)
 		# animate beat or kill
 		if enemy.health > 0:
-			enemy.move_pos((diff_x * 12, diff_y * 12))
+			enemy.move_pos((diff_x * ENEMY_BEAT_OFFSET, diff_y * ENEMY_BEAT_OFFSET))
 			play_sound("beat")
-			animate(enemy, tween='bounce_end', duration=0.4, pos=enemy.get_pos())
+			enemy.animate(ENEMY_BEAT_ANIMATION_TIME, 'bounce_end')
 		else:
 			play_sound("kill")
 			enemies.remove(enemy)
@@ -1512,10 +1543,9 @@ def move_char(diff_x, diff_y):
 			# can push, animate the push
 			old_barrel_pos = barrel.pos
 			barrel.move(diff)
-			new_barrel_pos = barrel.pos
 			if is_move_animate_enabled:
 				barrel.pos = old_barrel_pos
-				animate(barrel, duration=ARROW_KEYS_RESOLUTION, pos=new_barrel_pos)
+				barrel.animate(ARROW_KEYS_RESOLUTION)
 
 	# can move, animate the move
 	new_char_pos = char.pos
@@ -1530,15 +1560,16 @@ def move_char(diff_x, diff_y):
 		for i in range(1, distance):
 			char.move(diff)
 			lift.move(diff)
-			new_char_pos = char.pos
 		if is_move_animate_enabled:
 			animate_time_factor = distance - (distance - 1) / 2
 			lift.pos = old_char_pos
-			animate(lift, duration=animate_time_factor * ARROW_KEYS_RESOLUTION, pos=new_char_pos)
+			lift.animate(animate_time_factor * ARROW_KEYS_RESOLUTION)
 
 	if is_move_animate_enabled:
 		char.pos = old_char_pos
-		animate(char, duration=animate_time_factor * ARROW_KEYS_RESOLUTION, pos=new_char_pos)
+		char.animate(animate_time_factor * ARROW_KEYS_RESOLUTION, on_finished=teleport_char)
+	else:
+		teleport_char()
 
 	if map[old_char_cell] == CELL_SAND:
 		map[old_char_cell] = CELL_VOID
@@ -1548,7 +1579,7 @@ def move_char(diff_x, diff_y):
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
 	global game_time, level_time, idle_time, last_autogeneration_time
-	global last_time_arrow_keys_processed, last_processed_arrow_keys
+	global last_time_arrow_keys_processed, last_processed_arrow_keys, last_processed_arrow_diff
 
 	if mode == 'start':
 		init_new_level()
@@ -1591,6 +1622,9 @@ def update(dt):
 			num_bonus_attack -= 1
 			break
 
+	if char.is_animated():
+		return
+
 	keys = pygame.key.get_pressed()
 	for key in (ARROW_KEY_R, ARROW_KEY_L, ARROW_KEY_D, ARROW_KEY_U):
 		if keys[key] and key not in pressed_arrow_keys:
@@ -1604,14 +1638,18 @@ def update(dt):
 
 	last_time_arrow_keys_processed = game_time
 	last_processed_arrow_keys = []
+	last_processed_arrow_diff = (0, 0)
 
 	def set_arrow_key_to_process(key, diff):
+		global last_processed_arrow_keys, last_processed_arrow_diff
 		if not ALLOW_DIAGONAL_MOVES and last_processed_arrow_keys:
 			return
 		pressed_arrow_keys.remove(key)
-		next_cell = apply_diff(char.c, diff)
+		next_diff = apply_diff(last_processed_arrow_diff, diff)
+		next_cell = apply_diff(char.c, next_diff)
 		if map[next_cell] not in CELL_CHAR_MOVE_OBSTACLES or is_cell_in_actors(next_cell, lifts) or get_lift_target(char.c, diff):
 			last_processed_arrow_keys.append(key)
+			last_processed_arrow_diff = next_diff
 
 	for key in list(pressed_arrow_keys):
 		if key == ARROW_KEY_R and key not in last_processed_arrow_keys and ARROW_KEY_L not in last_processed_arrow_keys:
