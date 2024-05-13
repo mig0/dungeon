@@ -126,6 +126,9 @@ portal_destinations = {}
 num_bonus_health = 0
 num_bonus_attack = 0
 
+num_keys1 = 0
+num_keys2 = 0
+
 killed_enemies = []
 
 level_title_timer = 0
@@ -854,11 +857,13 @@ def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_VOID, 70)
 	replace_random_floor_cell(CELL_START, 1, set_char_cell)
 	replace_random_floor_cell(CELL_FINISH)
-	replace_random_floor_cell(CELL_GATE0, 3)
-	replace_random_floor_cell(CELL_GATE1, 3)
 	replace_random_floor_cell(CELL_SAND, 10)
 
 	replace_random_floor_cell(CELL_PORTAL, 2, create_portal_pair, extra_num=1)
+	replace_random_floor_cell(CELL_KEY1, 1)
+	replace_random_floor_cell(CELL_KEY2, 1)
+	replace_random_floor_cell(CELL_LOCK1, 1)
+	replace_random_floor_cell(CELL_LOCK2, 1)
 
 	replace_random_floor_cell(CELL_VOID, 5, create_lift, LIFT_A)
 	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_H)
@@ -890,6 +895,10 @@ def generate_random_solvable_stoneage_room():
 		map[path_cells[i]] = CELL_SAND
 
 	replace_random_floor_cell(CELL_PORTAL, 1, create_portal_pair, extra_num=1)
+	replace_random_floor_cell(CELL_KEY1, 1)
+	replace_random_floor_cell(CELL_KEY2, 1)
+	replace_random_floor_cell(CELL_LOCK1, 1)
+	replace_random_floor_cell(CELL_LOCK2, 1)
 
 def create_portal_pair(cell1, cell2):
 	if cell1 == cell2:
@@ -1038,9 +1047,13 @@ def set_theme(theme_name):
 	image7 = create_theme_image('start') if has_start or is_stoneage_puzzle else None
 	image8 = create_theme_image('finish') if has_finish or is_stoneage_puzzle or is_gate_puzzle else None
 	image9 = create_theme_image('portal') if is_stoneage_puzzle else None
-	image10 = create_theme_image('gate0') if is_stoneage_puzzle or is_gate_puzzle else None
-	image11 = create_theme_image('gate1') if is_stoneage_puzzle or is_gate_puzzle else None
+	image10 = create_theme_image('gate0') if is_gate_puzzle else None
+	image11 = create_theme_image('gate1') if is_gate_puzzle else None
 	image12 = create_theme_image('sand') if is_stoneage_puzzle else None
+	image13 = create_theme_image('key1') if is_stoneage_puzzle else None
+	image14 = create_theme_image('key2') if is_stoneage_puzzle else None
+	image15 = create_theme_image('lock1') if is_stoneage_puzzle else None
+	image16 = create_theme_image('lock2') if is_stoneage_puzzle else None
 	status_image = create_theme_image('status')
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
@@ -1066,6 +1079,10 @@ def set_theme(theme_name):
 		CELL_GATE0:  image10,
 		CELL_GATE1:  image11,
 		CELL_SAND:   image12,
+		CELL_KEY1:   image13,
+		CELL_KEY2:   image14,
+		CELL_LOCK1:  image15,
+		CELL_LOCK2:  image16,
 	}
 
 def start_music():
@@ -1147,6 +1164,7 @@ def init_new_level(offset=1, reload_stored=False):
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
 	global num_bonus_health, num_bonus_attack
+	global num_keys1, num_keys2
 	global enemies, barrels, killed_enemies, lifts
 	global hearts, swords, level_time
 	global map, color_map, stored_level
@@ -1201,6 +1219,9 @@ def init_new_level(offset=1, reload_stored=False):
 	killed_enemies = []
 	num_bonus_health = 0
 	num_bonus_attack = 0
+
+	num_keys1 = 0
+	num_keys2 = 0
 
 	set_theme(level["theme"])
 	if reload_stored:
@@ -1491,12 +1512,37 @@ def check_victory():
 		win_room()
 
 def teleport_char():
+	if map[char.c] != CELL_PORTAL:
+		print("Called teleport_char not on CELL_PORTAL")
+		quit()
+
+	if char._scale != 0:
+		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0), angle=(0, 540), on_finished=teleport_char)
+	else:
+		char.c = portal_destinations[char.c]
+		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(540, 0))
+
+def leave_cell(old_char_cell):
+	if map[old_char_cell] == CELL_SAND:
+		map[old_char_cell] = CELL_VOID
+
+def enter_cell():
+	global num_keys1, num_keys2
+
 	if map[char.c] == CELL_PORTAL:
-		if char._scale != 0:
-			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0), angle=(0, 540), on_finished=teleport_char)
-		else:
-			char.c = portal_destinations[char.c]
-			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(540, 0))
+		teleport_char()
+	elif map[char.c] == CELL_KEY1:
+		map[char.c] = CELL_FLOOR
+		num_keys1 += 1
+	elif map[char.c] == CELL_KEY2:
+		map[char.c] = CELL_FLOOR
+		num_keys2 += 1
+	elif map[char.c] == CELL_LOCK1:
+		map[char.c] = CELL_FLOOR
+		num_keys1 -= 1
+	elif map[char.c] == CELL_LOCK2:
+		map[char.c] = CELL_FLOOR
+		num_keys2 -= 1
 
 def move_char(diff_x, diff_y):
 	diff = (diff_x, diff_y)
@@ -1569,16 +1615,24 @@ def move_char(diff_x, diff_y):
 			lift.pos = old_char_pos
 			lift.animate(animate_time_factor * ARROW_KEYS_RESOLUTION)
 
+	leave_cell(old_char_cell)
+
 	if is_move_animate_enabled:
 		char.pos = old_char_pos
-		char.animate(animate_time_factor * ARROW_KEYS_RESOLUTION, on_finished=teleport_char)
+		char.animate(animate_time_factor * ARROW_KEYS_RESOLUTION, on_finished=enter_cell)
 	else:
-		teleport_char()
-
-	if map[old_char_cell] == CELL_SAND:
-		map[old_char_cell] = CELL_VOID
+		enter_cell()
 
 	reveal_map_near_char()
+
+def can_move(diff):
+	dest_cell = apply_diff(char.c, diff)
+
+	return map[dest_cell] not in CELL_CHAR_MOVE_OBSTACLES \
+		or map[dest_cell] == CELL_LOCK1 and num_keys1 > 0 \
+		or map[dest_cell] == CELL_LOCK2 and num_keys2 > 0 \
+		or is_cell_in_actors(dest_cell, lifts) \
+		or get_lift_target(char.c, diff)
 
 def update(dt):
 	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
@@ -1650,8 +1704,7 @@ def update(dt):
 			return
 		pressed_arrow_keys.remove(key)
 		next_diff = apply_diff(last_processed_arrow_diff, diff)
-		next_cell = apply_diff(char.c, next_diff)
-		if map[next_cell] not in CELL_CHAR_MOVE_OBSTACLES or is_cell_in_actors(next_cell, lifts) or get_lift_target(char.c, diff):
+		if can_move(next_diff):
 			last_processed_arrow_keys.append(key)
 			last_processed_arrow_diff = next_diff
 
