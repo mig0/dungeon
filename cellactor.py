@@ -6,6 +6,8 @@ from constants import CELL_W, CELL_H
 
 MAX_ALPHA = 255  # based on pygame
 
+NONE_CELL = (-1000, -1000)
+
 active_inplace_animation_actors = []
 
 def apply_diff(orig, diff):
@@ -16,6 +18,7 @@ def cell_to_pos(cell):
 
 class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, **kwargs):
+		self._cell = None
 		self.reset_inplace()
 		self.unset_inplace_animation()
 		self._unset_animation()
@@ -30,7 +33,7 @@ class CellActor(Actor):
 
 	@property
 	def c(self):
-		return self._cell
+		return None if self._cell == NONE_CELL else self._cell
 
 	@property
 	def cx(self):
@@ -42,7 +45,7 @@ class CellActor(Actor):
 
 	@c.setter
 	def c(self, cell):
-		self._cell = cell
+		self._cell = NONE_CELL if cell is None else cell
 		self.x, self.y = self.get_pos()
 
 	def get_pos(self):

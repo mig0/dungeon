@@ -156,18 +156,22 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 	for cy in MAP_Y_RANGE if full else PLAY_Y_RANGE:
 		if not combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
-				print(CELL_FLOOR if clean and map[cx, cy] in CELL_FLOOR_TYPES else map[cx, cy], end="")
+				cell = (cx, cy)
+				print(CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell], end="")
 		if dual:
 			print("    ", end="")
 		if dual or combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
-				cell_ch = CELL_FLOOR if clean and map[cx, cy] in CELL_FLOOR_TYPES else map[cx, cy] or ' '
-				if is_cell_in_actors((cx, cy), enemies):
-					cell_ch = '&'
-				if is_cell_in_actors((cx, cy), barrels):
-					cell_ch = '*'
-				if char.c is not None and is_cell_in_actors((cx, cy), [char]):
-					cell_ch = '@'
+				cell = (cx, cy)
+				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell] or ' '
+				if is_cell_in_actors(cell, enemies):
+					cell_ch = '🕱'
+				if is_cell_in_actors(cell, barrels):
+					cell_ch = '☐'
+				if is_cell_in_actors(cell, lifts):
+					cell_ch = LIFT_CHARS[get_actor_on_cell(cell, lifts).type]
+				if char.c is not None and char.c == cell:
+					cell_ch = '☻'
 				print(cell_ch, end="")
 		print()
 	if endl:
@@ -841,8 +845,8 @@ def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None, extra
 				map[extra_cell] = cell_type
 				extra_cells.append(extra_cell)
 		if callback:
-			if extra:
-				callback(cell, *extra, *extra_cells)
+			if extra is not None:
+				callback(cell, extra, *extra_cells)
 			else:
 				callback(cell, *extra_cells)
 
@@ -898,7 +902,7 @@ def create_portal_pair(cell1, cell2):
 def create_lift(cell, type):
 	global lifts
 
-	image_name = "lift" + ("" if type == LIFT_A else type)
+	image_name = "lift" + type
 	lift = create_theme_actor(image_name, cell)
 	lift.type = type
 	lifts.append(lift)

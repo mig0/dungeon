@@ -24,18 +24,18 @@ ARROW_KEY_L = pygame.K_LEFT
 ARROW_KEY_D = pygame.K_DOWN
 ARROW_KEY_U = pygame.K_UP
 
-CELL_BORDER = '#'
-CELL_FLOOR  = '.'
-CELL_CRACK  = ','
-CELL_BONES  = ':'
-CELL_ROCKS  = ';'
+CELL_BORDER = '▓'
+CELL_FLOOR  = '·'
+CELL_CRACK  = '⦁'
+CELL_BONES  = '•'
+CELL_ROCKS  = '◦'
 CELL_PLATE  = '_'
-CELL_GATE0  = 'G'
-CELL_GATE1  = '^'
-CELL_START  = 'S'
-CELL_FINISH = 'F'
-CELL_PORTAL = 'O'
-CELL_SAND   = '-'
+CELL_GATE0  = '⬮'
+CELL_GATE1  = '⬯'
+CELL_START  = '⏵'
+CELL_FINISH = '⍟'
+CELL_PORTAL = '𝟘'
+CELL_SAND   = '⧘'
 CELL_VOID   = ''
 CELL_INTERNAL1 = '1'
 
@@ -47,13 +47,23 @@ CELL_ENEMY_PLACE_OBSTACLES = (CELL_BORDER, CELL_PORTAL, CELL_GATE0, CELL_GATE1, 
 CELL_CHAR_PLACE_OBSTACLES = (CELL_BORDER, CELL_PLATE, CELL_PORTAL, CELL_GATE0, CELL_GATE1, CELL_SAND, CELL_VOID)
 CELL_CHAR_MOVE_OBSTACLES  = (CELL_BORDER, CELL_GATE0, CELL_VOID)
 
-LIFT_A = '+'
+LIFT_A = ''
 LIFT_H = 'h'
 LIFT_V = 'v'
 LIFT_L = 'l'
 LIFT_R = 'r'
 LIFT_U = 'u'
 LIFT_D = 'd'
+
+LIFT_CHARS = {
+	LIFT_A: '✥',
+	LIFT_H: '↔',
+	LIFT_V: '↕',
+	LIFT_L: '←',
+	LIFT_R: '→',
+	LIFT_U: '↑',
+	LIFT_D: '↓',
+}
 
 LIFT_TYPE_DIRECTIONS = {
 	LIFT_A:  [(-1, 0), (+1, 0), (0, -1), (0, +1)],
