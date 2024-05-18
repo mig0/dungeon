@@ -3,7 +3,7 @@ from config import *
 levels = [
 	{
 		"n": 0,
-		"num_enemies": 0,
+		"num_enemies": 2,
 #		"theme": "stoneage1",
 		"theme": "classic",
 		"music": "stoneage/01_stardust_falling",
@@ -13,8 +13,9 @@ levels = [
 		"lock_puzzle": True,
 		"min_locks": 2,
 		"max_locks": 4,
+		"enemy_key_bonus": True,
 		"bg_image": "bg/remains_of_a_threat.jpg",
-		"char_health": None,
+		"char_health": 100,
 	},
 	{
 		"n": 1,

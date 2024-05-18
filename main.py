@@ -96,6 +96,7 @@ is_cloud_mode = False
 is_gate_puzzle = False
 is_lock_puzzle = False
 is_stoneage_puzzle = False
+has_enemy_key_bonus = False
 has_start = False
 has_finish = False
 
@@ -122,6 +123,8 @@ theme_prefix = None
 enemies = []
 hearts = []
 swords = []
+keys1 = []
+keys2 = []
 barrels = []
 lifts = []
 
@@ -129,6 +132,8 @@ portal_destinations = {}
 
 num_bonus_health = 0
 num_bonus_attack = 0
+num_bonus_key1 = 0
+num_bonus_key2 = 0
 
 num_keys1 = 0
 num_keys2 = 0
@@ -607,7 +612,10 @@ def generate_random_solvable_lock_room(accessible_cells, finish_cell):
 
 			key_cell = get_random_accessible_non_key_cell(accessible_cells)
 			key_type = CELL_KEY1 if lock_type == CELL_LOCK1 else CELL_KEY2
-			map[key_cell] = key_type
+			if has_enemy_key_bonus:
+				create_enemy(key_cell, bonus=BONUS_KEY1 if key_type == CELL_KEY1 else BONUS_KEY2)
+			else:
+				map[key_cell] = key_type
 		else:
 			break
 
@@ -981,7 +989,8 @@ def get_lift_target(cell, diff):
 		returned_cell = cell = next_cell
 
 def create_enemy(cell, health=None, attack=None, bonus=None):
-	global enemies, num_bonus_health, num_bonus_attack
+	global enemies
+	global num_bonus_health, num_bonus_attack, num_bonus_key1, num_bonus_key2
 
 	enemy = create_actor("skeleton", cell)
 	enemy.health = health if health is not None else randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
@@ -991,6 +1000,10 @@ def create_enemy(cell, health=None, attack=None, bonus=None):
 		num_bonus_health += 1
 	elif enemy.bonus == BONUS_ATTACK:
 		num_bonus_attack += 1
+	elif enemy.bonus == BONUS_KEY1:
+		num_bonus_key1 += 1
+	elif enemy.bonus == BONUS_KEY2:
+		num_bonus_key2 += 1
 	enemies.append(enemy)
 
 def generate_room(idx):
@@ -1057,7 +1070,7 @@ def generate_room(idx):
 			cx = randint(room.x1, room.x2)
 			cy = randint(room.y1, room.y2)
 			positioned = map[cx, cy] not in CELL_ENEMY_PLACE_OBSTACLES
-			for other in (enemies + hearts + swords + barrels + [char]):
+			for other in (enemies + hearts + swords + keys1 + keys2 + barrels + [char]):
 				if (cx, cy) == other.c:
 					positioned = False
 		if num_tries == 0:
@@ -1216,13 +1229,15 @@ def init_new_level(offset=1, reload_stored=False):
 	global is_stoneage_puzzle, is_barrel_puzzle, is_color_puzzle
 	global is_gate_puzzle, is_lock_puzzle
 	global has_start, has_finish
+	global has_enemy_key_bonus
 	global bg_image
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
-	global num_bonus_health, num_bonus_attack
+	global num_bonus_health, num_bonus_attack, num_bonus_key1, num_bonus_key2
 	global num_keys1, num_keys2
 	global enemies, barrels, killed_enemies, lifts
-	global hearts, swords, level_time
+	global hearts, swords, keys1, keys2
+	global level_time
 	global map, color_map, stored_level
 
 	if reload_stored and offset != 0:
@@ -1256,6 +1271,7 @@ def init_new_level(offset=1, reload_stored=False):
 	is_cloud_mode = "cloud_mode" in level
 	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
 	is_lock_puzzle = "lock_puzzle" in level and is_any_maze
+	has_enemy_key_bonus = "enemy_key_bonus" in level
 	has_start = "has_start" in level
 	has_finish = "has_finish" in level
 
@@ -1270,12 +1286,16 @@ def init_new_level(offset=1, reload_stored=False):
 
 	hearts = []
 	swords = []
+	keys1 = []
+	keys2 = []
 	barrels = []
 	enemies = []
 	lifts = []
 	killed_enemies = []
 	num_bonus_health = 0
 	num_bonus_attack = 0
+	num_bonus_key1 = 0
+	num_bonus_key2 = 0
 
 	num_keys1 = 0
 	num_keys2 = 0
@@ -1397,6 +1417,12 @@ def draw_status():
 	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
 	screen.draw.text(str(num_bonus_attack), center=(POS_CENTER_X + 2 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
+	if has_enemy_key_bonus or num_bonus_key1:
+		status_key1.draw()
+		screen.draw.text(str(num_bonus_key1), center=(POS_CENTER_X + 6 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
+	if has_enemy_key_bonus or num_bonus_key2:
+		status_key2.draw()
+		screen.draw.text(str(num_bonus_key2), center=(POS_CENTER_X + 9 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	if mode == "game":
 		color, gcolor = ("#60C0FF", "#0080A0") if "time_limit" not in level else ("#FFC060", "#A08000") if level["time_limit"] - level_time > CRITICAL_REMAINING_LEVEL_TIME else ("#FF6060", "#A04040")
 		time_str = get_time_str(level_time if "time_limit" not in level else level["time_limit"] - level_time)
@@ -1425,10 +1451,8 @@ def draw():
 			enemy.draw()
 		for enemy in visible_enemies:
 			enemy.draw()
-		for heart in hearts:
-			heart.draw()
-		for sword in swords:
-			sword.draw()
+		for bonus_actor in hearts + swords + keys1 + keys2:
+			bonus_actor.draw()
 		char.draw()
 		for actor in visible_enemies + [char]:
 			if actor.health is None:
@@ -1641,6 +1665,12 @@ def move_char(diff_x, diff_y):
 			elif enemy.bonus == BONUS_ATTACK:
 				sword = create_actor('sword', enemy.c)
 				swords.append(sword)
+			elif enemy.bonus == BONUS_KEY1:
+				key1 = create_actor('key1', enemy.c)
+				keys1.append(key1)
+			elif enemy.bonus == BONUS_KEY2:
+				key2 = create_actor('key2', enemy.c)
+				keys2.append(key2)
 			enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
 			killed_enemies.append(enemy)
 			clock.schedule(kill_enemy, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
@@ -1700,9 +1730,11 @@ def can_move(diff):
 		or get_lift_target(char.c, diff)
 
 def update(dt):
-	global level_title_timer, level_target_timer, num_bonus_health, num_bonus_attack
+	global level_title_timer, level_target_timer
 	global game_time, level_time, idle_time, last_autogeneration_time
 	global last_time_arrow_keys_processed, last_processed_arrow_keys, last_processed_arrow_diff
+	global num_bonus_health, num_bonus_attack, num_bonus_key1, num_bonus_key2
+	global num_keys1, num_keys2
 
 	if mode == 'start':
 		init_new_level()
@@ -1743,6 +1775,20 @@ def update(dt):
 			char.attack += BONUS_ATTACK_VALUE
 			swords.pop(i)
 			num_bonus_attack -= 1
+			break
+
+	for i in range(len(keys1)):
+		if char.colliderect(keys1[i]):
+			num_keys1 += 1
+			keys1.pop(i)
+			num_bonus_key1 -= 1
+			break
+
+	for i in range(len(keys2)):
+		if char.colliderect(keys2[i]):
+			num_keys2 += 1
+			keys2.pop(i)
+			num_bonus_key2 -= 1
 			break
 
 	if char.is_animated():
