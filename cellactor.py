@@ -17,7 +17,7 @@ def cell_to_pos(cell):
 	return (CELL_W * (cell[0] + 0.5), CELL_H * (cell[1] + 0.5))
 
 class CellActor(Actor):
-	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, **kwargs):
+	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, scale=None, **kwargs):
 		self._cell = None
 		self.reset_inplace()
 		self.unset_inplace_animation()
@@ -30,6 +30,9 @@ class CellActor(Actor):
 		if isinstance(image, pygame.Surface):
 			self._orig_surf = image
 			self._update_pos()
+		if scale is not None:
+			self._scale = scale
+			self.transform_surf()
 
 	@property
 	def c(self):

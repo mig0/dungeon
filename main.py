@@ -73,6 +73,9 @@ char = CellActor('stand')
 status_heart = CellActor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
 status_sword = CellActor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
 
+status_key1 = CellActor("key1", (POS_CENTER_X + 5 * CELL_W / 2, POS_STATUS_Y), scale=0.7)
+status_key2 = CellActor("key2", (POS_CENTER_X + 8 * CELL_W / 2, POS_STATUS_Y), scale=0.7)
+
 # game variables
 is_game_won = False
 is_music_enabled = True
@@ -91,6 +94,7 @@ is_color_puzzle = False
 is_four_rooms = False
 is_cloud_mode = False
 is_gate_puzzle = False
+is_lock_puzzle = False
 is_stoneage_puzzle = False
 has_start = False
 has_finish = False
@@ -566,6 +570,55 @@ def generate_random_solvable_gate_room(accessible_cells, finish_cell):
 		print("Can't generate gate puzzle, sorry")
 		quit()
 
+def generate_random_solvable_lock_room(accessible_cells, finish_cell):
+	global map
+
+	def get_random_accessible_non_key_cell(accessible_cells):
+		num_tries = 100
+		while num_tries > 0:
+			cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
+			if map[cell] == CELL_KEY1 or map[cell] == CELL_KEY2 or cell == char_cell:
+				num_tries -= 1
+				continue
+			return cell
+
+	origin_map = map.copy()
+	orig_accessible_cells = accessible_cells.copy()
+
+	num_locks = 2 if is_four_rooms else randint(level.get('min_locks') or 2, level.get('max_locks') or 4)
+
+	num_tries = 1000
+	while num_tries > 0:
+		# exclude the finish
+		accessible_cells.pop()
+		for l in range(num_locks):
+			lock_cell = get_random_accessible_non_key_cell(accessible_cells)
+			lock_type = CELL_LOCK1 if randint(0, 1) == 0 else CELL_LOCK2
+			map[lock_cell] = lock_type
+
+			accessible_cells = get_all_accessible_cells()
+			if len(accessible_cells) < 3:
+				# failed to generate, try again
+				break
+			# exclude the char
+			accessible_cells.pop(0)
+			# exclude the finish
+			accessible_cells.pop()
+
+			key_cell = get_random_accessible_non_key_cell(accessible_cells)
+			key_type = CELL_KEY1 if lock_type == CELL_LOCK1 else CELL_KEY2
+			map[key_cell] = key_type
+		else:
+			break
+
+		debug(2, "Failed to generate solvable lock room, trying again")
+		map = origin_map.copy()
+		accessible_cells = orig_accessible_cells.copy()
+		num_tries -= 1
+	else:
+		print("Can't generate lock puzzle, sorry")
+		quit()
+
 def get_random_even_point(a1, a2):
 	return a1 + randint(0, int((a2 - a1) / 2)) * 2
 
@@ -962,7 +1015,7 @@ def generate_room(idx):
 	if is_barrel_puzzle:
 		generate_random_solvable_barrel_room()
 
-	if has_finish or is_gate_puzzle:
+	if has_finish or is_gate_puzzle or is_lock_puzzle:
 		char.c = (room.x1, room.y1)
 		if room.idx == 0:
 			set_char_cell(char.c)
@@ -973,6 +1026,9 @@ def generate_room(idx):
 
 	if is_gate_puzzle:
 		generate_random_solvable_gate_room(accessible_cells, finish_cell)
+
+	if is_lock_puzzle:
+		generate_random_solvable_lock_room(accessible_cells, finish_cell)
 
 	if is_color_puzzle:
 		for cy in color_puzzle.y_range:
@@ -1045,15 +1101,15 @@ def set_theme(theme_name):
 	image5 = create_theme_image('rocks')
 	image6 = create_theme_image('plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
 	image7 = create_theme_image('start') if has_start or is_stoneage_puzzle else None
-	image8 = create_theme_image('finish') if has_finish or is_stoneage_puzzle or is_gate_puzzle else None
+	image8 = create_theme_image('finish') if has_finish or is_stoneage_puzzle or is_gate_puzzle or is_lock_puzzle else None
 	image9 = create_theme_image('portal') if is_stoneage_puzzle else None
 	image10 = create_theme_image('gate0') if is_gate_puzzle else None
 	image11 = create_theme_image('gate1') if is_gate_puzzle else None
 	image12 = create_theme_image('sand') if is_stoneage_puzzle else None
-	image13 = create_theme_image('key1') if is_stoneage_puzzle else None
-	image14 = create_theme_image('key2') if is_stoneage_puzzle else None
-	image15 = create_theme_image('lock1') if is_stoneage_puzzle else None
-	image16 = create_theme_image('lock2') if is_stoneage_puzzle else None
+	image13 = create_theme_image('key1') if is_stoneage_puzzle or is_lock_puzzle else None
+	image14 = create_theme_image('key2') if is_stoneage_puzzle or is_lock_puzzle else None
+	image15 = create_theme_image('lock1') if is_stoneage_puzzle or is_lock_puzzle else None
+	image16 = create_theme_image('lock2') if is_stoneage_puzzle or is_lock_puzzle else None
 	status_image = create_theme_image('status')
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
@@ -1158,7 +1214,7 @@ def init_new_level(offset=1, reload_stored=False):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_spiral_maze, is_grid_maze, is_any_maze
 	global is_stoneage_puzzle, is_barrel_puzzle, is_color_puzzle
-	global is_gate_puzzle
+	global is_gate_puzzle, is_lock_puzzle
 	global has_start, has_finish
 	global bg_image
 	global is_cloud_mode, revealed_map
@@ -1199,6 +1255,7 @@ def init_new_level(offset=1, reload_stored=False):
 	is_four_rooms = "four_rooms" in level
 	is_cloud_mode = "cloud_mode" in level
 	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
+	is_lock_puzzle = "lock_puzzle" in level and is_any_maze
 	has_start = "has_start" in level
 	has_finish = "has_finish" in level
 
@@ -1328,6 +1385,14 @@ def draw_status():
 		status_image.left = CELL_W * cx
 		status_image.top = CELL_H * cy
 		status_image.draw()
+
+	if is_lock_puzzle or is_stoneage_puzzle or num_keys1 > 0:
+		status_key1.draw()
+		screen.draw.text(str(num_keys1), center=(POS_CENTER_X + 6 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
+	if is_lock_puzzle or is_stoneage_puzzle or num_keys2 > 0:
+		status_key2.draw()
+		screen.draw.text(str(num_keys2), center=(POS_CENTER_X + 9 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
+
 	status_heart.draw()
 	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	status_sword.draw()
@@ -1502,7 +1567,7 @@ def check_victory():
 	elif is_barrel_puzzle:
 		if is_barrel_puzzle_solved():
 			win_room()
-	elif has_finish or is_gate_puzzle or is_stoneage_puzzle:
+	elif has_finish or is_gate_puzzle or is_stoneage_puzzle or is_lock_puzzle:
 		if map[char.c] == CELL_FINISH:
 			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
 			win_room()
