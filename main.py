@@ -8,6 +8,7 @@ from random import randint
 from constants import *
 from translations import *
 from cellactor import *
+from drop import *
 
 lang = 'en'
 
@@ -70,12 +71,6 @@ def get_all_neighbors(cx, cy, include_self=False):
 # game sprites
 char = CellActor('stand')
 
-status_heart = CellActor("heart", (POS_CENTER_X - 2 * CELL_W / 2, POS_STATUS_Y))
-status_sword = CellActor("sword", (POS_CENTER_X + 1 * CELL_W / 2, POS_STATUS_Y))
-
-status_key1 = CellActor("key1", (POS_CENTER_X + 5 * CELL_W / 2, POS_STATUS_Y), scale=0.7)
-status_key2 = CellActor("key2", (POS_CENTER_X + 8 * CELL_W / 2, POS_STATUS_Y), scale=0.7)
-
 # game variables
 is_game_won = False
 is_music_enabled = True
@@ -96,7 +91,7 @@ is_cloud_mode = False
 is_gate_puzzle = False
 is_lock_puzzle = False
 is_stoneage_puzzle = False
-has_enemy_key_bonus = False
+is_enemy_key_drop = False
 has_start = False
 has_finish = False
 
@@ -121,22 +116,17 @@ revealed_map = None
 theme_prefix = None
 
 enemies = []
-hearts = []
-swords = []
-keys1 = []
-keys2 = []
 barrels = []
 lifts = []
 
 portal_destinations = {}
 
-num_bonus_health = 0
-num_bonus_attack = 0
-num_bonus_key1 = 0
-num_bonus_key2 = 0
+drop_heart = Drop('heart')
+drop_sword = Drop('sword')
+drop_key1  = Drop('key1')
+drop_key2  = Drop('key2')
 
-num_keys1 = 0
-num_keys2 = 0
+drops = (drop_heart, drop_sword, drop_key1, drop_key2)
 
 killed_enemies = []
 
@@ -191,6 +181,17 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 
 def get_theme_image_name(image_name):
 	return theme_prefix + image_name
+
+def is_cell_occupied(cell):
+	if is_cell_in_actors(cell, enemies + barrels + [char]):
+		return True
+	for drop in drops:
+		if drop.has_instance(cell):
+			return True
+	return False
+
+def is_cell_occupied_for_enemy(cell):
+	return map[cell] in CELL_ENEMY_PLACE_OBSTACLES or is_cell_occupied(cell)
 
 def create_theme_image(image_name):
 	return CellActor(get_theme_image_name(image_name))
@@ -577,27 +578,31 @@ def generate_random_solvable_gate_room(accessible_cells, finish_cell):
 
 def generate_random_solvable_lock_room(accessible_cells, finish_cell):
 	global map
+	global enemies
 
-	def get_random_accessible_non_key_cell(accessible_cells):
+	def get_random_accessible_non_occupied_cell(accessible_cells):
 		num_tries = 100
 		while num_tries > 0:
 			cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-			if map[cell] == CELL_KEY1 or map[cell] == CELL_KEY2 or cell == char_cell:
-				num_tries -= 1
-				continue
-			return cell
+			if not is_cell_occupied(cell):
+				return cell
+			num_tries -= 1
+		return None
 
 	origin_map = map.copy()
 	orig_accessible_cells = accessible_cells.copy()
 
 	num_locks = 2 if is_four_rooms else randint(level.get('min_locks') or 2, level.get('max_locks') or 4)
 
-	num_tries = 1000
+	num_tries = 10000
 	while num_tries > 0:
 		# exclude the finish
 		accessible_cells.pop()
 		for l in range(num_locks):
-			lock_cell = get_random_accessible_non_key_cell(accessible_cells)
+			lock_cell = get_random_accessible_non_occupied_cell(accessible_cells)
+			if not lock_cell:
+				# failed to find free cell for lock, try again
+				break
 			lock_type = CELL_LOCK1 if randint(0, 1) == 0 else CELL_LOCK2
 			map[lock_cell] = lock_type
 
@@ -610,18 +615,25 @@ def generate_random_solvable_lock_room(accessible_cells, finish_cell):
 			# exclude the finish
 			accessible_cells.pop()
 
-			key_cell = get_random_accessible_non_key_cell(accessible_cells)
-			key_type = CELL_KEY1 if lock_type == CELL_LOCK1 else CELL_KEY2
-			if has_enemy_key_bonus:
-				create_enemy(key_cell, bonus=BONUS_KEY1 if key_type == CELL_KEY1 else BONUS_KEY2)
+			key_cell = get_random_accessible_non_occupied_cell(accessible_cells)
+			if not key_cell:
+				# failed to find free cell for key, try again
+				break
+			drop = drop_key1 if lock_type == CELL_LOCK1 else drop_key2
+			if is_enemy_key_drop:
+				create_enemy(key_cell, drop=drop)
 			else:
-				map[key_cell] = key_type
+				drop.instantiate(key_cell)
 		else:
 			break
 
 		debug(2, "Failed to generate solvable lock room, trying again")
 		map = origin_map.copy()
 		accessible_cells = orig_accessible_cells.copy()
+		if is_enemy_key_drop:
+			enemies = []
+		drop_key1.reset()
+		drop_key2.reset()
 		num_tries -= 1
 	else:
 		print("Can't generate lock puzzle, sorry")
@@ -921,10 +933,10 @@ def generate_random_nonsolvable_stoneage_room():
 	replace_random_floor_cell(CELL_SAND, 10)
 
 	replace_random_floor_cell(CELL_PORTAL, 2, create_portal_pair, extra_num=1)
-	replace_random_floor_cell(CELL_KEY1, 1)
-	replace_random_floor_cell(CELL_KEY2, 1)
 	replace_random_floor_cell(CELL_LOCK1, 1)
 	replace_random_floor_cell(CELL_LOCK2, 1)
+	drop_key1.instantiate(get_random_floor_cell())
+	drop_key2.instantiate(get_random_floor_cell())
 
 	replace_random_floor_cell(CELL_VOID, 5, create_lift, LIFT_A)
 	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_H)
@@ -956,10 +968,10 @@ def generate_random_solvable_stoneage_room():
 		map[path_cells[i]] = CELL_SAND
 
 	replace_random_floor_cell(CELL_PORTAL, 1, create_portal_pair, extra_num=1)
-	replace_random_floor_cell(CELL_KEY1, 1)
-	replace_random_floor_cell(CELL_KEY2, 1)
 	replace_random_floor_cell(CELL_LOCK1, 1)
 	replace_random_floor_cell(CELL_LOCK2, 1)
+	drop_key1.instantiate(get_random_floor_cell())
+	drop_key2.instantiate(get_random_floor_cell())
 
 def create_portal_pair(cell1, cell2):
 	if cell1 == cell2:
@@ -988,22 +1000,15 @@ def get_lift_target(cell, diff):
 			return returned_cell
 		returned_cell = cell = next_cell
 
-def create_enemy(cell, health=None, attack=None, bonus=None):
+def create_enemy(cell, health=None, attack=None, drop=None):
 	global enemies
-	global num_bonus_health, num_bonus_attack, num_bonus_key1, num_bonus_key2
 
 	enemy = create_actor("skeleton", cell)
 	enemy.health = health if health is not None else randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
 	enemy.attack = attack if attack is not None else randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
-	enemy.bonus  = bonus  if bonus  is not None else randint(0, 2)
-	if enemy.bonus == BONUS_HEALTH:
-		num_bonus_health += 1
-	elif enemy.bonus == BONUS_ATTACK:
-		num_bonus_attack += 1
-	elif enemy.bonus == BONUS_KEY1:
-		num_bonus_key1 += 1
-	elif enemy.bonus == BONUS_KEY2:
-		num_bonus_key2 += 1
+	enemy.drop   = drop   if drop   is not None else (None, drop_heart, drop_sword)[randint(0, 2)]
+	if enemy.drop:
+		enemy.drop.contain(enemy)
 	enemies.append(enemy)
 
 def generate_room(idx):
@@ -1063,16 +1068,13 @@ def generate_room(idx):
 
 	# generate enemies
 	for i in range(level["num_enemies"] if "num_enemies" in level else DEFAULT_NUM_ENEMIES):
-		positioned = False
 		num_tries = 10000
-		while not positioned and num_tries > 0:
-			num_tries -= 1
+		while num_tries > 0:
 			cx = randint(room.x1, room.x2)
 			cy = randint(room.y1, room.y2)
-			positioned = map[cx, cy] not in CELL_ENEMY_PLACE_OBSTACLES
-			for other in (enemies + hearts + swords + keys1 + keys2 + barrels + [char]):
-				if (cx, cy) == other.c:
-					positioned = False
+			if not is_cell_occupied_for_enemy((cx, cy)):
+				break
+			num_tries -= 1
 		if num_tries == 0:
 			print("Was not able to find free spot for enemy in 10000 tries, positioning it anyway on an obstacle")
 		create_enemy((cx, cy))
@@ -1119,10 +1121,8 @@ def set_theme(theme_name):
 	image10 = create_theme_image('gate0') if is_gate_puzzle else None
 	image11 = create_theme_image('gate1') if is_gate_puzzle else None
 	image12 = create_theme_image('sand') if is_stoneage_puzzle else None
-	image13 = create_theme_image('key1') if is_stoneage_puzzle or is_lock_puzzle else None
-	image14 = create_theme_image('key2') if is_stoneage_puzzle or is_lock_puzzle else None
-	image15 = create_theme_image('lock1') if is_stoneage_puzzle or is_lock_puzzle else None
-	image16 = create_theme_image('lock2') if is_stoneage_puzzle or is_lock_puzzle else None
+	image13 = create_theme_image('lock1') if is_stoneage_puzzle or is_lock_puzzle else None
+	image14 = create_theme_image('lock2') if is_stoneage_puzzle or is_lock_puzzle else None
 	status_image = create_theme_image('status')
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
@@ -1148,10 +1148,8 @@ def set_theme(theme_name):
 		CELL_GATE0:  image10,
 		CELL_GATE1:  image11,
 		CELL_SAND:   image12,
-		CELL_KEY1:   image13,
-		CELL_KEY2:   image14,
-		CELL_LOCK1:  image15,
-		CELL_LOCK2:  image16,
+		CELL_LOCK1:  image13,
+		CELL_LOCK2:  image14,
 	}
 
 def start_music():
@@ -1229,14 +1227,11 @@ def init_new_level(offset=1, reload_stored=False):
 	global is_stoneage_puzzle, is_barrel_puzzle, is_color_puzzle
 	global is_gate_puzzle, is_lock_puzzle
 	global has_start, has_finish
-	global has_enemy_key_bonus
+	global is_enemy_key_drop
 	global bg_image
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
-	global num_bonus_health, num_bonus_attack, num_bonus_key1, num_bonus_key2
-	global num_keys1, num_keys2
 	global enemies, barrels, killed_enemies, lifts
-	global hearts, swords, keys1, keys2
 	global level_time
 	global map, color_map, stored_level
 
@@ -1271,7 +1266,7 @@ def init_new_level(offset=1, reload_stored=False):
 	is_cloud_mode = "cloud_mode" in level
 	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
 	is_lock_puzzle = "lock_puzzle" in level and is_any_maze
-	has_enemy_key_bonus = "enemy_key_bonus" in level
+	is_enemy_key_drop = "enemy_key_drop" in level
 	has_start = "has_start" in level
 	has_finish = "has_finish" in level
 
@@ -1284,21 +1279,13 @@ def init_new_level(offset=1, reload_stored=False):
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
 
-	hearts = []
-	swords = []
-	keys1 = []
-	keys2 = []
 	barrels = []
 	enemies = []
 	lifts = []
 	killed_enemies = []
-	num_bonus_health = 0
-	num_bonus_attack = 0
-	num_bonus_key1 = 0
-	num_bonus_key2 = 0
 
-	num_keys1 = 0
-	num_keys2 = 0
+	for drop in drops:
+		drop.reset()
 
 	set_theme(level["theme"])
 	if reload_stored:
@@ -1312,6 +1299,9 @@ def init_new_level(offset=1, reload_stored=False):
 			create_lift(*lift_info)
 	else:
 		generate_map()
+
+	for drop in drops:
+		drop.active = drop.num_contained > 0
 
 	if "target" not in level:
 		level["target"] = "default-level-target"
@@ -1347,7 +1337,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"map": map.copy(),
 		"color_map": color_map.copy() if is_color_puzzle else None,
 		"char_cell": char.c,
-		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.bonus) for enemy in enemies),
+		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.drop) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 	}
@@ -1406,23 +1396,8 @@ def draw_status():
 		status_image.top = CELL_H * cy
 		status_image.draw()
 
-	if is_lock_puzzle or is_stoneage_puzzle or num_keys1 > 0:
-		status_key1.draw()
-		screen.draw.text(str(num_keys1), center=(POS_CENTER_X + 6 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
-	if is_lock_puzzle or is_stoneage_puzzle or num_keys2 > 0:
-		status_key2.draw()
-		screen.draw.text(str(num_keys2), center=(POS_CENTER_X + 9 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
+	draw_status_drops(screen, drops)
 
-	status_heart.draw()
-	screen.draw.text(str(num_bonus_health), center=(POS_CENTER_X - 1 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
-	status_sword.draw()
-	screen.draw.text(str(num_bonus_attack), center=(POS_CENTER_X + 2 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
-	if has_enemy_key_bonus or num_bonus_key1:
-		status_key1.draw()
-		screen.draw.text(str(num_bonus_key1), center=(POS_CENTER_X + 6 * CELL_W / 2, POS_STATUS_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
-	if has_enemy_key_bonus or num_bonus_key2:
-		status_key2.draw()
-		screen.draw.text(str(num_bonus_key2), center=(POS_CENTER_X + 9 * CELL_W / 2, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
 	if mode == "game":
 		color, gcolor = ("#60C0FF", "#0080A0") if "time_limit" not in level else ("#FFC060", "#A08000") if level["time_limit"] - level_time > CRITICAL_REMAINING_LEVEL_TIME else ("#FF6060", "#A04040")
 		time_str = get_time_str(level_time if "time_limit" not in level else level["time_limit"] - level_time)
@@ -1451,8 +1426,8 @@ def draw():
 			enemy.draw()
 		for enemy in visible_enemies:
 			enemy.draw()
-		for bonus_actor in hearts + swords + keys1 + keys2:
-			bonus_actor.draw()
+		for drop in drops:
+			drop.draw_instances()
 		char.draw()
 		for actor in visible_enemies + [char]:
 			if actor.health is None:
@@ -1616,22 +1591,22 @@ def leave_cell(old_char_cell):
 		map[old_char_cell] = CELL_VOID
 
 def enter_cell():
-	global num_keys1, num_keys2
+	# collect drop if any
+	for drop in drops:
+		if drop.collect(char.c):
+			if drop.name == 'heart':
+				char.health += BONUS_HEALTH_VALUE
+			if drop.name == 'sword':
+				char.attack += BONUS_ATTACK_VALUE
 
 	if map[char.c] == CELL_PORTAL:
 		teleport_char()
-	elif map[char.c] == CELL_KEY1:
-		map[char.c] = CELL_FLOOR
-		num_keys1 += 1
-	elif map[char.c] == CELL_KEY2:
-		map[char.c] = CELL_FLOOR
-		num_keys2 += 1
 	elif map[char.c] == CELL_LOCK1:
 		map[char.c] = CELL_FLOOR
-		num_keys1 -= 1
+		drop_key1.consume()
 	elif map[char.c] == CELL_LOCK2:
 		map[char.c] = CELL_FLOOR
-		num_keys2 -= 1
+		drop_key2.consume()
 
 def move_char(diff_x, diff_y):
 	diff = (diff_x, diff_y)
@@ -1658,19 +1633,9 @@ def move_char(diff_x, diff_y):
 		else:
 			play_sound("kill")
 			enemies.remove(enemy)
-			# fallen bonuses upon enemy death
-			if enemy.bonus == BONUS_HEALTH:
-				heart = create_actor('heart', enemy.c)
-				hearts.append(heart)
-			elif enemy.bonus == BONUS_ATTACK:
-				sword = create_actor('sword', enemy.c)
-				swords.append(sword)
-			elif enemy.bonus == BONUS_KEY1:
-				key1 = create_actor('key1', enemy.c)
-				keys1.append(key1)
-			elif enemy.bonus == BONUS_KEY2:
-				key2 = create_actor('key2', enemy.c)
-				keys2.append(key2)
+			# fallen drops upon enemy death
+			if enemy.drop:
+				enemy.drop.instantiate(enemy)
 			enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
 			killed_enemies.append(enemy)
 			clock.schedule(kill_enemy, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
@@ -1724,8 +1689,8 @@ def can_move(diff):
 	dest_cell = apply_diff(char.c, diff)
 
 	return map[dest_cell] not in CELL_CHAR_MOVE_OBSTACLES \
-		or map[dest_cell] == CELL_LOCK1 and num_keys1 > 0 \
-		or map[dest_cell] == CELL_LOCK2 and num_keys2 > 0 \
+		or map[dest_cell] == CELL_LOCK1 and drop_key1.num_collected > 0 \
+		or map[dest_cell] == CELL_LOCK2 and drop_key2.num_collected > 0 \
 		or is_cell_in_actors(dest_cell, lifts) \
 		or get_lift_target(char.c, diff)
 
@@ -1733,8 +1698,6 @@ def update(dt):
 	global level_title_timer, level_target_timer
 	global game_time, level_time, idle_time, last_autogeneration_time
 	global last_time_arrow_keys_processed, last_processed_arrow_keys, last_processed_arrow_diff
-	global num_bonus_health, num_bonus_attack, num_bonus_key1, num_bonus_key2
-	global num_keys1, num_keys2
 
 	if mode == 'start':
 		init_new_level()
@@ -1762,34 +1725,6 @@ def update(dt):
 		last_autogeneration_time = idle_time
 
 	check_victory()
-
-	for i in range(len(hearts)):
-		if char.colliderect(hearts[i]):
-			char.health += BONUS_HEALTH_VALUE
-			hearts.pop(i)
-			num_bonus_health -= 1
-			break
-
-	for i in range(len(swords)):
-		if char.colliderect(swords[i]):
-			char.attack += BONUS_ATTACK_VALUE
-			swords.pop(i)
-			num_bonus_attack -= 1
-			break
-
-	for i in range(len(keys1)):
-		if char.colliderect(keys1[i]):
-			num_keys1 += 1
-			keys1.pop(i)
-			num_bonus_key1 -= 1
-			break
-
-	for i in range(len(keys2)):
-		if char.colliderect(keys2[i]):
-			num_keys2 += 1
-			keys2.pop(i)
-			num_bonus_key2 -= 1
-			break
 
 	if char.is_animated():
 		return

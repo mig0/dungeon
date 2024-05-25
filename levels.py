@@ -13,7 +13,7 @@ levels = [
 		"lock_puzzle": True,
 		"min_locks": 2,
 		"max_locks": 4,
-		"enemy_key_bonus": True,
+		"enemy_key_drop": True,
 		"bg_image": "bg/remains_of_a_threat.jpg",
 		"char_health": 100,
 	},
