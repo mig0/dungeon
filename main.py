@@ -166,6 +166,16 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
 				cell = (cx, cy)
 				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell] or ' '
+				for drop in drops:
+					if drop.has_instance(cell):
+						if drop.name == 'heart':
+							cell_ch = '♥'
+						if drop.name == 'sword':
+							cell_ch = '⸸'
+						if drop.name == 'key1':
+							cell_ch = '¹'
+						if drop.name == 'key2':
+							cell_ch = '²'
 				if is_cell_in_actors(cell, enemies):
 					cell_ch = '🕱'
 				if is_cell_in_actors(cell, barrels):
