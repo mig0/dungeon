@@ -33,20 +33,6 @@ def _(str_key):
 
 autodetect_lang()
 
-def create_actor(image_name, cell):
-	actor = CellActor(image_name)
-	actor.c = cell
-	return actor
-
-def get_actor_on_cell(cell, actors):
-	for actor in actors:
-		if cell == actor.c:
-			return actor
-	return None
-
-def is_cell_in_actors(cell, actors):
-	return get_actor_on_cell(cell, actors) is not None
-
 def is_cell_in_area(cell, x_range, y_range):
 	return cell[0] in x_range and cell[1] in y_range
 
@@ -1600,6 +1586,12 @@ def leave_cell(old_char_cell):
 	if map[old_char_cell] == CELL_SAND:
 		map[old_char_cell] = CELL_VOID
 
+def prepare_enter_cell(animate_duration):
+	# prepare drop disappear if any
+	for drop in drops:
+		if drop.has_instance(char.c):
+			drop.disappear(char.c, level_time, animate_duration)
+
 def enter_cell():
 	# collect drop if any
 	for drop in drops:
@@ -1688,8 +1680,10 @@ def move_char(diff_x, diff_y):
 	leave_cell(old_char_cell)
 
 	if is_move_animate_enabled:
+		animate_duration = animate_time_factor * ARROW_KEYS_RESOLUTION
+		prepare_enter_cell(animate_duration)
 		char.pos = old_char_pos
-		char.animate(animate_time_factor * ARROW_KEYS_RESOLUTION, on_finished=enter_cell)
+		char.animate(animate_duration, on_finished=enter_cell)
 	else:
 		enter_cell()
 

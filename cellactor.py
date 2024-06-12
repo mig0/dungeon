@@ -1,6 +1,6 @@
 import pygame
 from pgzero.actor import Actor, POS_TOPLEFT, ANCHOR_CENTER, transform_anchor
-from pgzero.animation import animate
+from pgzero.animation import *
 from typing import Union, Tuple
 from constants import CELL_W, CELL_H
 
@@ -15,6 +15,10 @@ def apply_diff(orig, diff):
 
 def cell_to_pos(cell):
 	return (CELL_W * (cell[0] + 0.5), CELL_H * (cell[1] + 0.5))
+
+@tweener
+def example(n):
+	return n
 
 class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, scale=None, **kwargs):
@@ -112,6 +116,7 @@ class CellActor(Actor):
 		self._inplace_animation_scale   = None
 		self._inplace_animation_angle   = None
 		self._inplace_animation_flip    = None
+		self._inplace_animation_tween   = None
 		self._inplace_animation_start_time  = None
 		self._inplace_animation_duration    = None
 		self._inplace_animation_on_finished = None
@@ -134,7 +139,7 @@ class CellActor(Actor):
 		if is_changed:
 			self.transform_surf()
 
-	def activate_inplace_animation(self, start_time, duration, opacity:Tuple[float, float]=None, scale:Tuple[float, float]=None, angle:Tuple[float, float]=None, flip:Tuple[bool, bool, int]=None, on_finished=None):
+	def activate_inplace_animation(self, start_time, duration, opacity:Tuple[float, float]=None, scale:Tuple[float, float]=None, angle:Tuple[float, float]=None, flip:Tuple[bool, bool, int]=None, tween="linear", on_finished=None):
 		self.unset_inplace_animation()
 
 		is_defined = False
@@ -157,6 +162,7 @@ class CellActor(Actor):
 			print("activate_inplace_animation called without opacity, scale or angle or flip, skipping")
 			return
 
+		self._inplace_animation_tween       = tween
 		self._inplace_animation_start_time  = start_time
 		self._inplace_animation_duration    = duration
 		self._inplace_animation_on_finished = on_finished
@@ -170,11 +176,16 @@ class CellActor(Actor):
 		if not self.is_inplace_animation_active():
 			return
 
+		if self._inplace_animation_start_time == 0:
+			self._inplace_animation_start_time = time
+
 		factor = (time - self._inplace_animation_start_time) / self._inplace_animation_duration
 		if factor > 1:
 			factor = 1
 		if factor < 0:
 			factor = 0
+		factor = TWEEN_FUNCTIONS[self._inplace_animation_tween](factor)
+
 		if self._inplace_animation_opacity:
 			self._opacity = self._inplace_animation_opacity[0] + factor * (self._inplace_animation_opacity[1] - self._inplace_animation_opacity[0])
 		if self._inplace_animation_scale:
@@ -211,4 +222,18 @@ class CellActor(Actor):
 
 	def is_animated(self):
 		return self.is_inplace_animation_active() or self.is_animated_external()
+
+def create_actor(image_name, cell):
+	actor = CellActor(image_name)
+	actor.c = cell
+	return actor
+
+def get_actor_on_cell(cell, actors):
+	for actor in actors:
+		if cell == actor.c:
+			return actor
+	return None
+
+def is_cell_in_actors(cell, actors):
+	return get_actor_on_cell(cell, actors) is not None
 
