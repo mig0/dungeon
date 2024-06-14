@@ -78,6 +78,7 @@ is_gate_puzzle = False
 is_lock_puzzle = False
 is_stoneage_puzzle = False
 is_enemy_key_drop = False
+is_stopless = False
 has_start = False
 has_finish = False
 
@@ -113,6 +114,12 @@ drop_key1  = Drop('key1')
 drop_key2  = Drop('key2')
 
 drops = (drop_heart, drop_sword, drop_key1, drop_key2)
+
+def get_drop_on_cell(cell):
+	for drop in drops:
+		if drop.has_instance(cell):
+			return drop
+	return None
 
 killed_enemies = []
 
@@ -152,16 +159,15 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
 				cell = (cx, cy)
 				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell] or ' '
-				for drop in drops:
-					if drop.has_instance(cell):
-						if drop.name == 'heart':
-							cell_ch = '♥'
-						if drop.name == 'sword':
-							cell_ch = '⸸'
-						if drop.name == 'key1':
-							cell_ch = '¹'
-						if drop.name == 'key2':
-							cell_ch = '²'
+				if drop := get_drop_on_cell(cell):
+					if drop.name == 'heart':
+						cell_ch = '♥'
+					if drop.name == 'sword':
+						cell_ch = '⸸'
+					if drop.name == 'key1':
+						cell_ch = '¹'
+					if drop.name == 'key2':
+						cell_ch = '²'
 				if is_cell_in_actors(cell, enemies):
 					cell_ch = '🕱'
 				if is_cell_in_actors(cell, barrels):
@@ -178,13 +184,14 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 def get_theme_image_name(image_name):
 	return theme_prefix + image_name
 
-def is_cell_occupied(cell):
-	if is_cell_in_actors(cell, enemies + barrels + [char]):
+def is_cell_occupied_except_char(cell):
+	if is_cell_in_actors(cell, enemies + barrels):
 		return True
-	for drop in drops:
-		if drop.has_instance(cell):
-			return True
-	return False
+
+	return get_drop_on_cell(cell) is not None
+
+def is_cell_occupied(cell):
+	return is_cell_occupied_except_char(cell) or char.c == cell
 
 def is_cell_occupied_for_enemy(cell):
 	return map[cell] in CELL_ENEMY_PLACE_OBSTACLES or is_cell_occupied(cell)
@@ -1224,6 +1231,7 @@ def init_new_level(offset=1, reload_stored=False):
 	global is_gate_puzzle, is_lock_puzzle
 	global has_start, has_finish
 	global is_enemy_key_drop
+	global is_stopless
 	global bg_image
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
@@ -1263,6 +1271,7 @@ def init_new_level(offset=1, reload_stored=False):
 	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
 	is_lock_puzzle = "lock_puzzle" in level and is_any_maze
 	is_enemy_key_drop = "enemy_key_drop" in level
+	is_stopless = "stopless" in level
 	has_start = "has_start" in level
 	has_finish = "has_finish" in level
 
@@ -1456,7 +1465,7 @@ def kill_enemy():
 
 def on_key_down(key):
 	global lang
-	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled
+	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled, is_stopless
 
 	reset_idle_time()
 
@@ -1477,6 +1486,10 @@ def on_key_down(key):
 				reset_level_and_target_timer()
 			else:
 				clear_level_and_target_timer()
+
+		if keyboard.s:
+			is_stopless = not is_stopless
+
 		return
 
 	if keyboard.f1:
@@ -1610,19 +1623,46 @@ def enter_cell():
 		map[char.c] = CELL_FLOOR
 		drop_key2.consume()
 
+last_move_diff = None
+
+def continue_move_char():
+	diff_x, diff_y = last_move_diff
+	last_move_diff = None
+	move_char(diff_x, diff_y)
+
+def get_move_animate_duration(old_char_cell):
+	distance = get_distance(old_char_cell, char.c)
+	animate_time_factor = distance - (distance - 1) / 2
+	return animate_time_factor * ARROW_KEYS_RESOLUTION
+
 def move_char(diff_x, diff_y):
+	global last_move_diff
+
 	diff = (diff_x, diff_y)
 	undo_diff = (-diff_x, -diff_y)
 
 	old_char_pos = char.pos
 	old_char_cell = char.c
+
 	# try to move forward, and prepare to cancel if the move is impossible
 	char.move(diff)
 
+	if is_stopless:
+		is_jumped = False
+		while map[char.c] in CELL_FLOOR_TYPES and not is_cell_occupied_except_char(char.c) and can_move(diff):
+			char.move(diff)
+			is_jumped = True
+		if is_move_animate_enabled and is_jumped and is_cell_occupied_except_char(char.c) and last_move_diff is None:
+			# undo one step
+			char.move(undo_diff)
+			last_move_diff = diff
+			char.pos = old_char_pos
+			char.animate(get_move_animate_duration(old_char_cell), on_finished=continue_move_char)
+			return
+
 	# collision with enemies
-	enemy_index = char.collidelist(enemies)
-	if enemy_index >= 0:
-		enemy = enemies[enemy_index]
+	enemy = get_actor_on_cell(char.c, enemies)
+	if enemy:
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		# can't move if we face enemy, cancel the move
@@ -1644,9 +1684,8 @@ def move_char(diff_x, diff_y):
 		return
 
 	# collision with barrels
-	barrel_index = char.collidelist(barrels)
-	if barrel_index >= 0:
-		barrel = barrels[barrel_index]
+	barrel = get_actor_on_cell(char.c, barrels)
+	if barrel:
 		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
 			# can't push, cancel the move
 			char.move(undo_diff)
@@ -1661,26 +1700,22 @@ def move_char(diff_x, diff_y):
 
 	# can move, animate the move
 	new_char_pos = char.pos
-	if is_move_animate_enabled:
-		animate_time_factor = 1
 
 	# process lift movement if available
 	if lift_target := get_lift_target(old_char_cell, diff):
-		distance = get_distance(old_char_cell, lift_target)
 		lift = get_actor_on_cell(old_char_cell, lifts)
 		lift.move(diff)
 		for i in range(1, distance):
 			char.move(diff)
 			lift.move(diff)
 		if is_move_animate_enabled:
-			animate_time_factor = distance - (distance - 1) / 2
 			lift.pos = old_char_pos
 			lift.animate(animate_time_factor * ARROW_KEYS_RESOLUTION)
 
 	leave_cell(old_char_cell)
 
 	if is_move_animate_enabled:
-		animate_duration = animate_time_factor * ARROW_KEYS_RESOLUTION
+		animate_duration = get_move_animate_duration(old_char_cell)
 		prepare_enter_cell(animate_duration)
 		char.pos = old_char_pos
 		char.animate(animate_duration, on_finished=enter_cell)
@@ -1691,6 +1726,9 @@ def move_char(diff_x, diff_y):
 
 def can_move(diff):
 	dest_cell = apply_diff(char.c, diff)
+
+	if not is_cell_in_room(dest_cell):
+		return False
 
 	return map[dest_cell] not in CELL_CHAR_MOVE_OBSTACLES \
 		or map[dest_cell] == CELL_LOCK1 and drop_key1.num_collected > 0 \
