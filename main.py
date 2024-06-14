@@ -160,22 +160,15 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 				cell = (cx, cy)
 				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell] or ' '
 				if drop := get_drop_on_cell(cell):
-					if drop.name == 'heart':
-						cell_ch = '♥'
-					if drop.name == 'sword':
-						cell_ch = '⸸'
-					if drop.name == 'key1':
-						cell_ch = '¹'
-					if drop.name == 'key2':
-						cell_ch = '²'
+					cell_ch = ACTOR_CHARS[drop.name]
 				if is_cell_in_actors(cell, enemies):
-					cell_ch = '🕱'
+					cell_ch = ACTOR_CHARS['enemy']
 				if is_cell_in_actors(cell, barrels):
-					cell_ch = '☐'
-				if is_cell_in_actors(cell, lifts):
-					cell_ch = LIFT_CHARS[get_actor_on_cell(cell, lifts).type]
+					cell_ch = ACTOR_CHARS['barrel']
+				if lift := get_actor_on_cell(cell, lifts):
+					cell_ch = LIFT_CHARS[lift.type]
 				if char.c is not None and char.c == cell:
-					cell_ch = '☻'
+					cell_ch = ACTOR_CHARS['char']
 				print(cell_ch, end="")
 		print()
 	if endl:
@@ -1489,6 +1482,9 @@ def on_key_down(key):
 
 		if keyboard.s:
 			is_stopless = not is_stopless
+
+		if keyboard.d:
+			debug_map()
 
 		return
 
