@@ -6,9 +6,15 @@ class Drop:
 	def __init__(self, name):
 		self.reset()
 		self.name = name
-		self.actor = CellActor(name)
-		self.status_actor = CellActor(name, scale=0.7)
+		self.image_name = DEFAULT_IMAGE_PREFIX + name
+		self.actor = CellActor(self.image_name)
+		self.status_actor = CellActor(self.image_name, scale=0.7)
 		self.disappeared_actors = []
+
+	def set_image(self, image_name):
+		self.image_name = image_name
+		for actor in (self.actor, self.status_actor):
+			actor.image = image_name
 
 	def reset(self):
 		self.active = False
@@ -51,7 +57,7 @@ class Drop:
 			actor.draw()
 
 	def disappear(self, cell, start_time, animate_duration):
-		actor = create_actor(self.name, cell)
+		actor = create_actor(self.image_name, cell)
 		actor.activate_inplace_animation(start_time, animate_duration, scale=[1, 0.2], tween='linear', on_finished=lambda: self.disappeared_actors.remove(actor))
 		self.disappeared_actors.append(actor)
 

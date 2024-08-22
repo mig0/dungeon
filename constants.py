@@ -175,3 +175,6 @@ DEFAULT_COLOR_PUZZLE_ROOM_SIZE_Y = [
 	int((ROOM_SIZE_Y[2] - 1) / 2) * 2 + 1,
 	int((ROOM_SIZE_Y[3] - 1) / 2) * 2 + 1,
 ]
+
+IMAGES_DIR_PREFIX = 'images/'
+DEFAULT_IMAGE_PREFIX = 'default/'

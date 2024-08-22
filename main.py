@@ -1,5 +1,6 @@
 #pgzero
 
+import os
 import random
 import pygame
 from numpy import ndarray, chararray
@@ -17,7 +18,6 @@ def autodetect_lang():
 
 	lang = 'en'
 	try:
-		import os
 		if 'LANG' in os.environ:
 			lang0 = (os.environ['LANG'])[0:2]
 			if lang0 in translations:
@@ -175,7 +175,13 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 		print()
 
 def get_theme_image_name(image_name):
-	return theme_prefix + image_name
+	for full_image_name in (theme_prefix + image_name, DEFAULT_IMAGE_PREFIX + image_name):
+		if os.path.isfile(IMAGES_DIR_PREFIX + full_image_name + '.png'):
+			debug(2, "Found image %s" % full_image_name)
+			return full_image_name
+
+	print("Unable to find image %s in neither %s nor %s" % (image_name, theme_prefix, DEFAULT_IMAGE_PREFIX))
+	quit()
 
 def is_cell_occupied_except_char(cell):
 	if is_cell_in_actors(cell, enemies + barrels):
@@ -1124,7 +1130,7 @@ def set_theme(theme_name):
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
 	if is_color_puzzle:
-		gray_alpha_image = pygame.image.load('images/' + theme_prefix + 'floor_gray_alpha.png').convert_alpha()
+		gray_alpha_image = pygame.image.load(IMAGES_DIR_PREFIX + get_theme_image_name('floor_gray_alpha') + '.png').convert_alpha()
 		color_cell_images = []
 		for color in COLOR_PUZZLE_RGB_VALUES:
 			color_cell_image = pygame.Surface((CELL_W, CELL_H))
@@ -1151,6 +1157,9 @@ def set_theme(theme_name):
 
 	for barrel in barrels:
 		barrel.image = get_theme_image_name('barrel')
+
+	for drop in drops:
+		drop.set_image(get_theme_image_name(drop.name))
 
 def start_music():
 	global is_music_started
