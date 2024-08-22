@@ -1102,6 +1102,7 @@ def generate_map():
 
 def set_theme(theme_name):
 	global cell_images, status_image, cloud_image, color_cell_images
+	global barrels
 	global theme_prefix
 
 	theme_prefix = theme_name + '/'
@@ -1147,6 +1148,9 @@ def set_theme(theme_name):
 		CELL_LOCK1:  image13,
 		CELL_LOCK2:  image14,
 	}
+
+	for barrel in barrels:
+		barrel.image = get_theme_image_name('barrel')
 
 def start_music():
 	global is_music_started
