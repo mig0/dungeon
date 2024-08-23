@@ -174,6 +174,24 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 	if endl:
 		print()
 
+def is_cell_in_map(cell):
+	return is_cell_in_area(cell, MAP_X_RANGE, MAP_Y_RANGE)
+
+def is_inner_wall(cell):
+	if map[cell] not in CELL_WALLS:
+		return False
+
+	for neigh in get_all_neighbors(*cell):
+		if is_cell_in_map(neigh) and map[neigh] not in CELL_WALLS:
+			return False
+	return True
+
+def convert_inner_walls():
+	for cy in MAP_Y_RANGE:
+		for cx in MAP_X_RANGE:
+			if is_inner_wall((cx, cy)):
+				map[cx, cy] = CELL_INNER_WALL
+
 def get_theme_image_name(image_name):
 	for full_image_name in (theme_prefix + image_name, DEFAULT_IMAGE_PREFIX + image_name):
 		if os.path.isfile(IMAGES_DIR_PREFIX + full_image_name + '.png'):
@@ -1114,6 +1132,9 @@ def generate_map():
 			generate_room(idx)
 	else:
 		generate_room(None)
+
+	if is_barrel_puzzle:
+		convert_inner_walls()
 
 def set_theme(theme_name):
 	global cell_images, status_image, cloud_image, color_cell_images
