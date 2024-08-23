@@ -428,7 +428,7 @@ def get_random_floor_cell_type():
 	return CELL_FLOOR_TYPES_FREQUENT[randint(0, len(CELL_FLOOR_TYPES_FREQUENT) - 1)]
 
 def convert_to_floor_if_needed(cx, cy):
-	if map[cx, cy] in (CELL_BORDER, CELL_VOID, CELL_INTERNAL1):
+	if map[cx, cy] in (*CELL_WALLS, CELL_VOID, CELL_INTERNAL1):
 		map[cx, cy] = get_random_floor_cell_type()
 
 def get_num_gate_puzzle_plates():
@@ -652,13 +652,13 @@ def generate_random_maze_area(x1, y1, x2, y2):
 	random_x = get_random_even_point(x1 + 1, x2 - 1)
 	random_y = get_random_even_point(y1 + 1, y2 - 1)
 
-	# create the horizontal and vertical border wall via this point
+	# create the horizontal and vertical wall via this point
 	for x in range(x1, x2 + 1):
-		map[x, random_y] = CELL_BORDER
+		map[x, random_y] = CELL_WALL
 	for y in range(y1, y2 + 1):
-		map[random_x, y] = CELL_BORDER
+		map[random_x, y] = CELL_WALL
 
-	# select 3 random holes on the 4 just created border walls
+	# select 3 random holes on the 4 just created wall walls
 	skipped_wall = randint(0, 3)
 	if skipped_wall != 0: map[get_random_even_point(x1, random_x - 1), random_y] = get_random_floor_cell_type()
 	if skipped_wall != 1: map[random_x, get_random_even_point(y1, random_y - 1)] = get_random_floor_cell_type()
@@ -675,7 +675,7 @@ def generate_grid_maze():
 	for cy in room.y_range:
 		for cx in room.x_range:
 			if (cx - room.x1 - 1) % 2 == 0 and (cy - room.y1 - 1) % 2 == 0:
-				map[cx, cy] = CELL_BORDER
+				map[cx, cy] = CELL_WALL
 
 def generate_spiral_maze():
 	if randint(0, 1) == 0:
@@ -693,7 +693,7 @@ def generate_spiral_maze():
 		step = steps[dir]
 		for i in range(len[dir % 2]):
 			pointer = apply_diff(pointer, step)
-			map[pointer] = CELL_BORDER
+			map[pointer] = CELL_WALL
 
 		if dir % 2 == 0:
 			len[0] -= 2
@@ -741,7 +741,7 @@ def generate_random_free_path(target_c, deviation=0, level=0):
 
 	for neigh in neighbors:
 		old_cell_type = map[neigh]
-		if old_cell_type not in (CELL_BORDER, CELL_VOID):
+		if old_cell_type not in (*CELL_WALLS, CELL_VOID):
 			print("BUG!")
 			return False
 		convert_to_floor_if_needed(*neigh)
@@ -783,11 +783,11 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 		if is_cell_in_actors((new_cx, new_cy), barrels):
 			continue
 		weight = randint(0, 30)
-		if map[cx, cy] != CELL_BORDER:
+		if map[cx, cy] not in CELL_WALLS:
 			weight += 20
 		if map[cx, cy] == CELL_PLATE:
 			weight += 4
-		if map[new_cx, new_cy] != CELL_BORDER:
+		if map[new_cx, new_cy] not in CELL_WALLS:
 			weight += 10
 		if map[new_cx, new_cy] == CELL_PLATE:
 			weight += 2
@@ -803,21 +803,21 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 	for neighbor in neighbors:
 		cx, cy = neighbor
 
-		# if the cell is not empty (BORDER), make it empty (FLOOR with additions)
-		was_border1_replaced = False
-		if map[cx, cy] == CELL_BORDER:
+		# if the cell is not empty (WALL), make it empty (FLOOR with additions)
+		was_wall1_replaced = False
+		if map[cx, cy] == CELL_WALL:
 			convert_to_floor_if_needed(cx, cy)
-			was_border1_replaced = True
+			was_wall1_replaced = True
 		barrel_cx = barrel.cx
 		barrel_cy = barrel.cy
 		new_char_cx = cx + (cx - barrel_cx)
 		new_char_cy = cy + (cy - barrel_cy)
 		debug(2, "barrel #%d - neighbor %s, next cell (%d, %d)" % (idx, neighbor, new_char_cx, new_char_cy))
 		debug_map(2, full=True, clean=True, dual=True)
-		was_border2_replaced = False
-		if map[new_char_cx, new_char_cy] == CELL_BORDER:
+		was_wall2_replaced = False
+		if map[new_char_cx, new_char_cy] == CELL_WALL:
 			convert_to_floor_if_needed(new_char_cx, new_char_cy)
-			was_border2_replaced = True
+			was_wall2_replaced = True
 
 		# if the char position is not None, first create random free path to the selected adjacent cell
 		old_char_c = char.c
@@ -843,10 +843,10 @@ def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
 		# can't create free path for char or can't pull barrel, restore the original state
 		char.c = old_char_c
 		barrel.c = (barrel_cx, barrel_cy)
-		if was_border1_replaced:
-			map[cx, cy] = CELL_BORDER
-		if was_border2_replaced:
-			map[new_char_cx, new_char_cy] = CELL_BORDER
+		if was_wall1_replaced:
+			map[cx, cy] = CELL_WALL
+		if was_wall2_replaced:
+			map[new_char_cx, new_char_cy] = CELL_WALL
 
 	return False
 
@@ -861,10 +861,10 @@ def generate_random_solvable_barrel_room():
 	# 0) initialize char position to None
 	char.c = None
 
-	# 1) initialize entire room to BORDER
+	# 1) initialize entire room to WALL
 	for cy in room.y_range:
 		for cx in room.x_range:
-			map[cx, cy] = CELL_BORDER
+			map[cx, cy] = CELL_WALL
 
 	# 2) place room plates randomly or in good positions, as the number of barrels
 	# 3) place room barrels into the place cells, one barrel per one plate
@@ -1088,10 +1088,10 @@ def generate_map():
 	for cy in MAP_Y_RANGE:
 		for cx in MAP_X_RANGE:
 			if cx == 0 or cx == PLAY_SIZE_X + 1 or cy == 0 or cy == PLAY_SIZE_Y + 1:
-				cell_type = CELL_BORDER
+				cell_type = CELL_WALL
 			else:
 				if is_four_rooms and (cx == ROOM_BORDER_X or cy == ROOM_BORDER_Y):
-					cell_type = CELL_BORDER
+					cell_type = CELL_WALL
 				else:
 					cell_type = get_random_floor_cell_type()
 			map[cx, cy] = cell_type
@@ -1112,7 +1112,7 @@ def set_theme(theme_name):
 	global theme_prefix
 
 	theme_prefix = theme_name + '/'
-	image1 = create_theme_image('border')
+	image1 = create_theme_image('wall')
 	image2 = create_theme_image('floor')
 	image3 = create_theme_image('crack')
 	image4 = create_theme_image('bones')
@@ -1139,7 +1139,7 @@ def set_theme(theme_name):
 			color_cell_images.append(color_cell_image)
 
 	cell_images = {
-		CELL_BORDER: image1,
+		CELL_WALL:   image1,
 		CELL_FLOOR:  image2,
 		CELL_CRACK:  image3,
 		CELL_BONES:  image4,
