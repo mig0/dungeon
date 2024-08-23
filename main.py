@@ -183,6 +183,15 @@ def get_theme_image_name(image_name):
 	print("Unable to find image %s in neither %s nor %s" % (image_name, theme_prefix, DEFAULT_IMAGE_PREFIX))
 	quit()
 
+def load_theme_cell_image(image_name):
+	return pygame.image.load(IMAGES_DIR_PREFIX + get_theme_image_name(image_name) + '.png').convert_alpha()
+
+def colorize_cell_image(image, color):
+	cell_surface = pygame.Surface((CELL_W, CELL_H))
+	cell_surface.fill(color)
+	cell_surface.blit(image, (0, 0))
+	return cell_surface
+
 def is_cell_occupied_except_char(cell):
 	if is_cell_in_actors(cell, enemies + barrels):
 		return True
@@ -1130,13 +1139,14 @@ def set_theme(theme_name):
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
 	if is_color_puzzle:
-		gray_alpha_image = pygame.image.load(IMAGES_DIR_PREFIX + get_theme_image_name('floor_gray_alpha') + '.png').convert_alpha()
+		gray_alpha_image = load_theme_cell_image('floor_gray_alpha')
 		color_cell_images = []
 		for color in COLOR_PUZZLE_RGB_VALUES:
-			color_cell_image = pygame.Surface((CELL_W, CELL_H))
-			color_cell_image.fill(color)
-			color_cell_image.blit(gray_alpha_image, (0, 0))
+			color_cell_image = colorize_cell_image(gray_alpha_image, color)
 			color_cell_images.append(color_cell_image)
+
+	inner_wall_image = load_theme_cell_image('wall')
+	inner_wall_image.fill((50, 50, 50), special_flags=pygame.BLEND_RGB_SUB)
 
 	cell_images = {
 		CELL_WALL:   image1,
@@ -1153,6 +1163,7 @@ def set_theme(theme_name):
 		CELL_SAND:   image12,
 		CELL_LOCK1:  image13,
 		CELL_LOCK2:  image14,
+		CELL_INNER_WALL: inner_wall_image,
 	}
 
 	for barrel in barrels:
@@ -1382,17 +1393,19 @@ def draw_map():
 				elif cell_type == CELL_VOID:
 					continue
 				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cx, cy] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
-					color_floor = get_color_puzzle_image(cx, cy)
-					screen.blit(color_floor, (CELL_W * cx, CELL_H * cy))
-					continue
+					cell_image = get_color_puzzle_image(cx, cy)
 				elif cell_type in cell_images:
 					cell_image = cell_images[cell_type]
 				else:
 					screen.draw.text(cell_type, center=cell_to_pos((cx, cy)), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
 					continue
-				cell_image.left = CELL_W * cx
-				cell_image.top = CELL_H * cy
-				cell_image.draw()
+
+				if cell_image.__class__.__name__ == 'CellActor':
+					cell_image.left = CELL_W * cx
+					cell_image.top = CELL_H * cy
+					cell_image.draw()
+				else:
+					screen.blit(cell_image, (CELL_W * cx, CELL_H * cy))
 
 def get_time_str(time):
 	sec = int(time)
