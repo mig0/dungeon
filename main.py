@@ -1536,17 +1536,23 @@ def on_key_down(key):
 		return
 
 	if keyboard.f1:
-		set_theme("classic")
+		set_theme("default")
 	if keyboard.f2:
-		set_theme("ancient1")
+		set_theme("classic")
 	if keyboard.f3:
-		set_theme("modern1")
+		set_theme("ancient1")
 	if keyboard.f4:
-		set_theme("modern2")
+		set_theme("modern1")
 	if keyboard.f5:
-		set_theme("stoneage1")
+		set_theme("modern2")
 	if keyboard.f6:
+		set_theme("stoneage1")
+	if keyboard.f7:
 		set_theme("stoneage2")
+	if keyboard.f8:
+		set_theme("minecraft")
+	if keyboard.f9:
+		set_theme("moss")
 
 	if keyboard.f11:
 		pygame.display.toggle_fullscreen()
