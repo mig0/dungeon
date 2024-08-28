@@ -1465,14 +1465,14 @@ def draw():
 		draw_status()
 		for lift in lifts:
 			lift.draw()
+		for drop in drops:
+			drop.draw_instances()
 		for barrel in visible_barrels:
 			barrel.draw()
 		for enemy in killed_enemies:
 			enemy.draw()
 		for enemy in visible_enemies:
 			enemy.draw()
-		for drop in drops:
-			drop.draw_instances()
 		char.draw()
 		for actor in visible_enemies + [char]:
 			if actor.health is None:
