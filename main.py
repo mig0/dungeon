@@ -126,7 +126,6 @@ killed_enemies = []
 level_title_timer = 0
 level_target_timer = 0
 
-from levels import levels
 level = None
 level_idx = -1
 
@@ -1281,7 +1280,7 @@ def init_new_level(offset=1, reload_stored=False):
 		print("Can't reload a non-current level")
 		quit()
 
-	if level_idx + offset < 0 or level_idx + offset > len(levels):
+	if level_idx + offset < 0 or level_idx + offset > len(LEVELS):
 		print("Requested level is out of range")
 		return
 
@@ -1290,13 +1289,13 @@ def init_new_level(offset=1, reload_stored=False):
 	mode = "init"
 
 	level_idx += offset
-	if level_idx == len(levels):
+	if level_idx == len(LEVELS):
 		mode = "end"
 		is_game_won = True
 		start_music()
 		return
 
-	level = levels[level_idx]
+	level = LEVELS[level_idx]
 	is_random_maze = "random_maze" in level
 	is_spiral_maze = "spiral_maze" in level
 	is_grid_maze = "grid_maze" in level

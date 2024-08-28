@@ -1,5 +1,8 @@
 import pygame
 from config import *
+from levels import *
+
+LEVELS = sorted(levels, key=lambda level: level["n"])
 
 MAP_SIZE_X = PLAY_SIZE_X + 2
 MAP_SIZE_Y = PLAY_SIZE_Y + 2
