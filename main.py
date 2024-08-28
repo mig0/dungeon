@@ -1397,6 +1397,7 @@ def init_new_room():
 		set_room(room_idx)
 		place_char_in_first_free_spot()
 		reveal_map_near_char()
+		char.reset_inplace()
 		mode = "game"
 
 def draw_map():
