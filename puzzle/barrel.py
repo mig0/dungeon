@@ -15,20 +15,20 @@ class BarrelPuzzle(Puzzle):
 		self.Globals.convert_inner_walls()
 
 	def pull_barrel_randomly(self, barrel, visited_cell_pairs, num_moves):
-		idx = self.Globals.barrels.index(barrel)
+		idx = barrels.index(barrel)
 		weighted_neighbors = []
 		# sort 4 barrel directions to place char to the "adjacent to barrel" cell for a pull (prefer empty cells)
 		for c in self.Globals.get_actor_neighbors(barrel, self.room.x_range, self.room.y_range):
-			if (c, self.Globals.char.c) in visited_cell_pairs:
+			if (c, char.c) in visited_cell_pairs:
 				continue
 			cx, cy = c
-			if is_cell_in_actors(c, self.Globals.barrels):
+			if is_cell_in_actors(c, barrels):
 				continue
 			new_cx = cx + cx - barrel.cx
 			new_cy = cy + cy - barrel.cy
 			if new_cx not in self.room.x_range or new_cy not in self.room.y_range:
 				continue
-			if is_cell_in_actors((new_cx, new_cy), self.Globals.barrels):
+			if is_cell_in_actors((new_cx, new_cy), barrels):
 				continue
 			weight = randint(0, 30)
 			if self.map[cx, cy] not in CELL_WALLS:
@@ -68,15 +68,15 @@ class BarrelPuzzle(Puzzle):
 				was_wall2_replaced = True
 
 			# if the char position is not None, first create random free path to the selected adjacent cell
-			old_char_c = self.Globals.char.c
-			if self.Globals.char.c is None:
-				self.Globals.char.c = (cx, cy)
+			old_char_c = char.c
+			if char.c is None:
+				char.c = (cx, cy)
 			if self.Globals.generate_random_free_path(neighbor):
 				# pull the barrel to the char
-				barrel.c = self.Globals.char.c
-				self.Globals.char.c = (new_char_cx, new_char_cy)
+				barrel.c = char.c
+				char.c = (new_char_cx, new_char_cy)
 
-				visited_cell_pairs.append((neighbor, self.Globals.char.c))
+				visited_cell_pairs.append((neighbor, char.c))
 
 				if num_moves <= 1:
 					return True
@@ -89,7 +89,7 @@ class BarrelPuzzle(Puzzle):
 				self.Globals.debug(2, "barrel #%d - failed to generate random free path to neighbor %s" % (idx, neighbor))
 
 			# can't create free path for char or can't pull barrel, restore the original state
-			self.Globals.char.c = old_char_c
+			char.c = old_char_c
 			barrel.c = (barrel_cx, barrel_cy)
 			if was_wall1_replaced:
 				self.map[cx, cy] = CELL_WALL
@@ -105,7 +105,7 @@ class BarrelPuzzle(Puzzle):
 			return (randint(self.room.x1, self.room.x2), randint(self.room.y1, self.room.y2))
 
 		# 0) initialize char position to None
-		self.Globals.char.c = None
+		char.c = None
 
 		# 1) initialize entire room to WALL
 		for cy in self.room.y_range:
@@ -123,16 +123,16 @@ class BarrelPuzzle(Puzzle):
 			self.Globals.create_barrel(cell)
 
 		# 4) for each room barrel do:
-		for barrel in self.Globals.barrels:
-			self.Globals.debug(2, "barrel #%d - starting (%d, %d)" % (self.Globals.barrels.index(barrel), barrel.cx, barrel.cy))
-			visited_cell_pairs = [(barrel.c, self.Globals.char.c)]
+		for barrel in barrels:
+			self.Globals.debug(2, "barrel #%d - starting (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
+			visited_cell_pairs = [(barrel.c, char.c)]
 			# 5) make random moves for the barrel until possible
 			num_moves = randint(10, 80)
 			self.pull_barrel_randomly(barrel, visited_cell_pairs, num_moves)
-			self.Globals.debug(2, "barrel #%d - finished (%d, %d)" % (self.Globals.barrels.index(barrel), barrel.cx, barrel.cy))
+			self.Globals.debug(2, "barrel #%d - finished (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
 
 		# 11) remember the char position, optionally try to move it as far left-top as possible
-		if self.Globals.char.c is None:
+		if char.c is None:
 			print("Failed to generate random solvable barrel room")
 			if DEBUG_LEVEL:
 				return
@@ -140,12 +140,12 @@ class BarrelPuzzle(Puzzle):
 				quit()
 
 		while True:
-			for c in self.Globals.get_actor_neighbors(self.Globals.char, self.room.x_range, self.room.y_range):
+			for c in self.Globals.get_actor_neighbors(char, self.room.x_range, self.room.y_range):
 				cx, cy = c
-				if cx > self.Globals.char.cx or cy > self.Globals.char.cy:
+				if cx > char.cx or cy > char.cy:
 					continue
 				if not self.map[c] in CELL_CHAR_MOVE_OBSTACLES:
-					self.Globals.char.c = c
+					char.c = c
 					if self.room.idx:
 						self.Globals.set_char_cell(c)
 					break
@@ -156,7 +156,7 @@ class BarrelPuzzle(Puzzle):
 		self.generate_random_solvable_room()
 
 	def is_solved(self):
-		room_barrels = [ barrel for barrel in self.Globals.barrels if self.Globals.is_actor_in_room(barrel) ]
+		room_barrels = [ barrel for barrel in barrels if self.Globals.is_actor_in_room(barrel) ]
 		for barrel in room_barrels:
 			if self.map[barrel.c] != CELL_PLATE:
 				return False

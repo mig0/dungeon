@@ -5,7 +5,7 @@ class ColorPuzzle(Puzzle):
 	def init(self):
 		self.color_map = None
 		self.color_cell_images = []
-		self.color_area = self.Globals.Area()
+		self.color_area = Area()
 
 	def has_plate(self):
 		return True
@@ -94,7 +94,7 @@ class ColorPuzzle(Puzzle):
 			num_tries -= 1
 
 	def on_press_key(self, keyboard):
-		if keyboard.space and self.map[self.Globals.char.c] == CELL_PLATE:
-			self.press_plate(*self.Globals.char.c)
+		if keyboard.space and self.map[char.c] == CELL_PLATE:
+			self.press_plate(*char.c)
 		return True
 

@@ -31,7 +31,7 @@ class GatePuzzle(Puzzle):
 		self.map[cx, cy] = CELL_GATE1 if self.map[cx, cy] == CELL_GATE0 else CELL_GATE0
 
 	def press_plate(self):
-		for gate in self.attached_plate_gates[self.Globals.char.c]:
+		for gate in self.attached_plate_gates[char.c]:
 			self.toggle_gate(*gate)
 
 	def check_solution(self, finish_cell, gates, depth=0, visited_plate_gate_states=None):
@@ -39,7 +39,7 @@ class GatePuzzle(Puzzle):
 			self.Globals.debug_map(2, descr="Map initially")
 			visited_plate_gate_states = {}
 
-		start_cell = self.Globals.char.c
+		start_cell = char.c
 
 		if self.Globals.is_path_found(start_cell, finish_cell):
 			if depth == 0:
@@ -64,13 +64,13 @@ class GatePuzzle(Puzzle):
 					solution = visited_plate_gate_states[plate_gate_states]
 				else:
 					visited_plate_gate_states[plate_gate_states] = None
-					self.Globals.char.c = plate
+					char.c = plate
 					self.press_plate()
 
 					solution = self.check_solution(finish_cell, gates, depth + 1, visited_plate_gate_states)
 
 					self.press_plate()
-					self.Globals.char.c = start_cell
+					char.c = start_cell
 					visited_plate_gate_states[plate_gate_states] = solution
 
 				if solution and (not best_solution or len(solution["used_plates"]) < len(best_solution["used_plates"]) \
@@ -134,7 +134,7 @@ class GatePuzzle(Puzzle):
 					plates.append(cell)
 					break
 
-			target_cells = [self.Globals.char.c, finish_cell, *plates]
+			target_cells = [char.c, finish_cell, *plates]
 
 			gates = []
 			for g in range(self.get_num_gates()):
@@ -168,7 +168,7 @@ class GatePuzzle(Puzzle):
 		self.generate_random_solvable_room(accessible_cells, finish_cell)
 
 	def on_press_key(self, keyboard):
-		if keyboard.space and self.map[self.Globals.char.c] == CELL_PLATE:
+		if keyboard.space and self.map[char.c] == CELL_PLATE:
 			self.press_plate()
 		return False
 

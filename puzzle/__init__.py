@@ -1,4 +1,5 @@
 from constants import *
+from objects import *
 from flags import flags
 from random import randint
 

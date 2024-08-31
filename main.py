@@ -9,7 +9,8 @@ from random import randint
 from constants import *
 from translations import *
 from cellactor import *
-from drop import *
+from objects import *
+from drop import draw_status_drops
 from flags import flags
 from puzzle import create_puzzle
 
@@ -56,10 +57,6 @@ def get_all_neighbors(cx, cy, include_self=False):
 			neighbors.append((cx + dx, cy + dy))
 	return neighbors
 
-# game sprites
-char = CellActor('stand')
-
-# game variables
 is_game_won = False
 is_music_enabled = True
 is_music_started = False
@@ -89,19 +86,6 @@ cell_images = {}  # will be generated
 revealed_map = None
 theme_prefix = None
 
-enemies = []
-barrels = []
-lifts = []
-
-portal_destinations = {}
-
-drop_heart = Drop('heart')
-drop_sword = Drop('sword')
-drop_key1  = Drop('key1')
-drop_key2  = Drop('key2')
-
-drops = (drop_heart, drop_sword, drop_key1, drop_key2)
-
 def get_drop_on_cell(cell):
 	for drop in drops:
 		if drop.has_instance(cell):
@@ -115,10 +99,6 @@ level_target_timer = 0
 
 level = None
 level_idx = -1
-
-class Area:
-	# x1, y1, x2, y2, size_x, size_y, x_range, y_range, idx
-	pass
 
 room = Area()
 room_idx = None
@@ -576,13 +556,6 @@ def create_enemy(cell, health=None, attack=None, drop=None):
 	enemies.append(enemy)
 
 class Globals:
-	Area = Area
-	char = char
-	enemies = enemies
-	barrels = barrels
-	drop_key1 = drop_key1
-	drop_key2 = drop_key2
-
 	get_actor_neighbors = get_actor_neighbors
 	get_all_neighbors = get_all_neighbors
 	debug = debug

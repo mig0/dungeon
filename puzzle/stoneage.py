@@ -28,8 +28,8 @@ class StoneagePuzzle(Puzzle):
 		self.Globals.replace_random_floor_cell(CELL_PORTAL, 2, self.Globals.create_portal_pair, extra_num=1)
 		self.Globals.replace_random_floor_cell(CELL_LOCK1, 1)
 		self.Globals.replace_random_floor_cell(CELL_LOCK2, 1)
-		self.Globals.drop_key1.instantiate(self.Globals.get_random_floor_cell())
-		self.Globals.drop_key2.instantiate(self.Globals.get_random_floor_cell())
+		drop_key1.instantiate(self.Globals.get_random_floor_cell())
+		drop_key2.instantiate(self.Globals.get_random_floor_cell())
 
 		self.Globals.replace_random_floor_cell(CELL_VOID, 5, self.Globals.create_lift, LIFT_A)
 		self.Globals.replace_random_floor_cell(CELL_VOID, 2, self.Globals.create_lift, LIFT_H)
@@ -51,7 +51,7 @@ class StoneagePuzzle(Puzzle):
 		self.Globals.set_char_cell(start_cell)
 
 		self.Globals.replace_random_floor_cell(CELL_VOID, (self.room.x2 - self.room.x1 + 1) * (self.room.y2 - self.room.y1 + 1) - 2)
-		self.Globals.char.c = start_cell
+		char.c = start_cell
 		self.Globals.generate_random_free_path(finish_cell, deviation=4)
 
 		path_cells = self.Globals.find_path(start_cell, finish_cell)[:-1]
@@ -61,8 +61,8 @@ class StoneagePuzzle(Puzzle):
 		self.Globals.replace_random_floor_cell(CELL_PORTAL, 1, self.Globals.create_portal_pair, extra_num=1)
 		self.Globals.replace_random_floor_cell(CELL_LOCK1, 1)
 		self.Globals.replace_random_floor_cell(CELL_LOCK2, 1)
-		self.Globals.drop_key1.instantiate(self.Globals.get_random_floor_cell())
-		self.Globals.drop_key2.instantiate(self.Globals.get_random_floor_cell())
+		drop_key1.instantiate(self.Globals.get_random_floor_cell())
+		drop_key2.instantiate(self.Globals.get_random_floor_cell())
 
 	def generate_room(self, accessible_cells, finish_cell):
 		self.generate_random_solvable_room()

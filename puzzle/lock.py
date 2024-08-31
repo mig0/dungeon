@@ -48,7 +48,7 @@ class LockPuzzle(Puzzle):
 				if not key_cell:
 					# failed to find free cell for key, try again
 					break
-				drop = self.Globals.drop_key1 if lock_type == CELL_LOCK1 else self.Globals.drop_key2
+				drop = drop_key1 if lock_type == CELL_LOCK1 else drop_key2
 				if flags.is_enemy_key_drop:
 					self.Globals.create_enemy(key_cell, drop=drop)
 				else:
@@ -60,9 +60,9 @@ class LockPuzzle(Puzzle):
 			copyto(self.map, origin_map)
 			accessible_cells = orig_accessible_cells.copy()
 			if flags.is_enemy_key_drop:
-				self.Globals.enemies = []
-			self.Globals.drop_key1.reset()
-			self.Globals.drop_key2.reset()
+				enemies.clear()
+			drop_key1.reset()
+			drop_key2.reset()
 			num_tries -= 1
 		else:
 			print("Can't generate lock puzzle, sorry")
