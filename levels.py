@@ -179,7 +179,7 @@ levels = [
 		"target": "reach-finish",
 	},
 	{
-		"n": 0.1,
+		"n": 6.1,
 		"theme": "stoneage1",
 		"music": "stoneage/01_stardust_falling",
 		"stoneage_puzzle": True,

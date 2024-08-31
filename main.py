@@ -10,6 +10,7 @@ from constants import *
 from translations import *
 from cellactor import *
 from drop import *
+from puzzle import *
 
 lang = 'en'
 
@@ -70,17 +71,14 @@ is_random_maze = False
 is_spiral_maze = False
 is_grid_maze = False
 is_any_maze = False
-is_barrel_puzzle = False
-is_color_puzzle = False
 is_four_rooms = False
 is_cloud_mode = False
-is_gate_puzzle = False
-is_lock_puzzle = False
-is_stoneage_puzzle = False
 is_enemy_key_drop = False
 is_stopless = False
 has_start = False
 has_finish = False
+
+puzzle = None
 
 bg_image = None
 
@@ -96,9 +94,7 @@ last_processed_arrow_keys = []
 last_processed_arrow_diff = (0, 0)
 
 map = None  # will be generated
-color_map = None
 cell_images = {}  # will be generated
-color_cell_images = []
 revealed_map = None
 theme_prefix = None
 
@@ -135,7 +131,6 @@ class Area:
 
 room = Area()
 room_idx = None
-color_puzzle = Area()
 
 def debug(level, str):
 	if DEBUG_LEVEL < level:
@@ -227,51 +222,6 @@ def create_theme_image(image_name):
 def create_theme_actor(image_name, cell):
 	return create_actor(get_theme_image_name(image_name), cell)
 
-def get_num_color_puzzle_values():
-	return level["color_puzzle_values"] if "color_puzzle_values" in level else MAX_COLOR_PUZZLE_VALUES
-
-def press_color_puzzle_cell(cx, cy):
-	color_map[cx, cy] = (color_map[cx, cy] + 1) % get_num_color_puzzle_values()
-
-def press_color_puzzle_plate(cx, cy):
-	for (nx, ny) in get_all_neighbors(cx, cy):
-		press_color_puzzle_cell(nx, ny)
-		if "color_puzzle_extended" in level and (nx != cx and ny != cy) ^ (cx % 3 != 0 or cy % 3 != 0):
-			press_color_puzzle_cell(nx, ny)
-
-def get_color_puzzle_image(cx, cy):
-	return color_cell_images[color_map[cx, cy]]
-
-def set_color_puzzle():
-	color_puzzle.size_x = level["color_puzzle_size"][0] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X[room.idx] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X
-	color_puzzle.size_y = level["color_puzzle_size"][1] if "color_puzzle_size" in level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_Y[room.idx] if room is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_Y
-	color_puzzle.x1 = room.x1 + int((room.size_x - color_puzzle.size_x) / 2)
-	color_puzzle.x2 = color_puzzle.x1 + color_puzzle.size_x - 1
-	color_puzzle.y1 = room.y1 + int((room.size_y - color_puzzle.size_y) / 2)
-	color_puzzle.y2 = color_puzzle.y1 + color_puzzle.size_y - 1
-	color_puzzle.x_range = range(color_puzzle.x1, color_puzzle.x2 + 1)
-	color_puzzle.y_range = range(color_puzzle.y1, color_puzzle.y2 + 1)
-
-def is_in_color_puzzle(cx, cy):
-	return is_color_puzzle and cx in color_puzzle.x_range and cy in color_puzzle.y_range
-
-def is_color_puzzle_plate(cx, cy):
-	return is_in_color_puzzle(cx, cy) and (cx - color_puzzle.x1) % 2 == 1 and (cy - color_puzzle.y1) % 2 == 1
-
-def is_color_puzzle_solved():
-	for cy in color_puzzle.y_range:
-		for cx in color_puzzle.x_range:
-			if not is_color_puzzle_plate(cx, cy) and color_map[cx, cy] != COLOR_PUZZLE_VALUE_GREEN:
-				return False
-	return True
-
-def is_barrel_puzzle_solved():
-	room_barrels = [ barrel for barrel in barrels if is_actor_in_room(barrel) ]
-	for barrel in room_barrels:
-		if map[barrel.c] != CELL_PLATE:
-			return False
-	return True
-
 def reveal_map_near_char():
 	if not is_cloud_mode:
 		return
@@ -305,8 +255,7 @@ def set_room(idx):
 	room.y_range = ROOM_Y_RANGE[idx] if idx is not None else PLAY_Y_RANGE
 	room.idx = idx
 
-	if is_color_puzzle:
-		set_color_puzzle()
+	puzzle.on_set_room(room)
 
 def get_max_room_distance():
 	return get_distance((room.x1, room.y1), (room.x2, room.y2))
@@ -415,13 +364,6 @@ def find_path(start_cell, target_cell):
 def is_path_found(start_cell, target_cell):
 	return target_cell in get_accessible_cells(start_cell)
 
-def get_passed_gates(start_cell, target_cell):
-	passed_gates = []
-	for cell in find_path(start_cell, target_cell) or ():
-		if map[cell] == CELL_GATE1:
-			passed_gates.append(cell)
-	return passed_gates
-
 def set_char_cell(cell):
 	global char_cell
 
@@ -456,216 +398,6 @@ def get_random_floor_cell_type():
 def convert_to_floor_if_needed(cx, cy):
 	if map[cx, cy] in (*CELL_WALLS, CELL_VOID, CELL_INTERNAL1):
 		map[cx, cy] = get_random_floor_cell_type()
-
-def get_num_gate_puzzle_plates():
-	return level["num_gate_puzzle_plates"] if "num_gate_puzzle_plates" in level else DEFAULT_NUM_GATE_PUZZLE_PLATES
-
-def get_num_gate_puzzle_gates():
-	return level["num_gate_puzzle_gates"] if "num_gate_puzzle_gates" in level else DEFAULT_NUM_GATE_PUZZLE_GATES
-
-def toggle_gate_puzzle_gate(cx, cy):
-	map[cx, cy] = CELL_GATE1 if map[cx, cy] == CELL_GATE0 else CELL_GATE0
-
-def press_gate_puzzle_plate():
-	for gate in gate_puzzle_attached_plate_gates[char.c]:
-		toggle_gate_puzzle_gate(*gate)
-
-def check_gate_puzzle_solution(finish_cell, gates, depth=0, visited_plate_gate_states=None):
-	global map
-
-	if depth == 0:
-		debug_map(2, descr="Map initially")
-		visited_plate_gate_states = {}
-
-	start_cell = char.c
-
-	if is_path_found(start_cell, finish_cell):
-		if depth == 0:
-			return False
-		else:
-			return {
-				'used_plates': [],
-				'open_gates': [],
-				'passed_gates': get_passed_gates(start_cell, finish_cell),
-			}
-
-	best_solution = None
-	best_plate = None
-
-	plates = [ *gate_puzzle_attached_plate_gates ]
-	gate_states = tuple(map[gate] for gate in gates)
-
-	for plate in plates:
-		if start_cell != plate and is_path_found(start_cell, plate):
-			plate_gate_states = (plate, gate_states)
-			if plate_gate_states in visited_plate_gate_states:
-				solution = visited_plate_gate_states[plate_gate_states]
-			else:
-				visited_plate_gate_states[plate_gate_states] = None
-				char.c = plate
-				press_gate_puzzle_plate()
-
-				solution = check_gate_puzzle_solution(finish_cell, gates, depth + 1, visited_plate_gate_states)
-
-				press_gate_puzzle_plate()
-				char.c = start_cell
-				visited_plate_gate_states[plate_gate_states] = solution
-
-			if solution and (not best_solution or len(solution["used_plates"]) < len(best_solution["used_plates"]) \
-					or len(solution["used_plates"]) == len(best_solution["used_plates"]) and best_plate not in solution["used_plates"]):
-				best_solution = solution
-				best_plate = plate
-
-	if best_solution:
-		used_plates = best_solution["used_plates"].copy()
-		if best_plate not in used_plates:
-			used_plates.append(best_plate)
-
-		open_gates = best_solution["open_gates"].copy()
-		for gate in gate_puzzle_attached_plate_gates[best_plate]:
-			if map[gate] == CELL_GATE0 and gate not in open_gates:
-				open_gates.append(gate)
-
-		passed_gates = best_solution["passed_gates"].copy()
-		for gate in get_passed_gates(start_cell, best_plate):
-			if gate not in passed_gates:
-				passed_gates.append(gate)
-
-		if depth == 0:
-			return \
-				len(used_plates)  >= get_num_gate_puzzle_plates() and \
-				len(open_gates)   >= get_num_gate_puzzle_gates()  and \
-				len(passed_gates) >= get_num_gate_puzzle_gates()
-		else:
-			return {
-				'used_plates': used_plates,
-				'open_gates': open_gates,
-				'passed_gates': passed_gates,
-			}
-
-	return False if depth == 0 else None
-
-def generate_random_solvable_gate_room(accessible_cells, finish_cell):
-	global map, gate_puzzle_attached_plate_gates
-
-	origin_map = map.copy()
-
-	def select_random_gates_attached_to_plate(num_gates):
-		num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
-		if num_attached_gates > num_gates:
-			num_attached_gates = num_gates
-		attached_gate_idxs = []
-		while len(attached_gate_idxs) < num_attached_gates:
-			gate_idx = randint(0, num_gates - 1)
-			if gate_idx in attached_gate_idxs:
-				continue
-			attached_gate_idxs.append(gate_idx)
-		return attached_gate_idxs
-
-	num_tries = 100000
-	while num_tries > 0:
-		plates = []
-		for p in range(get_num_gate_puzzle_plates()):
-			while True:
-				cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-				if map[cell] in CELL_CHAR_PLACE_OBSTACLES:
-					continue
-				map[cell] = CELL_PLATE
-				plates.append(cell)
-				break
-
-		target_cells = [char.c, finish_cell, *plates]
-
-		gates = []
-		for g in range(get_num_gate_puzzle_gates()):
-			while True:
-				cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-				if map[cell] in CELL_CHAR_PLACE_OBSTACLES:
-					continue
-				if get_num_accessible_target_directions(cell, target_cells) < 2:
-					continue
-				target_cells.append(cell)
-				map[cell] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
-				gates.append(cell)
-				break
-
-		gate_puzzle_attached_plate_gates = {}
-		for plate in plates:
-			gate_idxs = select_random_gates_attached_to_plate(len(gates))
-			gate_puzzle_attached_plate_gates[plate] = [ gates[i] for i in gate_idxs ]
-
-		debug_map(4, descr="Generating gate puzzle - tries left: %d" % num_tries)
-		if check_gate_puzzle_solution(finish_cell, gates):
-			break
-
-		map = origin_map.copy()
-		num_tries -= 1
-	else:
-		print("Can't generate gate puzzle, sorry")
-		quit()
-
-def generate_random_solvable_lock_room(accessible_cells, finish_cell):
-	global map
-	global enemies
-
-	def get_random_accessible_non_occupied_cell(accessible_cells):
-		num_tries = 100
-		while num_tries > 0:
-			cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-			if not is_cell_occupied(cell):
-				return cell
-			num_tries -= 1
-		return None
-
-	origin_map = map.copy()
-	orig_accessible_cells = accessible_cells.copy()
-
-	num_locks = 2 if is_four_rooms else randint(level.get('min_locks') or 2, level.get('max_locks') or 4)
-
-	num_tries = 10000
-	while num_tries > 0:
-		# exclude the finish
-		accessible_cells.pop()
-		for l in range(num_locks):
-			lock_cell = get_random_accessible_non_occupied_cell(accessible_cells)
-			if not lock_cell:
-				# failed to find free cell for lock, try again
-				break
-			lock_type = CELL_LOCK1 if randint(0, 1) == 0 else CELL_LOCK2
-			map[lock_cell] = lock_type
-
-			accessible_cells = get_all_accessible_cells()
-			if len(accessible_cells) < 3:
-				# failed to generate, try again
-				break
-			# exclude the char
-			accessible_cells.pop(0)
-			# exclude the finish
-			accessible_cells.pop()
-
-			key_cell = get_random_accessible_non_occupied_cell(accessible_cells)
-			if not key_cell:
-				# failed to find free cell for key, try again
-				break
-			drop = drop_key1 if lock_type == CELL_LOCK1 else drop_key2
-			if is_enemy_key_drop:
-				create_enemy(key_cell, drop=drop)
-			else:
-				drop.instantiate(key_cell)
-		else:
-			break
-
-		debug(2, "Failed to generate solvable lock room, trying again")
-		map = origin_map.copy()
-		accessible_cells = orig_accessible_cells.copy()
-		if is_enemy_key_drop:
-			enemies = []
-		drop_key1.reset()
-		drop_key2.reset()
-		num_tries -= 1
-	else:
-		print("Can't generate lock puzzle, sorry")
-		quit()
 
 def get_random_even_point(a1, a2):
 	return a1 + randint(0, int((a2 - a1) / 2)) * 2
@@ -792,146 +524,6 @@ def create_barrel(cell):
 	barrel = create_theme_actor("barrel", cell)
 	barrels.append(barrel)
 
-def pull_barrel_randomly(barrel, visited_cell_pairs, num_moves):
-	idx = barrels.index(barrel)
-	weighted_neighbors = []
-	# sort 4 barrel directions to place char to the "adjacent to barrel" cell for a pull (prefer empty cells)
-	for c in get_actor_neighbors(barrel, room.x_range, room.y_range):
-		if (c, char.c) in visited_cell_pairs:
-			continue
-		cx, cy = c
-		if is_cell_in_actors(c, barrels):
-			continue
-		new_cx = cx + cx - barrel.cx
-		new_cy = cy + cy - barrel.cy
-		if new_cx not in room.x_range or new_cy not in room.y_range:
-			continue
-		if is_cell_in_actors((new_cx, new_cy), barrels):
-			continue
-		weight = randint(0, 30)
-		if map[cx, cy] not in CELL_WALLS:
-			weight += 20
-		if map[cx, cy] == CELL_PLATE:
-			weight += 4
-		if map[new_cx, new_cy] not in CELL_WALLS:
-			weight += 10
-		if map[new_cx, new_cy] == CELL_PLATE:
-			weight += 2
-		weighted_neighbors.append((weight, c))
-
-	neighbors = [n[1] for n in sorted(weighted_neighbors, reverse=True)]
-
-	if not neighbors:
-		# can't find free neighbor for barrel, stop
-		debug(2, "barrel #%d - failed to find free neighbor for barrel %s (%d left)" % (idx, barrel.c, num_moves))
-		return False
-
-	for neighbor in neighbors:
-		cx, cy = neighbor
-
-		# if the cell is not empty (WALL), make it empty (FLOOR with additions)
-		was_wall1_replaced = False
-		if map[cx, cy] == CELL_WALL:
-			convert_to_floor_if_needed(cx, cy)
-			was_wall1_replaced = True
-		barrel_cx = barrel.cx
-		barrel_cy = barrel.cy
-		new_char_cx = cx + (cx - barrel_cx)
-		new_char_cy = cy + (cy - barrel_cy)
-		debug(2, "barrel #%d - neighbor %s, next cell (%d, %d)" % (idx, neighbor, new_char_cx, new_char_cy))
-		debug_map(2, full=True, clean=True, dual=True)
-		was_wall2_replaced = False
-		if map[new_char_cx, new_char_cy] == CELL_WALL:
-			convert_to_floor_if_needed(new_char_cx, new_char_cy)
-			was_wall2_replaced = True
-
-		# if the char position is not None, first create random free path to the selected adjacent cell
-		old_char_c = char.c
-		if char.c is None:
-			char.c = (cx, cy)
-		if generate_random_free_path(neighbor):
-			# pull the barrel to the char
-			barrel.c = char.c
-			char.c = (new_char_cx, new_char_cy)
-
-			visited_cell_pairs.append((neighbor, char.c))
-
-			if num_moves <= 1:
-				return True
-
-			if pull_barrel_randomly(barrel, visited_cell_pairs, num_moves - 1):
-				return True
-			else:
-				debug(2, "barrel #%d - failed to pull barrel (%d moves left)" % (idx, num_moves - 1))
-		else:
-			debug(2, "barrel #%d - failed to generate random free path to neighbor %s" % (idx, neighbor))
-
-		# can't create free path for char or can't pull barrel, restore the original state
-		char.c = old_char_c
-		barrel.c = (barrel_cx, barrel_cy)
-		if was_wall1_replaced:
-			map[cx, cy] = CELL_WALL
-		if was_wall2_replaced:
-			map[new_char_cx, new_char_cy] = CELL_WALL
-
-	return False
-
-def generate_random_solvable_barrel_room():
-	global map
-
-	num_barrels = level["num_barrels"] if "num_barrels" in level else DEFAULT_NUM_BARRELS
-
-	def get_random_cell():
-		return (randint(room.x1, room.x2), randint(room.y1, room.y2))
-
-	# 0) initialize char position to None
-	char.c = None
-
-	# 1) initialize entire room to WALL
-	for cy in room.y_range:
-		for cx in room.x_range:
-			map[cx, cy] = CELL_WALL
-
-	# 2) place room plates randomly or in good positions, as the number of barrels
-	# 3) place room barrels into the place cells, one barrel per one plate
-	for n in range(num_barrels):
-		while True:
-			cell = get_random_cell()
-			if map[cell] != CELL_PLATE:
-				map[cell] = CELL_PLATE
-				break
-		create_barrel(cell)
-
-	# 4) for each room barrel do:
-	for barrel in barrels:
-		debug(2, "barrel #%d - starting (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
-		visited_cell_pairs = [(barrel.c, char.c)]
-		# 5) make random moves for the barrel until possible
-		num_moves = randint(10, 80)
-		pull_barrel_randomly(barrel, visited_cell_pairs, num_moves)
-		debug(2, "barrel #%d - finished (%d, %d)" % (barrels.index(barrel), barrel.cx, barrel.cy))
-
-	# 11) remember the char position, optionally try to move it as far left-top as possible
-	if char.c is None:
-		print("Failed to generate random solvable barrel room")
-		if DEBUG_LEVEL:
-			return
-		else:
-			quit()
-
-	while True:
-		for c in get_actor_neighbors(char, room.x_range, room.y_range):
-			cx, cy = c
-			if cx > char.cx or cy > char.cy:
-				continue
-			if not map[c] in CELL_CHAR_MOVE_OBSTACLES:
-				char.c = c
-				if room.idx:
-					set_char_cell(c)
-				break
-		else:
-			break
-
 def get_random_floor_cell():
 	while True:
 		cell = randint(room.x1, room.x2), randint(room.y1, room.y2)
@@ -953,53 +545,6 @@ def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None, extra
 				callback(cell, extra, *extra_cells)
 			else:
 				callback(cell, *extra_cells)
-
-def generate_random_nonsolvable_stoneage_room():
-	replace_random_floor_cell(CELL_VOID, 70)
-	replace_random_floor_cell(CELL_START, 1, set_char_cell)
-	replace_random_floor_cell(CELL_FINISH)
-	replace_random_floor_cell(CELL_SAND, 10)
-
-	replace_random_floor_cell(CELL_PORTAL, 2, create_portal_pair, extra_num=1)
-	replace_random_floor_cell(CELL_LOCK1, 1)
-	replace_random_floor_cell(CELL_LOCK2, 1)
-	drop_key1.instantiate(get_random_floor_cell())
-	drop_key2.instantiate(get_random_floor_cell())
-
-	replace_random_floor_cell(CELL_VOID, 5, create_lift, LIFT_A)
-	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_H)
-	replace_random_floor_cell(CELL_VOID, 2, create_lift, LIFT_V)
-	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_L)
-	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_R)
-	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_U)
-	replace_random_floor_cell(CELL_VOID, 1, create_lift, LIFT_D)
-
-def generate_random_solvable_stoneage_room():
-	global start_cell
-
-	while True:
-		start_cell = get_random_floor_cell()
-		finish_cell = get_random_floor_cell()
-		if get_distance(start_cell, finish_cell) > get_max_room_distance() / 2:
-			break
-
-	map[start_cell] = CELL_START
-	map[finish_cell] = CELL_FINISH
-	set_char_cell(start_cell)
-
-	replace_random_floor_cell(CELL_VOID, (room.x2 - room.x1 + 1) * (room.y2 - room.y1 + 1) - 2)
-	char.c = char_cell
-	generate_random_free_path(finish_cell, deviation=4)
-
-	path_cells = find_path(start_cell, finish_cell)[:-1]
-	for i in range(int(randint(0, 60) * len(path_cells) / 100), int(randint(40, 100) * len(path_cells) / 100)):
-		map[path_cells[i]] = CELL_SAND
-
-	replace_random_floor_cell(CELL_PORTAL, 1, create_portal_pair, extra_num=1)
-	replace_random_floor_cell(CELL_LOCK1, 1)
-	replace_random_floor_cell(CELL_LOCK2, 1)
-	drop_key1.instantiate(get_random_floor_cell())
-	drop_key2.instantiate(get_random_floor_cell())
 
 def create_portal_pair(cell1, cell2):
 	if cell1 == cell2:
@@ -1039,12 +584,43 @@ def create_enemy(cell, health=None, attack=None, drop=None):
 		enemy.drop.contain(enemy)
 	enemies.append(enemy)
 
+class Globals:
+	Area = Area
+	char = char
+	enemies = enemies
+	barrels = barrels
+	drop_key1 = drop_key1
+	drop_key2 = drop_key2
+	is_four_rooms = is_four_rooms
+	is_enemy_key_drop = is_enemy_key_drop
+
+	get_actor_neighbors = get_actor_neighbors
+	get_all_neighbors = get_all_neighbors
+	debug = debug
+	debug_map = debug_map
+	convert_inner_walls = convert_inner_walls
+	load_theme_cell_image = load_theme_cell_image
+	colorize_cell_image = colorize_cell_image
+	is_cell_occupied = is_cell_occupied
+	get_max_room_distance = get_max_room_distance
+	is_actor_in_room = is_actor_in_room
+	get_distance = get_distance
+	get_all_accessible_cells = get_all_accessible_cells
+	get_num_accessible_target_directions = get_num_accessible_target_directions
+	find_path = find_path
+	is_path_found = is_path_found
+	set_char_cell = set_char_cell
+	get_random_floor_cell_type = get_random_floor_cell_type
+	convert_to_floor_if_needed = convert_to_floor_if_needed
+	generate_random_free_path = generate_random_free_path
+	create_barrel = create_barrel
+	get_random_floor_cell = get_random_floor_cell
+	replace_random_floor_cell = replace_random_floor_cell
+	create_portal_pair = create_portal_pair
+	create_enemy = create_enemy
+
 def generate_room(idx):
 	set_room(idx)
-
-	if is_barrel_puzzle or is_gate_puzzle:
-		draw()
-		pygame.display.flip()
 
 	if is_random_maze:
 		generate_random_maze_room()
@@ -1055,13 +631,9 @@ def generate_room(idx):
 	if is_grid_maze:
 		generate_grid_maze()
 
-	if is_stoneage_puzzle:
-		generate_random_solvable_stoneage_room()
-
-	if is_barrel_puzzle:
-		generate_random_solvable_barrel_room()
-
-	if has_finish or is_gate_puzzle or is_lock_puzzle:
+	accessible_cells = None
+	finish_cell = None
+	if has_finish or puzzle.is_finish_cell_required():
 		char.c = (room.x1, room.y1)
 		if room.idx == 0:
 			set_char_cell(char.c)
@@ -1070,29 +642,7 @@ def generate_room(idx):
 		finish_cell = accessible_cells.pop()
 		map[finish_cell] = CELL_FINISH
 
-	if is_gate_puzzle:
-		generate_random_solvable_gate_room(accessible_cells, finish_cell)
-
-	if is_lock_puzzle:
-		generate_random_solvable_lock_room(accessible_cells, finish_cell)
-
-	if is_color_puzzle:
-		for cy in color_puzzle.y_range:
-			for cx in color_puzzle.x_range:
-				color_map[cx, cy] = COLOR_PUZZLE_VALUE_GREEN
-				if is_color_puzzle_plate(cx, cy):
-					map[cx, cy] = CELL_PLATE
-					color_map[cx, cy] = COLOR_PUZZLE_VALUE_PLATE
-		num_tries = 5
-		while num_tries > 0:
-			for n in range(color_puzzle.size_x * color_puzzle.size_y * 3):
-				plate_cx = color_puzzle.x1 + randint(1, int(color_puzzle.size_x / 2)) * 2 - 1
-				plate_cy = color_puzzle.y1 + randint(1, int(color_puzzle.size_y / 2)) * 2 - 1
-				for i in range(randint(1, get_num_color_puzzle_values() - 1)):
-					press_color_puzzle_plate(plate_cx, plate_cy)
-			if not is_color_puzzle_solved():
-				break
-			num_tries -= 1
+	puzzle.generate_room(accessible_cells, finish_cell)
 
 	# generate enemies
 	for i in range(level["num_enemies"] if "num_enemies" in level else DEFAULT_NUM_ENEMIES):
@@ -1108,7 +658,7 @@ def generate_room(idx):
 		create_enemy((cx, cy))
 
 def generate_map():
-	global map, color_map
+	global map
 
 	map = chararray((MAP_SIZE_X, MAP_SIZE_Y), itemsize=5, unicode=True)
 	for cy in MAP_Y_RANGE:
@@ -1122,9 +672,7 @@ def generate_map():
 					cell_type = get_random_floor_cell_type()
 			map[cx, cy] = cell_type
 
-	if is_color_puzzle:
-		color_map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=int)
-		color_map.fill(COLOR_PUZZLE_VALUE_OUTSIDE)
+	puzzle.on_create_map(map)
 
 	if is_four_rooms:
 		for idx in range(4):
@@ -1132,11 +680,10 @@ def generate_map():
 	else:
 		generate_room(None)
 
-	if is_barrel_puzzle:
-		convert_inner_walls()
+	puzzle.on_generate_map()
 
 def set_theme(theme_name):
-	global cell_images, status_image, cloud_image, color_cell_images
+	global cell_images, status_image, cloud_image
 	global barrels
 	global theme_prefix
 
@@ -1146,24 +693,19 @@ def set_theme(theme_name):
 	image3 = create_theme_image('crack')
 	image4 = create_theme_image('bones')
 	image5 = create_theme_image('rocks')
-	image6 = create_theme_image('plate') if is_color_puzzle or is_barrel_puzzle or is_gate_puzzle else None
-	image7 = create_theme_image('start') if has_start or is_stoneage_puzzle else None
-	image8 = create_theme_image('finish') if has_finish or is_stoneage_puzzle or is_gate_puzzle or is_lock_puzzle else None
-	image9 = create_theme_image('portal') if is_stoneage_puzzle else None
-	image10 = create_theme_image('gate0') if is_gate_puzzle else None
-	image11 = create_theme_image('gate1') if is_gate_puzzle else None
-	image12 = create_theme_image('sand') if is_stoneage_puzzle else None
-	image13 = create_theme_image('lock1') if is_stoneage_puzzle or is_lock_puzzle else None
-	image14 = create_theme_image('lock2') if is_stoneage_puzzle or is_lock_puzzle else None
+	image6 = create_theme_image('plate')  if puzzle.has_plate() else None
+	image7 = create_theme_image('start')  if has_start or puzzle.has_start() else None
+	image8 = create_theme_image('finish') if has_finish or puzzle.has_finish() else None
+	image9 = create_theme_image('portal') if puzzle.has_portal() else None
+	image10 = create_theme_image('gate0') if puzzle.has_gate() else None
+	image11 = create_theme_image('gate1') if puzzle.has_gate() else None
+	image12 = create_theme_image('sand')  if puzzle.has_sand() else None
+	image13 = create_theme_image('lock1') if puzzle.has_locks() else None
+	image14 = create_theme_image('lock2') if puzzle.has_locks() else None
 	status_image = create_theme_image('status')
 	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
 
-	if is_color_puzzle:
-		gray_alpha_image = load_theme_cell_image('floor_gray_alpha')
-		color_cell_images = []
-		for color in COLOR_PUZZLE_RGB_VALUES:
-			color_cell_image = colorize_cell_image(gray_alpha_image, color)
-			color_cell_images.append(color_cell_image)
+	puzzle.on_set_theme()
 
 	inner_wall_image = load_theme_cell_image('wall')
 	inner_wall_image.fill((50, 50, 50), special_flags=pygame.BLEND_RGB_SUB)
@@ -1264,17 +806,16 @@ def reset_idle_time():
 def init_new_level(offset=1, reload_stored=False):
 	global level_idx, level, level_time, mode, is_game_won
 	global is_random_maze, is_spiral_maze, is_grid_maze, is_any_maze
-	global is_stoneage_puzzle, is_barrel_puzzle, is_color_puzzle
-	global is_gate_puzzle, is_lock_puzzle
 	global has_start, has_finish
 	global is_enemy_key_drop
 	global is_stopless
+	global puzzle
 	global bg_image
 	global is_cloud_mode, revealed_map
 	global is_four_rooms, char_cell, room_idx
 	global enemies, barrels, killed_enemies, lifts
 	global level_time
-	global map, color_map, stored_level
+	global map, stored_level
 
 	if reload_stored and offset != 0:
 		print("Can't reload a non-current level")
@@ -1296,21 +837,18 @@ def init_new_level(offset=1, reload_stored=False):
 		return
 
 	level = LEVELS[level_idx]
+
 	is_random_maze = "random_maze" in level
 	is_spiral_maze = "spiral_maze" in level
 	is_grid_maze = "grid_maze" in level
-	is_any_maze = is_random_maze or is_spiral_maze or is_grid_maze
-	is_stoneage_puzzle = "stoneage_puzzle" in level and not is_any_maze
-	is_barrel_puzzle = "barrel_puzzle" in level and not is_any_maze and not is_stoneage_puzzle
-	is_color_puzzle = "color_puzzle" in level and not is_any_maze and not is_barrel_puzzle and not is_stoneage_puzzle
 	is_four_rooms = "four_rooms" in level
 	is_cloud_mode = "cloud_mode" in level
-	is_gate_puzzle = "gate_puzzle" in level and is_any_maze
-	is_lock_puzzle = "lock_puzzle" in level and is_any_maze
 	is_enemy_key_drop = "enemy_key_drop" in level
 	is_stopless = "stopless" in level
 	has_start = "has_start" in level
 	has_finish = "has_finish" in level
+
+	puzzle = create_puzzle(level, Globals)
 
 	bg_image = None
 	if "bg_image" in level:
@@ -1321,10 +859,10 @@ def init_new_level(offset=1, reload_stored=False):
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
 
-	barrels = []
-	enemies = []
-	lifts = []
-	killed_enemies = []
+	barrels.clear()
+	enemies.clear()
+	lifts.clear()
+	killed_enemies.clear()
 
 	for drop in drops:
 		drop.reset()
@@ -1332,14 +870,17 @@ def init_new_level(offset=1, reload_stored=False):
 	set_theme(level["theme"])
 	if reload_stored:
 		map = stored_level["map"]
-		color_map = stored_level["color_map"]
 		for enemy_info in stored_level["enemy_infos"]:
 			create_enemy(*enemy_info)
 		for barrel_cell in stored_level["barrel_cells"]:
 			create_barrel(barrel_cell)
 		for lift_info in stored_level["lift_infos"]:
 			create_lift(*lift_info)
+		puzzle.restore_level(stored_level)
 	else:
+		if puzzle.is_long_generation():
+			draw()
+			pygame.display.flip()
 		generate_map()
 
 	for drop in drops:
@@ -1377,12 +918,12 @@ def init_new_level(offset=1, reload_stored=False):
 
 	stored_level = {
 		"map": map.copy(),
-		"color_map": color_map.copy() if is_color_puzzle else None,
 		"char_cell": char.c,
 		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.drop) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 	}
+	puzzle.store_level(stored_level)
 
 def init_new_room():
 	global room_idx, mode
@@ -1413,15 +954,19 @@ def draw_map():
 					cell_image = cloud_image
 				elif cell_type == CELL_VOID:
 					continue
-				elif is_color_puzzle and cell_type == CELL_FLOOR and color_map[cx, cy] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
-					cell_image = get_color_puzzle_image(cx, cy)
+				elif cell_image0 := puzzle.get_cell_image_to_draw(cx, cy, cell_type):
+					cell_image = cell_image0
 				elif cell_type in cell_images:
 					cell_image = cell_images[cell_type]
 				else:
 					screen.draw.text(cell_type, center=cell_to_pos((cx, cy)), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
 					continue
 
-				if cell_image.__class__.__name__ == 'CellActor':
+				if not cell_image:
+					debug_map()
+					print("Bug. Got null cell image at (%d, %d) cell_type=%s" % ((cx, cy, cell_type)))
+					quit()
+				elif cell_image.__class__.__name__ == 'CellActor':
 					cell_image.left = CELL_W * cx
 					cell_image.top = CELL_H * cy
 					cell_image.draw()
@@ -1587,16 +1132,12 @@ def on_key_down(key):
 	if keyboard.q:
 		quit()
 
-	if keyboard.space and is_color_puzzle and map[char.c] == CELL_PLATE:
-		press_color_puzzle_plate(*char.c)
-		if is_color_puzzle_solved():
-			win_room()
-
-	if keyboard.space and is_gate_puzzle and map[char.c] == CELL_PLATE:
-		press_gate_puzzle_plate()
-
 	if keyboard.space and map[char.c] == CELL_PORTAL:
 		teleport_char()
+
+	if puzzle.on_press_key(keyboard):
+		if puzzle.is_solved():
+			win_room()
 
 def loose_game():
 	global mode, is_game_won
@@ -1621,14 +1162,14 @@ def check_victory():
 		loose_game()
 	elif char.health is not None and char.health <= MIN_CHAR_HEALTH:
 		loose_game()
-	elif is_barrel_puzzle:
-		if is_barrel_puzzle_solved():
+	elif puzzle.is_target_to_be_solved():
+		if puzzle.is_solved():
 			win_room()
-	elif has_finish or is_gate_puzzle or is_stoneage_puzzle or is_lock_puzzle:
+	elif has_finish or puzzle.has_finish():
 		if map[char.c] == CELL_FINISH:
 			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
 			win_room()
-	elif is_stoneage_puzzle or is_color_puzzle:
+	elif not puzzle.is_target_to_kill_enemies():
 		pass
 	elif not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
 		win_room()
