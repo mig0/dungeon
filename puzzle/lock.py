@@ -21,7 +21,7 @@ class LockPuzzle(Puzzle):
 		origin_map = self.map.copy()
 		orig_accessible_cells = accessible_cells.copy()
 
-		num_locks = 2 if self.Globals.is_four_rooms else randint(self.level.get('min_locks') or 2, self.level.get('max_locks') or 4)
+		num_locks = 2 if flags.is_four_rooms else randint(self.level.get('min_locks') or 2, self.level.get('max_locks') or 4)
 
 		num_tries = 10000
 		while num_tries > 0:
@@ -49,7 +49,7 @@ class LockPuzzle(Puzzle):
 					# failed to find free cell for key, try again
 					break
 				drop = self.Globals.drop_key1 if lock_type == CELL_LOCK1 else self.Globals.drop_key2
-				if self.Globals.is_enemy_key_drop:
+				if flags.is_enemy_key_drop:
 					self.Globals.create_enemy(key_cell, drop=drop)
 				else:
 					drop.instantiate(key_cell)
@@ -59,7 +59,7 @@ class LockPuzzle(Puzzle):
 			self.Globals.debug(2, "Failed to generate solvable lock room, trying again")
 			copyto(self.map, origin_map)
 			accessible_cells = orig_accessible_cells.copy()
-			if self.Globals.is_enemy_key_drop:
+			if flags.is_enemy_key_drop:
 				self.Globals.enemies = []
 			self.Globals.drop_key1.reset()
 			self.Globals.drop_key2.reset()

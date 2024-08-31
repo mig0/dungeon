@@ -2,11 +2,10 @@ from . import *
 from numpy import ndarray
 
 class ColorPuzzle(Puzzle):
-	def __init__(self, level, Globals):
-		super().__init__(level, Globals)
+	def init(self):
 		self.color_map = None
 		self.color_cell_images = []
-		self.color_area = Globals.Area()
+		self.color_area = self.Globals.Area()
 
 	def has_plate(self):
 		return True

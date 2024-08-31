@@ -1,4 +1,5 @@
 from constants import *
+from flags import flags
 from random import randint
 
 class Puzzle:
@@ -7,6 +8,10 @@ class Puzzle:
 		self.room = None
 		self.level = level
 		self.Globals = Globals
+		self.init()
+
+	def init(self):
+		pass
 
 	def is_long_generation(self):
 		return False
@@ -78,22 +83,20 @@ from .lock import *
 from .stoneage import *
 
 def create_puzzle(level, Globals):
-	is_any_maze = "random_maze" in level or "spiral_maze" in level or "grid_maze" in level
+	is_any_maze = flags.is_random_maze or flags.is_spiral_maze or flags.is_grid_maze
 
-	if "barrel_puzzle" in level and not is_any_maze:
-		return BarrelPuzzle(level, Globals)
+	if level.get("barrel_puzzle") and not is_any_maze:
+		puzzle_class = BarrelPuzzle
+	elif level.get("color_puzzle") and not is_any_maze:
+		puzzle_class = ColorPuzzle
+	elif level.get("gate_puzzle") and is_any_maze:
+		puzzle_class = GatePuzzle
+	elif level.get("lock_puzzle") and is_any_maze:
+		puzzle_class = LockPuzzle
+	elif level.get("stoneage_puzzle") and not is_any_maze:
+		puzzle_class = StoneagePuzzle
+	else:
+		puzzle_class = Puzzle
 
-	if "color_puzzle" in level and not is_any_maze:
-		return ColorPuzzle(level, Globals)
-
-	if "gate_puzzle" in level and is_any_maze:
-		return GatePuzzle(level, Globals)
-
-	if "lock_puzzle" in level and is_any_maze:
-		return LockPuzzle(level, Globals)
-
-	if "stoneage_puzzle" in level and not is_any_maze:
-		return StoneagePuzzle(level, Globals)
-
-	return Puzzle(level, Globals)
+	return puzzle_class(level, Globals)
 

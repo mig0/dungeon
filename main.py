@@ -10,7 +10,8 @@ from constants import *
 from translations import *
 from cellactor import *
 from drop import *
-from puzzle import *
+from flags import flags
+from puzzle import create_puzzle
 
 lang = 'en'
 
@@ -67,16 +68,6 @@ is_move_animate_enabled = True
 is_level_intro_enabled = True
 
 mode = "start"
-is_random_maze = False
-is_spiral_maze = False
-is_grid_maze = False
-is_any_maze = False
-is_four_rooms = False
-is_cloud_mode = False
-is_enemy_key_drop = False
-is_stopless = False
-has_start = False
-has_finish = False
 
 puzzle = None
 
@@ -223,14 +214,14 @@ def create_theme_actor(image_name, cell):
 	return create_actor(get_theme_image_name(image_name), cell)
 
 def reveal_map_near_char():
-	if not is_cloud_mode:
+	if not flags.is_cloud_mode:
 		return
 
 	for (cx, cy) in get_all_neighbors(char.cx, char.cy, include_self=True):
 		revealed_map[cx, cy] = True
 
 def get_revealed_actors(actors):
-	if not is_cloud_mode or level.get("actors_always_revealed", False):
+	if not flags.is_cloud_mode or level.get("actors_always_revealed", False):
 		return actors
 
 	revealed_actors = []
@@ -591,8 +582,6 @@ class Globals:
 	barrels = barrels
 	drop_key1 = drop_key1
 	drop_key2 = drop_key2
-	is_four_rooms = is_four_rooms
-	is_enemy_key_drop = is_enemy_key_drop
 
 	get_actor_neighbors = get_actor_neighbors
 	get_all_neighbors = get_all_neighbors
@@ -622,18 +611,18 @@ class Globals:
 def generate_room(idx):
 	set_room(idx)
 
-	if is_random_maze:
+	if flags.is_random_maze:
 		generate_random_maze_room()
 
-	if is_spiral_maze:
+	if flags.is_spiral_maze:
 		generate_spiral_maze()
 
-	if is_grid_maze:
+	if flags.is_grid_maze:
 		generate_grid_maze()
 
 	accessible_cells = None
 	finish_cell = None
-	if has_finish or puzzle.is_finish_cell_required():
+	if flags.has_finish or puzzle.is_finish_cell_required():
 		char.c = (room.x1, room.y1)
 		if room.idx == 0:
 			set_char_cell(char.c)
@@ -666,7 +655,7 @@ def generate_map():
 			if cx == 0 or cx == PLAY_SIZE_X + 1 or cy == 0 or cy == PLAY_SIZE_Y + 1:
 				cell_type = CELL_WALL
 			else:
-				if is_four_rooms and (cx == ROOM_BORDER_X or cy == ROOM_BORDER_Y):
+				if flags.is_four_rooms and (cx == ROOM_BORDER_X or cy == ROOM_BORDER_Y):
 					cell_type = CELL_WALL
 				else:
 					cell_type = get_random_floor_cell_type()
@@ -674,7 +663,7 @@ def generate_map():
 
 	puzzle.on_create_map(map)
 
-	if is_four_rooms:
+	if flags.is_four_rooms:
 		for idx in range(4):
 			generate_room(idx)
 	else:
@@ -694,8 +683,8 @@ def set_theme(theme_name):
 	image4 = create_theme_image('bones')
 	image5 = create_theme_image('rocks')
 	image6 = create_theme_image('plate')  if puzzle.has_plate() else None
-	image7 = create_theme_image('start')  if has_start or puzzle.has_start() else None
-	image8 = create_theme_image('finish') if has_finish or puzzle.has_finish() else None
+	image7 = create_theme_image('start')  if flags.has_start or puzzle.has_start() else None
+	image8 = create_theme_image('finish') if flags.has_finish or puzzle.has_finish() else None
 	image9 = create_theme_image('portal') if puzzle.has_portal() else None
 	image10 = create_theme_image('gate0') if puzzle.has_gate() else None
 	image11 = create_theme_image('gate1') if puzzle.has_gate() else None
@@ -703,7 +692,7 @@ def set_theme(theme_name):
 	image13 = create_theme_image('lock1') if puzzle.has_locks() else None
 	image14 = create_theme_image('lock2') if puzzle.has_locks() else None
 	status_image = create_theme_image('status')
-	cloud_image = create_theme_image('cloud') if is_cloud_mode and not bg_image else None
+	cloud_image = create_theme_image('cloud') if flags.is_cloud_mode and not bg_image else None
 
 	puzzle.on_set_theme()
 
@@ -805,14 +794,10 @@ def reset_idle_time():
 
 def init_new_level(offset=1, reload_stored=False):
 	global level_idx, level, level_time, mode, is_game_won
-	global is_random_maze, is_spiral_maze, is_grid_maze, is_any_maze
-	global has_start, has_finish
-	global is_enemy_key_drop
-	global is_stopless
 	global puzzle
 	global bg_image
-	global is_cloud_mode, revealed_map
-	global is_four_rooms, char_cell, room_idx
+	global revealed_map
+	global char_cell, room_idx
 	global enemies, barrels, killed_enemies, lifts
 	global level_time
 	global map, stored_level
@@ -838,15 +823,7 @@ def init_new_level(offset=1, reload_stored=False):
 
 	level = LEVELS[level_idx]
 
-	is_random_maze = "random_maze" in level
-	is_spiral_maze = "spiral_maze" in level
-	is_grid_maze = "grid_maze" in level
-	is_four_rooms = "four_rooms" in level
-	is_cloud_mode = "cloud_mode" in level
-	is_enemy_key_drop = "enemy_key_drop" in level
-	is_stopless = "stopless" in level
-	has_start = "has_start" in level
-	has_finish = "has_finish" in level
+	flags.parse_level(level)
 
 	puzzle = create_puzzle(level, Globals)
 
@@ -894,7 +871,7 @@ def init_new_level(offset=1, reload_stored=False):
 	if is_level_intro_enabled:
 		reset_level_and_target_timer()
 
-	room_idx = 0 if is_four_rooms else None
+	room_idx = 0 if flags.is_four_rooms else None
 	set_room(room_idx)
 
 	if reload_stored:
@@ -904,7 +881,7 @@ def init_new_level(offset=1, reload_stored=False):
 	else:
 		place_char_in_first_free_spot()
 
-	if is_cloud_mode:
+	if flags.is_cloud_mode:
 		revealed_map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=bool)
 		revealed_map.fill(False)
 	reveal_map_near_char()
@@ -928,10 +905,10 @@ def init_new_level(offset=1, reload_stored=False):
 def init_new_room():
 	global room_idx, mode
 
-	if is_four_rooms:
+	if flags.is_four_rooms:
 		room_idx += 1
 
-	if not is_four_rooms or room_idx == 4:
+	if not flags.is_four_rooms or room_idx == 4:
 		init_new_level()
 	else:
 		set_room(room_idx)
@@ -948,7 +925,7 @@ def draw_map():
 			if cell_type in CELL_FLOOR_EXTENSIONS and cell_type != CELL_FLOOR:
 				cell_types.insert(0, CELL_FLOOR)
 			for cell_type in cell_types:
-				if is_cloud_mode and not revealed_map[cx, cy]:
+				if flags.is_cloud_mode and not revealed_map[cx, cy]:
 					if bg_image:
 						continue
 					cell_image = cloud_image
@@ -1050,7 +1027,7 @@ def kill_enemy():
 
 def on_key_down(key):
 	global lang
-	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled, is_stopless
+	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled
 
 	reset_idle_time()
 
@@ -1073,7 +1050,7 @@ def on_key_down(key):
 				clear_level_and_target_timer()
 
 		if keyboard.s:
-			is_stopless = not is_stopless
+			flags.is_stopless = not flags.is_stopless
 
 		if keyboard.d:
 			debug_map()
@@ -1165,7 +1142,7 @@ def check_victory():
 	elif puzzle.is_target_to_be_solved():
 		if puzzle.is_solved():
 			win_room()
-	elif has_finish or puzzle.has_finish():
+	elif flags.has_finish or puzzle.has_finish():
 		if map[char.c] == CELL_FINISH:
 			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
 			win_room()
@@ -1237,7 +1214,7 @@ def move_char(diff_x, diff_y):
 	# try to move forward, and prepare to cancel if the move is impossible
 	char.move(diff)
 
-	if is_stopless:
+	if flags.is_stopless:
 		is_jumped = False
 		while map[char.c] in CELL_FLOOR_TYPES and not is_cell_occupied_except_char(char.c) and can_move(diff):
 			char.move(diff)
