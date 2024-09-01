@@ -187,4 +187,12 @@ levels = [
 		"char_health": 100,
 		"target": "reach-finish",
 	},
+	{
+		"n": 7.1,
+		"theme": "stoneage1",
+		"music": "stoneage/08_the_golden_valley.mp3",
+		"trivial_puzzle": True,
+		"char_health": 40,
+		"target": "reach-finish",
+	},
 ]

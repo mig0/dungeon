@@ -82,6 +82,7 @@ from .color import *
 from .gate import *
 from .lock import *
 from .stoneage import *
+from .trivial import *
 
 def create_puzzle(level, Globals):
 	is_any_maze = flags.is_random_maze or flags.is_spiral_maze or flags.is_grid_maze
@@ -96,6 +97,8 @@ def create_puzzle(level, Globals):
 		puzzle_class = LockPuzzle
 	elif level.get("stoneage_puzzle") and not is_any_maze:
 		puzzle_class = StoneagePuzzle
+	elif level.get("trivial_puzzle"):
+		puzzle_class = TrivialPuzzle
 	else:
 		puzzle_class = Puzzle
 
