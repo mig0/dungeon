@@ -1062,13 +1062,6 @@ def on_key_down(key):
 	if keyboard.f12:
 		pygame.mouse.set_visible(not pygame.mouse.get_visible())
 
-	if keyboard.p:
-		init_new_level(-1)
-	if keyboard.r:
-		init_new_level(0, bool(keyboard.lalt))
-	if keyboard.n:
-		init_new_level(+1)
-
 	if keyboard.l:
 		reset_level_and_target_timer()
 
@@ -1086,6 +1079,16 @@ def on_key_down(key):
 
 	if keyboard.q:
 		quit()
+
+	if mode == "next":
+		return
+
+	if keyboard.p:
+		init_new_level(-1)
+	if keyboard.r:
+		init_new_level(0, bool(keyboard.lalt))
+	if keyboard.n:
+		init_new_level(+1)
 
 	if keyboard.space and map[char.c] == CELL_PORTAL:
 		teleport_char()
