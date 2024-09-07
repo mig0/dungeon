@@ -14,10 +14,10 @@ class ColorPuzzle(Puzzle):
 		return False
 
 	def on_set_theme(self):
-		gray_alpha_image = self.Globals.load_theme_cell_image('floor_gray_alpha')
+		gray_tiles_image = self.Globals.load_theme_cell_image('floor_gray_tiles')
 		self.color_cell_images = []
 		for color in COLOR_PUZZLE_RGB_VALUES:
-			color_cell_image = self.Globals.colorize_cell_image(gray_alpha_image, color)
+			color_cell_image = self.Globals.colorize_cell_image(gray_tiles_image, color)
 			self.color_cell_images.append(color_cell_image)
 
 	def on_set_room(self, room):
