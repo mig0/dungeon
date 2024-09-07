@@ -1,7 +1,7 @@
 from constants import *
 from objects import *
 from flags import flags
-from random import randint
+from random import randint, random
 
 class Puzzle:
 	def __init__(self, level, Globals):
@@ -79,6 +79,9 @@ class Puzzle:
 
 	def on_press_key(self, keyboard):
 		return False
+
+	def on_update(self, level_time):
+		pass
 
 from .barrel import *
 from .color import *

@@ -1293,6 +1293,8 @@ def update(dt):
 	for actor in active_inplace_animation_actors:
 		actor.update_inplace_animation(level_time)
 
+	puzzle.on_update(level_time)
+
 	if level_title_timer > 0:
 		level_title_timer -= 1
 	elif level_target_timer > 0:
