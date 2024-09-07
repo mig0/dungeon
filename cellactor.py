@@ -23,6 +23,7 @@ def example(n):
 class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, scale=None, **kwargs):
 		self._cell = None
+		self._default_opacity = 1.0
 		self.reset_inplace()
 		self.unset_inplace_animation()
 		self._unset_animation()
@@ -54,6 +55,11 @@ class CellActor(Actor):
 	def c(self, cell):
 		self._cell = NONE_CELL if cell is None else cell
 		self.x, self.y = self.get_pos()
+
+	def set_image(self, image):
+		if self.image != image:
+			self.image = image
+			self.transform_surf()
 
 	def get_pos(self):
 		return cell_to_pos(self._cell)
@@ -98,7 +104,7 @@ class CellActor(Actor):
 		self.pos = p
 
 	def reset_inplace(self):
-		self._opacity = 1.0
+		self._opacity = self._default_opacity
 		self._scale = 1.0
 		self._angle = 0.0
 		self._flip  = None
@@ -124,8 +130,8 @@ class CellActor(Actor):
 	def reset_inplace_animation(self, hard=True):
 		self.unset_inplace_animation()
 		is_changed = False
-		if self._opacity != 1:
-			self._opacity = 1
+		if self._opacity != self._default_opacity:
+			self._opacity = self._default_opacity
 			is_changed = True
 		if self._scale != 1:
 			self._scale = 1
@@ -222,6 +228,13 @@ class CellActor(Actor):
 
 	def is_animated(self):
 		return self.is_inplace_animation_active() or self.is_animated_external()
+
+	def set_default_opacity(self, default_opacity):
+		is_default_opacity = self._opacity == self._default_opacity
+		self._default_opacity = default_opacity
+		if is_default_opacity and self._opacity != self._default_opacity:
+			self._opacity = self._default_opacity
+			self.transform_surf()
 
 def create_actor(image_name, cell):
 	actor = CellActor(image_name)
