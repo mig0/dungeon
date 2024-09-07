@@ -1,8 +1,7 @@
-#pgzero
-
 import os
 import random
 import pygame
+import pgzero
 from numpy import ndarray, chararray
 from copy import deepcopy
 from random import randint
@@ -169,10 +168,15 @@ def get_theme_image_name(image_name):
 def load_theme_cell_image(image_name):
 	return pygame.image.load(IMAGES_DIR_PREFIX + get_theme_image_name(image_name) + '.png').convert_alpha()
 
-def colorize_cell_image(image, color):
-	cell_surface = pygame.Surface((CELL_W, CELL_H))
-	cell_surface.fill(color)
+def colorize_cell_image(image, color, alpha=1):
+	cell_surface = pygame.Surface((CELL_W, CELL_H), pygame.SRCALPHA, 32)
+	cell_surface.fill((*color, alpha * 255))
 	cell_surface.blit(image, (0, 0))
+	return cell_surface
+
+def create_text_cell_image(text, color='#E0E0E0', gcolor="#408080", owidth=1.2, ocolor="#004040", alpha=1, fontsize=48):
+	cell_surface = pygame.Surface((CELL_W, CELL_H), pygame.SRCALPHA, 32)
+	pgzero.ptext.draw(text, surf=cell_surface, center=cell_to_pos((0, 0)), color=color, gcolor=gcolor, owidth=owidth, ocolor=ocolor, alpha=alpha, fontsize=fontsize)
 	return cell_surface
 
 def is_cell_occupied_except_char(cell):
@@ -563,6 +567,7 @@ class Globals:
 	convert_inner_walls = convert_inner_walls
 	load_theme_cell_image = load_theme_cell_image
 	colorize_cell_image = colorize_cell_image
+	create_text_cell_image = create_text_cell_image
 	is_cell_occupied = is_cell_occupied
 	get_max_room_distance = get_max_room_distance
 	is_actor_in_room = is_actor_in_room
@@ -911,8 +916,7 @@ def draw_map():
 				elif cell_type in cell_images:
 					cell_image = cell_images[cell_type]
 				else:
-					screen.draw.text(cell_type, center=cell_to_pos((cx, cy)), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=48)
-					continue
+					cell_image = create_text_cell_image(cell_type)
 
 				if not cell_image:
 					debug_map()
