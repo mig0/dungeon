@@ -71,7 +71,10 @@ class Puzzle:
 	def restore_level(self, stored_level):
 		pass
 
-	def get_cell_image_to_draw(self, cx, cy, cell_type):
+	def modify_cell_types_to_draw(self, cell, cell_types):
+		pass
+
+	def get_cell_image_to_draw(self, cell, cell_type):
 		return None
 
 	def on_press_key(self, keyboard):

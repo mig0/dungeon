@@ -48,8 +48,8 @@ class ColorPuzzle(Puzzle):
 			if "color_puzzle_extended" in self.level and (nx != cx and ny != cy) ^ (cx % 3 != 0 or cy % 3 != 0):
 				self.press_cell(nx, ny)
 
-	def get_image(self, cx, cy):
-		return self.color_cell_images[self.color_map[cx, cy]]
+	def get_image(self, cell):
+		return self.color_cell_images[self.color_map[cell]]
 
 	def is_in_color_area(self, cx, cy):
 		return cx in self.color_area.x_range and cy in self.color_area.y_range
@@ -70,9 +70,9 @@ class ColorPuzzle(Puzzle):
 	def restore_level(self, stored_level):
 		self.color_map = stored_level["color_map"]
 
-	def get_cell_image_to_draw(self, cx, cy, cell_type):
-		if cell_type == CELL_FLOOR and self.color_map[cx, cy] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
-			return self.get_image(cx, cy)
+	def get_cell_image_to_draw(self, cell, cell_type):
+		if cell_type == CELL_FLOOR and self.color_map[cell] not in (COLOR_PUZZLE_VALUE_OUTSIDE, COLOR_PUZZLE_VALUE_PLATE):
+			return self.get_image(cell)
 		return None
 
 	def generate_room(self, accessible_cells, finish_cell):

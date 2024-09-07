@@ -893,18 +893,20 @@ def init_new_room():
 def draw_map():
 	for cy in range(len(map[0])):
 		for cx in range(len(map)):
+			cell = (cx, cy)
 			cell_type = map[cx, cy]
 			cell_types = [cell_type]
 			if cell_type in CELL_FLOOR_EXTENSIONS and cell_type != CELL_FLOOR:
 				cell_types.insert(0, CELL_FLOOR)
+			puzzle.modify_cell_types_to_draw(cell, cell_types)
 			for cell_type in cell_types:
-				if flags.is_cloud_mode and not revealed_map[cx, cy]:
+				if flags.is_cloud_mode and not revealed_map[cell]:
 					if bg_image:
 						continue
 					cell_image = cloud_image
 				elif cell_type == CELL_VOID:
 					continue
-				elif cell_image0 := puzzle.get_cell_image_to_draw(cx, cy, cell_type):
+				elif cell_image0 := puzzle.get_cell_image_to_draw(cell, cell_type):
 					cell_image = cell_image0
 				elif cell_type in cell_images:
 					cell_image = cell_images[cell_type]
@@ -914,11 +916,10 @@ def draw_map():
 
 				if not cell_image:
 					debug_map()
-					print("Bug. Got null cell image at (%d, %d) cell_type=%s" % ((cx, cy, cell_type)))
+					print("Bug. Got null cell image at %s cell_type=%s" % (cell, cell_type))
 					quit()
 				elif cell_image.__class__.__name__ == 'CellActor':
-					cell_image.left = CELL_W * cx
-					cell_image.top = CELL_H * cy
+					cell_image.c = cell
 					cell_image.draw()
 				else:
 					screen.blit(cell_image, (CELL_W * cx, CELL_H * cy))
