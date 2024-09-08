@@ -83,6 +83,9 @@ class Puzzle:
 	def on_update(self, level_time):
 		pass
 
+	def finish(self):
+		pass
+
 from .barrel import *
 from .color import *
 from .gate import *

@@ -788,6 +788,10 @@ def init_new_level(offset=1, reload_stored=False):
 		print("Requested level is out of range")
 		return
 
+	if puzzle:
+		mode = "finish"
+		puzzle.finish()
+
 	stop_music()
 	clear_level_and_target_timer()
 	mode = "init"
