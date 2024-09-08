@@ -1127,12 +1127,12 @@ def check_victory():
 		loose_game()
 	elif char.health is not None and char.health <= MIN_CHAR_HEALTH:
 		loose_game()
+	elif flags.has_finish or puzzle.has_finish():
+		if map[char.c] == CELL_FINISH and (not puzzle.is_target_to_be_solved() or puzzle.is_solved()):
+			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
+			win_room()
 	elif puzzle.is_target_to_be_solved():
 		if puzzle.is_solved():
-			win_room()
-	elif flags.has_finish or puzzle.has_finish():
-		if map[char.c] == CELL_FINISH:
-			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
 			win_room()
 	elif not puzzle.is_target_to_kill_enemies():
 		pass
