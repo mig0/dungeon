@@ -101,59 +101,159 @@ PLAY_Y_RANGE = range(PLAY_Y1, PLAY_Y2 + 1)
 MAP_X_RANGE = range(0, MAP_SIZE_X)
 MAP_Y_RANGE = range(0, MAP_SIZE_Y)
 
-ROOM_SIZE_X = [
-	int(PLAY_SIZE_X / 2),
-	PLAY_SIZE_X - int(PLAY_SIZE_X / 2) - 1,
-	int(PLAY_SIZE_X / 2),
-	PLAY_SIZE_X - int(PLAY_SIZE_X / 2) - 1,
+PLAY_4_SIZE_X = PLAY_SIZE_X - 1
+PLAY_4_SIZE_Y = PLAY_SIZE_Y - 1
+
+ROOM_4_SIZE_X = [
+	PLAY_4_SIZE_X // 2,
+	PLAY_4_SIZE_X - PLAY_4_SIZE_X // 2,
+	PLAY_4_SIZE_X // 2,
+	PLAY_4_SIZE_X - PLAY_4_SIZE_X // 2,
 ]
-ROOM_SIZE_Y = [
-	int(PLAY_SIZE_Y / 2),
-	int(PLAY_SIZE_Y / 2),
-	PLAY_SIZE_Y - int(PLAY_SIZE_Y / 2) - 1,
-	PLAY_SIZE_Y - int(PLAY_SIZE_Y / 2) - 1,
+ROOM_4_SIZE_Y = [
+	PLAY_4_SIZE_Y // 2,
+	PLAY_4_SIZE_Y // 2,
+	PLAY_4_SIZE_Y - PLAY_4_SIZE_Y // 2,
+	PLAY_4_SIZE_Y - PLAY_4_SIZE_Y // 2,
 ]
 
-ROOM_X1 = [
+ROOM_4_X1 = [
 	PLAY_X1,
-	PLAY_X1 + ROOM_SIZE_X[0] + 1,
+	PLAY_X1 + ROOM_4_SIZE_X[0] + 1,
 	PLAY_X1,
-	PLAY_X1 + ROOM_SIZE_X[0] + 1,
+	PLAY_X1 + ROOM_4_SIZE_X[0] + 1,
 ]
-ROOM_X2 = [
-	PLAY_X1 + ROOM_SIZE_X[0] - 1,
+ROOM_4_X2 = [
+	PLAY_X1 + ROOM_4_SIZE_X[0] - 1,
 	PLAY_X2,
-	PLAY_X1 + ROOM_SIZE_X[0] - 1,
+	PLAY_X1 + ROOM_4_SIZE_X[0] - 1,
 	PLAY_X2,
 ]
-ROOM_Y1 = [
+ROOM_4_Y1 = [
 	PLAY_Y1,
 	PLAY_Y1,
-	PLAY_Y1 + ROOM_SIZE_Y[0] + 1,
-	PLAY_Y1 + ROOM_SIZE_Y[0] + 1,
+	PLAY_Y1 + ROOM_4_SIZE_Y[0] + 1,
+	PLAY_Y1 + ROOM_4_SIZE_Y[0] + 1,
 ]
-ROOM_Y2 = [
-	PLAY_Y1 + ROOM_SIZE_Y[0] - 1,
-	PLAY_Y1 + ROOM_SIZE_Y[0] - 1,
+ROOM_4_Y2 = [
+	PLAY_Y1 + ROOM_4_SIZE_Y[0] - 1,
+	PLAY_Y1 + ROOM_4_SIZE_Y[0] - 1,
 	PLAY_Y2,
 	PLAY_Y2,
 ]
 
-ROOM_X_RANGE = [
-	range(ROOM_X1[0], ROOM_X2[0] + 1),
-	range(ROOM_X1[1], ROOM_X2[1] + 1),
-	range(ROOM_X1[2], ROOM_X2[2] + 1),
-	range(ROOM_X1[3], ROOM_X2[3] + 1),
+ROOM_4_X_RANGE = [
+	range(ROOM_4_X1[0], ROOM_4_X2[0] + 1),
+	range(ROOM_4_X1[1], ROOM_4_X2[1] + 1),
+	range(ROOM_4_X1[2], ROOM_4_X2[2] + 1),
+	range(ROOM_4_X1[3], ROOM_4_X2[3] + 1),
 ]
-ROOM_Y_RANGE = [
-	range(ROOM_Y1[0], ROOM_Y2[0] + 1),
-	range(ROOM_Y1[1], ROOM_Y2[1] + 1),
-	range(ROOM_Y1[2], ROOM_Y2[2] + 1),
-	range(ROOM_Y1[3], ROOM_Y2[3] + 1),
+ROOM_4_Y_RANGE = [
+	range(ROOM_4_Y1[0], ROOM_4_Y2[0] + 1),
+	range(ROOM_4_Y1[1], ROOM_4_Y2[1] + 1),
+	range(ROOM_4_Y1[2], ROOM_4_Y2[2] + 1),
+	range(ROOM_4_Y1[3], ROOM_4_Y2[3] + 1),
 ]
 
-ROOM_BORDER_X = ROOM_X2[0] + 1
-ROOM_BORDER_Y = ROOM_Y2[0] + 1
+ROOM_4_BORDERS_X = [ROOM_4_X2[0] + 1]
+ROOM_4_BORDERS_Y = [ROOM_4_Y2[0] + 1]
+
+PLAY_9_SIZE_X = PLAY_SIZE_X - 2
+PLAY_9_SIZE_Y = PLAY_SIZE_Y - 2
+
+ROOM_9_SIZE_X = [
+	PLAY_9_SIZE_X // 3,
+	PLAY_9_SIZE_X - PLAY_9_SIZE_X // 3 * 2,
+	PLAY_9_SIZE_X // 3,
+	PLAY_9_SIZE_X // 3,
+	PLAY_9_SIZE_X - PLAY_9_SIZE_X // 3 * 2,
+	PLAY_9_SIZE_X // 3,
+	PLAY_9_SIZE_X // 3,
+	PLAY_9_SIZE_X - PLAY_9_SIZE_X // 3 * 2,
+	PLAY_9_SIZE_X // 3,
+]
+ROOM_9_SIZE_Y = [
+	PLAY_9_SIZE_Y // 3,
+	PLAY_9_SIZE_Y - PLAY_9_SIZE_Y // 3 * 2,
+	PLAY_9_SIZE_Y // 3,
+	PLAY_9_SIZE_Y // 3,
+	PLAY_9_SIZE_Y - PLAY_9_SIZE_Y // 3 * 2,
+	PLAY_9_SIZE_Y // 3,
+	PLAY_9_SIZE_Y // 3,
+	PLAY_9_SIZE_Y - PLAY_9_SIZE_Y // 3 * 2,
+	PLAY_9_SIZE_Y // 3,
+]
+
+ROOM_9_X1 = [
+	PLAY_X1,
+	PLAY_X1 + ROOM_9_SIZE_X[0] + 1,
+	PLAY_X1 + ROOM_9_SIZE_X[0] + 1 + ROOM_9_SIZE_X[1] + 1,
+	PLAY_X1,
+	PLAY_X1 + ROOM_9_SIZE_X[0] + 1,
+	PLAY_X1 + ROOM_9_SIZE_X[0] + 1 + ROOM_9_SIZE_X[1] + 1,
+	PLAY_X1,
+	PLAY_X1 + ROOM_9_SIZE_X[0] + 1,
+	PLAY_X1 + ROOM_9_SIZE_X[0] + 1 + ROOM_9_SIZE_X[1] + 1,
+]
+ROOM_9_X2 = [
+	ROOM_9_X1[0] + ROOM_9_SIZE_X[0] - 1,
+	ROOM_9_X1[1] + ROOM_9_SIZE_X[1] - 1,
+	PLAY_X2,
+	ROOM_9_X1[0] + ROOM_9_SIZE_X[0] - 1,
+	ROOM_9_X1[1] + ROOM_9_SIZE_X[1] - 1,
+	PLAY_X2,
+	ROOM_9_X1[0] + ROOM_9_SIZE_X[0] - 1,
+	ROOM_9_X1[1] + ROOM_9_SIZE_X[1] - 1,
+	PLAY_X2,
+]
+ROOM_9_Y1 = [
+	PLAY_Y1,
+	PLAY_Y1,
+	PLAY_Y1,
+	PLAY_Y1 + ROOM_9_SIZE_Y[0] + 1,
+	PLAY_Y1 + ROOM_9_SIZE_Y[0] + 1,
+	PLAY_Y1 + ROOM_9_SIZE_Y[0] + 1,
+	PLAY_Y1 + ROOM_9_SIZE_Y[0] + 1 + ROOM_9_SIZE_Y[1] + 1,
+	PLAY_Y1 + ROOM_9_SIZE_Y[0] + 1 + ROOM_9_SIZE_Y[1] + 1,
+	PLAY_Y1 + ROOM_9_SIZE_Y[0] + 1 + ROOM_9_SIZE_Y[1] + 1,
+]
+ROOM_9_Y2 = [
+	ROOM_9_Y1[0] + ROOM_9_SIZE_Y[0] - 1,
+	ROOM_9_Y1[0] + ROOM_9_SIZE_Y[0] - 1,
+	ROOM_9_Y1[0] + ROOM_9_SIZE_Y[0] - 1,
+	ROOM_9_Y1[4] + ROOM_9_SIZE_Y[4] - 1,
+	ROOM_9_Y1[4] + ROOM_9_SIZE_Y[4] - 1,
+	ROOM_9_Y1[4] + ROOM_9_SIZE_Y[4] - 1,
+	PLAY_Y2,
+	PLAY_Y2,
+	PLAY_Y2,
+]
+
+ROOM_9_X_RANGE = [
+	range(ROOM_9_X1[0], ROOM_9_X2[0] + 1),
+	range(ROOM_9_X1[1], ROOM_9_X2[1] + 1),
+	range(ROOM_9_X1[2], ROOM_9_X2[2] + 1),
+	range(ROOM_9_X1[3], ROOM_9_X2[3] + 1),
+	range(ROOM_9_X1[4], ROOM_9_X2[4] + 1),
+	range(ROOM_9_X1[5], ROOM_9_X2[5] + 1),
+	range(ROOM_9_X1[6], ROOM_9_X2[6] + 1),
+	range(ROOM_9_X1[7], ROOM_9_X2[7] + 1),
+	range(ROOM_9_X1[8], ROOM_9_X2[8] + 1),
+]
+ROOM_9_Y_RANGE = [
+	range(ROOM_9_Y1[0], ROOM_9_Y2[0] + 1),
+	range(ROOM_9_Y1[1], ROOM_9_Y2[1] + 1),
+	range(ROOM_9_Y1[2], ROOM_9_Y2[2] + 1),
+	range(ROOM_9_Y1[3], ROOM_9_Y2[3] + 1),
+	range(ROOM_9_Y1[4], ROOM_9_Y2[4] + 1),
+	range(ROOM_9_Y1[5], ROOM_9_Y2[5] + 1),
+	range(ROOM_9_Y1[6], ROOM_9_Y2[6] + 1),
+	range(ROOM_9_Y1[7], ROOM_9_Y2[7] + 1),
+	range(ROOM_9_Y1[8], ROOM_9_Y2[8] + 1),
+]
+
+ROOM_9_BORDERS_X = [ROOM_9_X2[0] + 1, ROOM_9_X2[1] + 1]
+ROOM_9_BORDERS_Y = [ROOM_9_Y2[0] + 1, ROOM_9_Y2[3] + 1]
 
 MAX_COLOR_PUZZLE_VALUES = 6
 
@@ -165,22 +265,6 @@ COLOR_PUZZLE_VALUE_BLUE    = 2
 COLOR_PUZZLE_VALUE_YELLOW  = 3
 COLOR_PUZZLE_VALUE_CYAN    = 4
 COLOR_PUZZLE_VALUE_PURPLE  = 5
-
-DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X = int((PLAY_SIZE_X - 1) / 2) * 2 + 1
-DEFAULT_COLOR_PUZZLE_PLAY_SIZE_Y = int((PLAY_SIZE_Y - 1) / 2) * 2 + 1
-
-DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X = [
-	int((ROOM_SIZE_X[0] - 1) / 2) * 2 + 1,
-	int((ROOM_SIZE_X[1] - 1) / 2) * 2 + 1,
-	int((ROOM_SIZE_X[2] - 1) / 2) * 2 + 1,
-	int((ROOM_SIZE_X[3] - 1) / 2) * 2 + 1,
-]
-DEFAULT_COLOR_PUZZLE_ROOM_SIZE_Y = [
-	int((ROOM_SIZE_Y[0] - 1) / 2) * 2 + 1,
-	int((ROOM_SIZE_Y[1] - 1) / 2) * 2 + 1,
-	int((ROOM_SIZE_Y[2] - 1) / 2) * 2 + 1,
-	int((ROOM_SIZE_Y[3] - 1) / 2) * 2 + 1,
-]
 
 IMAGES_DIR_PREFIX = 'images/'
 DEFAULT_IMAGE_PREFIX = 'default/'

@@ -22,8 +22,8 @@ class ColorPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		self.color_area.size_x = self.level["color_puzzle_size"][0] if "color_puzzle_size" in self.level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_X[room.idx] if room.idx is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_X
-		self.color_area.size_y = self.level["color_puzzle_size"][1] if "color_puzzle_size" in self.level else DEFAULT_COLOR_PUZZLE_ROOM_SIZE_Y[room.idx] if room.idx is not None else DEFAULT_COLOR_PUZZLE_PLAY_SIZE_Y
+		self.color_area.size_x = self.level["color_puzzle_size"][0] if "color_puzzle_size" in self.level else flags.DEFAULT_PUZZLE_ROOM_SIZE_X(room.idx) if room.idx is not None else flags.DEFAULT_PUZZLE_PLAY_SIZE_X
+		self.color_area.size_y = self.level["color_puzzle_size"][1] if "color_puzzle_size" in self.level else flags.DEFAULT_PUZZLE_ROOM_SIZE_Y(room.idx) if room.idx is not None else flags.DEFAULT_PUZZLE_PLAY_SIZE_Y
 		self.color_area.x1 = room.x1 + int((room.size_x - self.color_area.size_x) / 2)
 		self.color_area.x2 = self.color_area.x1 + self.color_area.size_x - 1
 		self.color_area.y1 = room.y1 + int((room.size_y - self.color_area.size_y) / 2)

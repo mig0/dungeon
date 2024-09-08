@@ -21,7 +21,7 @@ class LockPuzzle(Puzzle):
 		origin_map = self.map.copy()
 		orig_accessible_cells = accessible_cells.copy()
 
-		num_locks = 2 if flags.is_four_rooms else randint(self.level.get('min_locks') or 2, self.level.get('max_locks') or 4)
+		num_locks = 1 if flags.is_nine_rooms else 2 if flags.is_four_rooms else randint(self.level.get('min_locks') or 2, self.level.get('max_locks') or 4)
 
 		num_tries = 10000
 		while num_tries > 0:
