@@ -1099,9 +1099,7 @@ def on_key_down(key):
 	if keyboard.space and map[char.c] == CELL_PORTAL:
 		teleport_char()
 
-	if puzzle.on_press_key(keyboard):
-		if puzzle.is_solved():
-			win_room()
+	puzzle.on_press_key(keyboard)
 
 def loose_game():
 	global mode, is_game_won

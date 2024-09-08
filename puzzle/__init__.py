@@ -78,7 +78,7 @@ class Puzzle:
 		return None
 
 	def on_press_key(self, keyboard):
-		return False
+		pass
 
 	def on_update(self, level_time):
 		pass

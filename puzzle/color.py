@@ -10,8 +10,8 @@ class ColorPuzzle(Puzzle):
 	def has_plate(self):
 		return True
 
-	def is_target_to_kill_enemies(self):
-		return False
+	def is_target_to_be_solved(self):
+		return True
 
 	def on_set_theme(self):
 		gray_tiles_image = self.Globals.load_theme_cell_image('floor_gray_tiles')
@@ -96,5 +96,4 @@ class ColorPuzzle(Puzzle):
 	def on_press_key(self, keyboard):
 		if keyboard.space and self.map[char.c] == CELL_PLATE:
 			self.press_plate(*char.c)
-		return True
 
