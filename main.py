@@ -1096,6 +1096,9 @@ def on_key_down(key):
 	if keyboard.n:
 		init_new_level(+1)
 
+	if keyboard.w:
+		win_room()
+
 	if keyboard.space and map[char.c] == CELL_PORTAL:
 		teleport_char()
 
