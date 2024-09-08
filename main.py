@@ -602,8 +602,10 @@ def generate_room(idx):
 	finish_cell = None
 	if flags.has_finish or puzzle.is_finish_cell_required():
 		char.c = (room.x1, room.y1)
-		if room.idx == 0:
+		if not room.idx:
 			set_char_cell(char.c)
+			if flags.has_start:
+				map[char_cell] = CELL_START
 		accessible_cells = get_all_accessible_cells()
 		accessible_cells.pop(0)  # remove char cell
 		finish_cell = accessible_cells.pop()
