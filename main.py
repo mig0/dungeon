@@ -1110,7 +1110,7 @@ def win_room():
 
 	play_sound("finish")
 	mode = "next"
-	clock.schedule(init_new_room, 1.5)
+	clock.schedule(init_new_room, WIN_NEW_DELAY)
 
 def check_victory():
 	if mode != "game":
