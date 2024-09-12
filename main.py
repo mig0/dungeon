@@ -47,13 +47,13 @@ def get_actor_neighbors(actor, x_range=None, y_range=None):
 	debug(3, "* get_actor_neighbors %s - %s" % (str(actor.c), neighbors))
 	return neighbors
 
-def get_all_neighbors(cx, cy, include_self=False):
+def get_all_neighbors(cell, include_self=False):
 	neighbors = []
 	for dy in (-1, 0, +1):
 		for dx in (-1, 0, +1):
 			if dy == 0 and dx == 0 and not include_self:
 				continue
-			neighbors.append((cx + dx, cy + dy))
+			neighbors.append(apply_diff(cell, (dx, dy)))
 	return neighbors
 
 is_game_won = False
@@ -145,7 +145,7 @@ def is_inner_wall(cell):
 	if map[cell] not in CELL_WALLS:
 		return False
 
-	for neigh in get_all_neighbors(*cell):
+	for neigh in get_all_neighbors(cell):
 		if is_cell_in_map(neigh) and map[neigh] not in CELL_WALLS:
 			return False
 	return True
@@ -201,8 +201,8 @@ def reveal_map_near_char():
 	if not flags.is_cloud_mode:
 		return
 
-	for (cx, cy) in get_all_neighbors(char.cx, char.cy, include_self=True):
-		revealed_map[cx, cy] = True
+	for cell in get_all_neighbors(char.c, include_self=True):
+		revealed_map[cell] = True
 
 def get_revealed_actors(actors):
 	if not flags.is_cloud_mode or level.get("actors_always_revealed", False):
@@ -560,6 +560,7 @@ def create_enemy(cell, health=None, attack=None, drop=None):
 	enemies.append(enemy)
 
 class Globals:
+	is_cell_in_area = is_cell_in_area
 	get_actor_neighbors = get_actor_neighbors
 	get_all_neighbors = get_all_neighbors
 	debug = debug

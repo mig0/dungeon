@@ -55,9 +55,6 @@ class MemoryPuzzle(Puzzle):
 	def get_num_pairs(self):
 		return (self.area.size_x * self.area.size_y) // 2
 
-	def is_in_area(self, cx, cy):
-		return cx in self.area.x_range and cy in self.area.y_range
-
 	def on_create_map(self, map):
 		super().on_create_map(map)
 		self.memory_map = ndarray((MAP_SIZE_X, MAP_SIZE_X), dtype=int)
@@ -106,31 +103,29 @@ class MemoryPuzzle(Puzzle):
 
 	def generate_room(self, accessible_cells, finish_cell):
 		memory_pairs = {}
-		for cy in self.area.y_range:
-			for cx in self.area.x_range:
-				cell1 = (cx, cy)
-				if self.is_empty_central_cell(cell1):
-					continue
-				if self.memory_map[cell1] == MEMORY_PUZZLE_VALUE_OUTSIDE:
-					self.Globals.debug(3, "Finding unused pair_ids for %s" % str(cell1))
-					while True:
-						pair_idx = randint(1, self.get_num_pairs())
-						if pair_idx not in memory_pairs:
-							break
-					self.Globals.debug(3, "	%d" % pair_idx)
-					self.memory_map[cell1] = pair_idx
-					self.Globals.debug(3, "Finding unused pair cell for %s" % str(cell1))
-					while True:
-						pair_cx = randint(self.area.x_range.start, self.area.x_range.stop - 1)
-						pair_cy = randint(self.area.y_range.start, self.area.y_range.stop - 1)
-						cell2 = (pair_cx, pair_cy)
-						if self.is_empty_central_cell(cell2):
-							continue
-						if self.memory_map[cell2] == MEMORY_PUZZLE_VALUE_OUTSIDE:
-							break
-					self.Globals.debug(3, "	%s" % str(cell2))
-					self.memory_map[cell2] = pair_idx
-					memory_pairs[pair_idx] = (cell1, cell2)  # or True
+		for cell1 in product(self.area.x_range, self.area.y_range):
+			if self.is_empty_central_cell(cell1):
+				continue
+			if self.memory_map[cell1] == MEMORY_PUZZLE_VALUE_OUTSIDE:
+				self.Globals.debug(3, "Finding unused pair_ids for %s" % str(cell1))
+				while True:
+					pair_idx = randint(1, self.get_num_pairs())
+					if pair_idx not in memory_pairs:
+						break
+				self.Globals.debug(3, "	%d" % pair_idx)
+				self.memory_map[cell1] = pair_idx
+				self.Globals.debug(3, "Finding unused pair cell for %s" % str(cell1))
+				while True:
+					pair_cx = randint(self.area.x_range.start, self.area.x_range.stop - 1)
+					pair_cy = randint(self.area.y_range.start, self.area.y_range.stop - 1)
+					cell2 = (pair_cx, pair_cy)
+					if self.is_empty_central_cell(cell2):
+						continue
+					if self.memory_map[cell2] == MEMORY_PUZZLE_VALUE_OUTSIDE:
+						break
+				self.Globals.debug(3, "	%s" % str(cell2))
+				self.memory_map[cell2] = pair_idx
+				memory_pairs[pair_idx] = (cell1, cell2)  # or True
 		self.room_memory_pairs[self.room.idx] = memory_pairs
 
 		if self.room.idx in (0, None):
