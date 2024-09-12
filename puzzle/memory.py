@@ -9,8 +9,8 @@ class MemoryPuzzle(Puzzle):
 	def init(self):
 		self.memory_map = None
 		self.room_memory_pairs = {}
-		self.memory_cell_images = []
-		self.memory_area = Area()
+		self.cell_images = []
+		self.area = Area()
 		self.use_colors = False
 		self.level_time = 0
 		self.is_revealed = self.level.get("memory_puzzle_revealed", False)
@@ -24,39 +24,39 @@ class MemoryPuzzle(Puzzle):
 
 	def on_set_theme(self):
 		gray_frame_image = self.Globals.load_theme_cell_image('floor_gray_frame')
-		self.memory_cell_images = [gray_frame_image]
+		self.cell_images = [gray_frame_image]
 		for color in COLOR_PUZZLE_RGB_VALUES:
-			memory_cell_image = self.Globals.colorize_cell_image(gray_frame_image, color)
-			self.memory_cell_images.append(memory_cell_image)
+			cell_image = self.Globals.colorize_cell_image(gray_frame_image, color)
+			self.cell_images.append(cell_image)
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		self.memory_area.size_x = self.level["memory_puzzle_size"][0] if "memory_puzzle_size" in self.level else flags.ROOM_SIZE_X[room.idx] if room.idx is not None else PLAY_SIZE_X
-		self.memory_area.size_y = self.level["memory_puzzle_size"][1] if "memory_puzzle_size" in self.level else flags.ROOM_SIZE_Y[room.idx] if room.idx is not None else PLAY_SIZE_Y
-		self.memory_area.x1 = room.x1 + (room.size_x - self.memory_area.size_x) // 2
-		self.memory_area.x2 = self.memory_area.x1 + self.memory_area.size_x - 1
-		self.memory_area.y1 = room.y1 + (room.size_y - self.memory_area.size_y) // 2
-		self.memory_area.y2 = self.memory_area.y1 + self.memory_area.size_y - 1
-		self.memory_area.x_range = range(self.memory_area.x1, self.memory_area.x2 + 1)
-		self.memory_area.y_range = range(self.memory_area.y1, self.memory_area.y2 + 1)
+		self.area.size_x = self.level["memory_puzzle_size"][0] if "memory_puzzle_size" in self.level else flags.ROOM_SIZE_X[room.idx] if room.idx is not None else PLAY_SIZE_X
+		self.area.size_y = self.level["memory_puzzle_size"][1] if "memory_puzzle_size" in self.level else flags.ROOM_SIZE_Y[room.idx] if room.idx is not None else PLAY_SIZE_Y
+		self.area.x1 = room.x1 + (room.size_x - self.area.size_x) // 2
+		self.area.x2 = self.area.x1 + self.area.size_x - 1
+		self.area.y1 = room.y1 + (room.size_y - self.area.size_y) // 2
+		self.area.y2 = self.area.y1 + self.area.size_y - 1
+		self.area.x_range = range(self.area.x1, self.area.x2 + 1)
+		self.area.y_range = range(self.area.y1, self.area.y2 + 1)
 		self.use_colors = self.get_num_pairs() <= len(COLOR_PUZZLE_RGB_VALUES)
 		self.unset_open_cells()
 
 	def has_empty_central_cell(self):
-		return self.memory_area.size_x * self.memory_area.size_y % 2 == 1
+		return self.area.size_x * self.area.size_y % 2 == 1
 
 	def get_empty_central_cell(self):
-		return ((self.memory_area.x1 + self.memory_area.x2) // 2, (self.memory_area.y1 + self.memory_area.y2) // 2) \
+		return ((self.area.x1 + self.area.x2) // 2, (self.area.y1 + self.area.y2) // 2) \
 			if self.has_empty_central_cell() else None
 
 	def is_empty_central_cell(self, cell):
 		return cell == self.get_empty_central_cell()
 
 	def get_num_pairs(self):
-		return (self.memory_area.size_x * self.memory_area.size_y) // 2
+		return (self.area.size_x * self.area.size_y) // 2
 
-	def is_in_memory_area(self, cx, cy):
-		return cx in self.memory_area.x_range and cy in self.memory_area.y_range
+	def is_in_area(self, cx, cy):
+		return cx in self.area.x_range and cy in self.area.y_range
 
 	def on_create_map(self, map):
 		super().on_create_map(map)
@@ -106,8 +106,8 @@ class MemoryPuzzle(Puzzle):
 
 	def generate_room(self, accessible_cells, finish_cell):
 		memory_pairs = {}
-		for cy in self.memory_area.y_range:
-			for cx in self.memory_area.x_range:
+		for cy in self.area.y_range:
+			for cx in self.area.x_range:
 				cell1 = (cx, cy)
 				if self.is_empty_central_cell(cell1):
 					continue
@@ -121,8 +121,8 @@ class MemoryPuzzle(Puzzle):
 					self.memory_map[cell1] = pair_idx
 					self.Globals.debug(3, "Finding unused pair cell for %s" % str(cell1))
 					while True:
-						pair_cx = randint(self.memory_area.x_range.start, self.memory_area.x_range.stop - 1)
-						pair_cy = randint(self.memory_area.y_range.start, self.memory_area.y_range.stop - 1)
+						pair_cx = randint(self.area.x_range.start, self.area.x_range.stop - 1)
+						pair_cy = randint(self.area.y_range.start, self.area.y_range.stop - 1)
 						cell2 = (pair_cx, pair_cy)
 						if self.is_empty_central_cell(cell2):
 							continue
@@ -158,14 +158,14 @@ class MemoryPuzzle(Puzzle):
 					value = 0
 			else:
 				value = 1 if cell == self.open_cell1 and self.is_revealed else 2 if cell == self.open_cell2 and self.is_revealed else 0
-			return self.memory_cell_images[value]
+			return self.cell_images[value]
 		if cell_type == CELL_MEMORY_VALUE:
 			alpha = 1
 			if (reveal_fade_factor := self.get_reveal_fade_factor()) is not None:
 				alpha = reveal_fade_factor
 			return self.Globals.create_text_cell_image(str(self.memory_map[cell]), alpha=alpha)
 		if cell_type == CELL_MEMORY_OPENC:
-			return self.memory_cell_images[0]
+			return self.cell_images[0]
 		return None
 
 	def on_press_key(self, keyboard):
