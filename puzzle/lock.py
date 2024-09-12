@@ -1,5 +1,4 @@
 from . import *
-from numpy import copyto
 
 class LockPuzzle(Puzzle):
 	def is_finish_cell_required(self):

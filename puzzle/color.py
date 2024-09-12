@@ -1,5 +1,4 @@
 from . import *
-from numpy import ndarray
 
 class ColorPuzzle(Puzzle):
 	def init(self):

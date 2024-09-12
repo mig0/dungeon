@@ -1,5 +1,4 @@
 from . import *
-from cellactor import is_cell_in_actors
 
 class BarrelPuzzle(Puzzle):
 	def has_plate(self):

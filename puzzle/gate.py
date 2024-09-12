@@ -1,5 +1,4 @@
 from . import *
-from numpy import copyto
 
 class GatePuzzle(Puzzle):
 	def is_long_generation(self):

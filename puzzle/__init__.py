@@ -1,7 +1,9 @@
 from constants import *
+from cellactor import *
 from objects import *
 from flags import flags
 from random import randint, random
+from numpy import ndarray, arange, array_equal, ix_, argwhere, copyto
 
 class Puzzle:
 	def __init__(self, level, Globals):
@@ -86,13 +88,13 @@ class Puzzle:
 	def finish(self):
 		pass
 
-from .barrel import *
-from .color import *
-from .gate import *
-from .lock import *
-from .memory import *
-from .stoneage import *
-from .trivial import *
+from .barrel    import BarrelPuzzle
+from .color     import ColorPuzzle
+from .gate      import GatePuzzle
+from .lock      import LockPuzzle
+from .memory    import MemoryPuzzle
+from .stoneage  import StoneagePuzzle
+from .trivial   import TrivialPuzzle
 
 def create_puzzle(level, Globals):
 	is_any_maze = flags.is_random_maze or flags.is_spiral_maze or flags.is_grid_maze
