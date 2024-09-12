@@ -10,8 +10,20 @@ NONE_CELL = (-1000, -1000)
 
 active_inplace_animation_actors = []
 
+def cmp(n1, n2):
+	return 1 if n1 > n2 else 0 if n1 == n2 else -1
+
+def product(x_range, y_range):
+	return ((x, y) for x in x_range for y in y_range)
+
 def apply_diff(orig, diff):
 	return (orig[0] + diff[0], orig[1] + diff[1])
+
+def cell_diff(cell1, cell2):
+	return (cell2[0] - cell1[0], cell2[1] - cell1[1])
+
+def cell_direction(cell1, cell2):
+	return (cmp(cell2[0], cell1[0]), cmp(cell2[1], cell1[1]))
 
 def cell_to_pos(cell):
 	return (CELL_W * (cell[0] + 0.5), CELL_H * (cell[1] + 0.5))
