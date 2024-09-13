@@ -90,6 +90,7 @@ class Puzzle:
 
 from .barrel    import BarrelPuzzle
 from .color     import ColorPuzzle
+from .fifteen   import FifteenPuzzle
 from .gate      import GatePuzzle
 from .lock      import LockPuzzle
 from .memory    import MemoryPuzzle
@@ -103,6 +104,8 @@ def create_puzzle(level, Globals):
 		puzzle_class = BarrelPuzzle
 	elif level.get("color_puzzle") and not is_any_maze:
 		puzzle_class = ColorPuzzle
+	elif level.get("fifteen_puzzle") and not is_any_maze:
+		puzzle_class = FifteenPuzzle
 	elif level.get("gate_puzzle") and is_any_maze:
 		puzzle_class = GatePuzzle
 	elif level.get("lock_puzzle") and is_any_maze:
