@@ -2,6 +2,7 @@ import os
 import random
 import pygame
 import pgzero
+from pgzero.constants import keys
 from numpy import ndarray, chararray
 from copy import deepcopy
 from random import randint
@@ -1048,6 +1049,9 @@ def kill_enemy():
 def on_key_down(key):
 	global lang
 	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled
+
+	# apply workaround for the invalid syntax keyboard.return in python
+	keyboard.enter = keys.RETURN in keyboard._pressed
 
 	reset_idle_time()
 
