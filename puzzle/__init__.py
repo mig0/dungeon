@@ -94,6 +94,7 @@ from .fifteen   import FifteenPuzzle
 from .gate      import GatePuzzle
 from .lock      import LockPuzzle
 from .memory    import MemoryPuzzle
+from .rotatepic import RotatepicPuzzle
 from .stoneage  import StoneagePuzzle
 from .trivial   import TrivialPuzzle
 
@@ -112,6 +113,8 @@ def create_puzzle(level, Globals):
 		puzzle_class = LockPuzzle
 	elif level.get("memory_puzzle") and not is_any_maze:
 		puzzle_class = MemoryPuzzle
+	elif level.get("rotatepic_puzzle"):
+		puzzle_class = RotatepicPuzzle
 	elif level.get("stoneage_puzzle") and not is_any_maze:
 		puzzle_class = StoneagePuzzle
 	elif level.get("trivial_puzzle"):
