@@ -105,8 +105,10 @@ class FifteenPuzzle(Puzzle):
 		# scramble by real moves
 		num_moves_left = self.max_num * 12
 		empty_cell = self.get_empty_cell()
+		is_row = True
 		while num_moves_left > 0:
-			if (randint(0, 1) == 0):
+			is_row = not is_row
+			if is_row:
 				cell = (empty_cell[0], self.get_random_non_equal(self.area.y_range, empty_cell[1]))
 			else:
 				cell = (self.get_random_non_equal(self.area.x_range, empty_cell[0]), empty_cell[1])
