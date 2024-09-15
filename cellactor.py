@@ -16,8 +16,9 @@ def cmp(n1, n2):
 def product(x_range, y_range):
 	return ((x, y) for x in x_range for y in y_range)
 
-def apply_diff(orig, diff):
-	return (orig[0] + diff[0], orig[1] + diff[1])
+def apply_diff(orig, diff, subtract=False):
+	factor = -1 if subtract else 1
+	return (orig[0] + diff[0] * factor, orig[1] + diff[1] * factor)
 
 def cell_diff(cell1, cell2):
 	return (cell2[0] - cell1[0], cell2[1] - cell1[1])
@@ -79,14 +80,14 @@ class CellActor(Actor):
 	def sync_pos(self):
 		self.pos = get_pos(self)
 
-	def apply_pos_diff(self, diff):
-		return apply_diff(cell_to_pos(self.c), diff)
+	def apply_pos_diff(self, diff, subtract=False):
+		return apply_diff(cell_to_pos(self.c), diff, subtract)
 
-	def move_pos(self, diff):
-		self.pos = self.apply_pos_diff(diff)
+	def move_pos(self, diff, undo=False):
+		self.pos = self.apply_pos_diff(diff, undo)
 
-	def move(self, diff):
-		self.c = apply_diff(self.c, diff)
+	def move(self, diff, undo=False):
+		self.c = apply_diff(self.c, diff, undo)
 
 	def transform_surf(self):
 		self._surf = self._orig_surf

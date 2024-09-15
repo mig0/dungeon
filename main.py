@@ -102,6 +102,9 @@ level_idx = -1
 room = Area()
 room_idx = None
 
+def get_bg_image():
+	return bg_image
+
 def debug(level, str):
 	if DEBUG_LEVEL < level:
 		return
@@ -165,6 +168,28 @@ def get_theme_image_name(image_name):
 	print("Unable to find image %s in neither %s nor %s" % (image_name, theme_prefix, DEFAULT_IMAGE_PREFIX))
 	quit()
 
+def load_image(image_name, size, do_crop=False):
+	image = pygame.image.load(image_name).convert()
+	if do_crop:
+		# image=300x400 size=100x200 -> cropped=200x400
+		# image=300x400 size=200x100 -> cropped=300x150
+		w = image.get_width()
+		h = image.get_height()
+		if w * size[1] > h * size[0]:
+			crop_w = size[0] * h // size[1]
+			crop_h = h
+			crop_x = (w - crop_w) // 2
+			crop_y = 0
+		else:
+			crop_w = w
+			crop_h = size[1] * w // size[0]
+			crop_x = 0
+			crop_y = (h - crop_h) // 2
+		cropped_image = pygame.Surface((crop_w, crop_h), pygame.SRCALPHA, 32)
+		cropped_image.blit(image, (-crop_x, -crop_y))
+		image = cropped_image
+	return pygame.transform.scale(image, size)
+
 def load_theme_cell_image(image_name):
 	return pygame.image.load(IMAGES_DIR_PREFIX + get_theme_image_name(image_name) + '.png').convert_alpha()
 
@@ -172,6 +197,14 @@ def colorize_cell_image(image, color, alpha=1):
 	cell_surface = pygame.Surface((CELL_W, CELL_H), pygame.SRCALPHA, 32)
 	cell_surface.fill((*color, alpha * 255))
 	cell_surface.blit(image, (0, 0))
+	return cell_surface
+
+def create_cell_subimage(image, cell, starting_cell=(0, 0), rotate_angle=0):
+	cell_surface = pygame.Surface((CELL_W, CELL_H), pygame.SRCALPHA, 32)
+	cell = apply_diff(cell, starting_cell, subtract=True)
+	cell_surface.blit(image, (-cell[0] * CELL_W, -cell[1] * CELL_H))
+	if rotate_angle != 0:
+		cell_surface = pygame.transform.rotate(cell_surface, rotate_angle)
 	return cell_surface
 
 def create_text_cell_image(text, color='#E0E0E0', gcolor="#408080", owidth=1.2, ocolor="#004040", alpha=1, fontsize=48):
@@ -563,11 +596,14 @@ class Globals:
 	is_cell_in_area = is_cell_in_area
 	get_actor_neighbors = get_actor_neighbors
 	get_all_neighbors = get_all_neighbors
+	get_bg_image = get_bg_image
 	debug = debug
 	debug_map = debug_map
 	convert_inner_walls = convert_inner_walls
+	load_image = load_image
 	load_theme_cell_image = load_theme_cell_image
 	colorize_cell_image = colorize_cell_image
+	create_cell_subimage = create_cell_subimage
 	create_text_cell_image = create_text_cell_image
 	is_cell_occupied = is_cell_occupied
 	get_max_room_distance = get_max_room_distance
@@ -814,8 +850,7 @@ def init_new_level(offset=1, reload_stored=False):
 
 	bg_image = None
 	if "bg_image" in level:
-		bg_image = pygame.image.load(level["bg_image"]).convert()
-		bg_image = pygame.transform.scale(bg_image, (MAP_W, MAP_H))
+		bg_image = load_image(level["bg_image"], (MAP_W, MAP_H), level.get("bg_image_crop", False))
 
 	char_cell = None
 	char.health = level["char_health"]
@@ -1195,7 +1230,6 @@ def move_char(diff_x, diff_y):
 	global last_move_diff
 
 	diff = (diff_x, diff_y)
-	undo_diff = (-diff_x, -diff_y)
 
 	old_char_pos = char.pos
 	old_char_cell = char.c
@@ -1210,7 +1244,7 @@ def move_char(diff_x, diff_y):
 			is_jumped = True
 		if is_move_animate_enabled and is_jumped and is_cell_occupied_except_char(char.c) and last_move_diff is None:
 			# undo one step
-			char.move(undo_diff)
+			char.move(diff, undo=True)
 			last_move_diff = diff
 			char.pos = old_char_pos
 			char.animate(get_move_animate_duration(old_char_cell), on_finished=continue_move_char)
@@ -1222,7 +1256,7 @@ def move_char(diff_x, diff_y):
 		enemy.health -= char.attack
 		char.health -= enemy.attack
 		# can't move if we face enemy, cancel the move
-		char.move(undo_diff)
+		char.move(diff, undo=True)
 		# animate beat or kill
 		if enemy.health > 0:
 			enemy.move_pos((diff_x * ENEMY_BEAT_OFFSET, diff_y * ENEMY_BEAT_OFFSET))
@@ -1244,7 +1278,7 @@ def move_char(diff_x, diff_y):
 	if barrel:
 		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
 			# can't push, cancel the move
-			char.move(undo_diff)
+			char.move(diff, undo=True)
 			return
 		else:
 			# can push, animate the push
