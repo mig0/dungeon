@@ -166,7 +166,6 @@ class MemoryPuzzle(Puzzle):
 	def on_press_key(self, keyboard):
 		if keyboard.space:
 			self.press_cell(char.c)
-		return True
 
 	def set_char_opacity_if_needed(self):
 		if not self.use_colors:

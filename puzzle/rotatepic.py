@@ -101,7 +101,6 @@ class RotatepicPuzzle(Puzzle):
 		if keyboard.backspace:
 			self.scramble()
 		self.draw_solved_mode = keyboard.enter and not self.draw_solved_mode
-		return True
 
 	def set_char_opacity_if_needed(self):
 		char.set_default_opacity(MEMORY_PUZZLE_CHAR_OPACITY if self.rotatepic_map[char.c] != ROTATEPIC_PUZZLE_VALUE_OUTSIDE else 1)
