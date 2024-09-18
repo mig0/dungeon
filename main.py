@@ -558,13 +558,17 @@ def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None, extra
 			else:
 				callback(cell, *extra_cells)
 
-def create_portal_pair(cell1, cell2):
-	if cell1 == cell2:
-		print("BUG: Portal pair can't be the same cell, exiting")
+def create_portal(cell, dst_cell):
+	if cell == dst_cell:
+		print("BUG: Portal destination can't be the same cell %s, exiting" % str(cell))
 		quit()
 
-	portal_destinations[cell1] = cell2
-	portal_destinations[cell2] = cell1
+	map[cell] = CELL_PORTAL
+	portal_destinations[cell] = dst_cell
+
+def create_portal_pair(cell1, cell2):
+	create_portal(cell1, cell2)
+	create_portal(cell2, cell1)
 
 def create_lift(cell, type):
 	global lifts
@@ -624,6 +628,7 @@ class Globals:
 	create_barrel = create_barrel
 	get_random_floor_cell = get_random_floor_cell
 	replace_random_floor_cell = replace_random_floor_cell
+	create_portal = create_portal
 	create_portal_pair = create_portal_pair
 	create_enemy = create_enemy
 
@@ -865,6 +870,7 @@ def init_new_level(offset=1, reload_stored=False):
 	enemies.clear()
 	lifts.clear()
 	killed_enemies.clear()
+	portal_destinations.clear()
 
 	for drop in drops:
 		drop.reset()
