@@ -11,6 +11,8 @@ class Puzzle:
 		self.room = None
 		self.level = level
 		self.Globals = Globals
+		self.accessible_cells = None
+		self.finish_cell = None
 		self.init()
 
 	def init(self):
@@ -58,7 +60,11 @@ class Puzzle:
 	def on_set_room(self, room):
 		self.room = room
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def set_finish_cell(self, accessible_cells, finish_cell):
+		self.accessible_cells = accessible_cells
+		self.finish_cell = finish_cell
+
+	def generate_room(self):
 		pass
 
 	def on_generate_map(self):

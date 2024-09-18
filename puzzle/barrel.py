@@ -151,7 +151,7 @@ class BarrelPuzzle(Puzzle):
 			else:
 				break
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def generate_room(self):
 		self.generate_random_solvable_room()
 
 	def is_solved(self):

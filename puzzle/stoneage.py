@@ -64,6 +64,6 @@ class StoneagePuzzle(Puzzle):
 		drop_key1.instantiate(self.Globals.get_random_floor_cell())
 		drop_key2.instantiate(self.Globals.get_random_floor_cell())
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def generate_room(self):
 		self.generate_random_solvable_room()
 

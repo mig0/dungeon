@@ -101,7 +101,7 @@ class MemoryPuzzle(Puzzle):
 		else:
 			self.open_cell1 = cell
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def generate_room(self):
 		memory_pairs = {}
 		for cell1 in product(self.area.x_range, self.area.y_range):
 			if self.is_empty_central_cell(cell1):

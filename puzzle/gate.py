@@ -163,8 +163,8 @@ class GatePuzzle(Puzzle):
 			print("Can't generate gate puzzle, sorry")
 			quit()
 
-	def generate_room(self, accessible_cells, finish_cell):
-		self.generate_random_solvable_room(accessible_cells, finish_cell)
+	def generate_room():
+		self.generate_random_solvable_room(self.accessible_cells, self.finish_cell)
 
 	def on_press_key(self, keyboard):
 		if keyboard.space and self.map[char.c] == CELL_PLATE:

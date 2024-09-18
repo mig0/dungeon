@@ -116,7 +116,7 @@ class FifteenPuzzle(Puzzle):
 			empty_cell = cell
 			num_moves_left -= 1
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def generate_room(self):
 		# create the solved position - populate numbers from 1 to max_num
 		real_fifteen_map = arange(self.max_num).reshape(self.area.size_y, self.area.size_x)
 		real_fifteen_map += 1
@@ -125,7 +125,7 @@ class FifteenPuzzle(Puzzle):
 		self.scramble()
 
 		if self.is_solved():
-			self.generate_room(accessible_cells, finish_cell)
+			self.generate_room()
 
 	def modify_cell_types_to_draw(self, cell, cell_types):
 		if self.fifteen_map[cell] == FIFTEEN_PUZZLE_VALUE_OUTSIDE:

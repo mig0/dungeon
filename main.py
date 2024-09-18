@@ -651,8 +651,9 @@ def generate_room(idx):
 		accessible_cells.pop(0)  # remove char cell
 		finish_cell = accessible_cells.pop()
 		map[finish_cell] = CELL_FINISH
+		puzzle.set_finish_cell(accessible_cells, finish_cell)
 
-	puzzle.generate_room(accessible_cells, finish_cell)
+	puzzle.generate_room()
 
 	# generate enemies
 	for i in range(level["num_enemies"] if "num_enemies" in level else DEFAULT_NUM_ENEMIES):

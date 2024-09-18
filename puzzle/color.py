@@ -73,7 +73,7 @@ class ColorPuzzle(Puzzle):
 			return self.get_cell_image(cell)
 		return None
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def generate_room(self):
 		for cell in product(self.area.x_range, self.area.y_range):
 			self.color_map[cell] = COLOR_PUZZLE_VALUE_GREEN
 			if self.is_plate(cell):

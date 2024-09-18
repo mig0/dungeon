@@ -67,6 +67,6 @@ class LockPuzzle(Puzzle):
 			print("Can't generate lock puzzle, sorry")
 			quit()
 
-	def generate_room(self, accessible_cells, finish_cell):
-		self.generate_random_solvable_room(accessible_cells, finish_cell)
+	def generate_room(self):
+		self.generate_random_solvable_room(self.accessible_cells, self.finish_cell)
 

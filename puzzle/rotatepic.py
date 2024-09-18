@@ -69,7 +69,7 @@ class RotatepicPuzzle(Puzzle):
 			delta = randint(1, 7) // 2
 			self.rotate_cell(cell, delta)
 
-	def generate_room(self, accessible_cells, finish_cell):
+	def generate_room(self):
 		# create the solved position - populate boxes with 0
 		real_rotatepic_map = ndarray((self.area.size_x, self.area.size_y), dtype=int)
 		real_rotatepic_map.fill(0)
@@ -78,7 +78,7 @@ class RotatepicPuzzle(Puzzle):
 		self.scramble()
 
 		if self.is_solved():
-			self.generate_room(accessible_cells, finish_cell)
+			self.generate_room()
 
 	def modify_cell_types_to_draw(self, cell, cell_types):
 		if self.rotatepic_map[cell] == ROTATEPIC_PUZZLE_VALUE_OUTSIDE:
