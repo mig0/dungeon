@@ -213,6 +213,9 @@ def create_text_cell_image(text, color='#E0E0E0', gcolor="#408080", owidth=1.2, 
 	pgzero.ptext.draw(text, surf=cell_surface, center=cell_to_pos((0, 0)), color=color, gcolor=gcolor, owidth=owidth, ocolor=ocolor, alpha=alpha, fontsize=fontsize)
 	return cell_surface
 
+def is_portal_destination(cell):
+	return cell in {v: k for k, v in portal_destinations.items()}
+
 def is_cell_occupied_except_char(cell):
 	if is_cell_in_actors(cell, enemies + barrels):
 		return True
@@ -223,7 +226,7 @@ def is_cell_occupied(cell):
 	return is_cell_occupied_except_char(cell) or char.c == cell
 
 def is_cell_occupied_for_enemy(cell):
-	return map[cell] in CELL_ENEMY_PLACE_OBSTACLES or is_cell_occupied(cell)
+	return map[cell] in CELL_ENEMY_PLACE_OBSTACLES or is_cell_occupied(cell) or is_portal_destination(cell)
 
 def create_theme_image(image_name):
 	return CellActor(get_theme_image_name(image_name))
