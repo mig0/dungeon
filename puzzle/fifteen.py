@@ -11,6 +11,9 @@ class FifteenPuzzle(Puzzle):
 		self.frame_image = None
 		self.max_num = 0
 
+	def assert_config(self):
+		return not flags.is_any_maze
+
 	def on_set_theme(self):
 		self.frame_image = self.Globals.load_theme_cell_image('floor_gray_frame')
 

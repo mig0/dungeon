@@ -1,6 +1,9 @@
 from . import *
 
 class BarrelPuzzle(Puzzle):
+	def assert_config(self):
+		return not flags.is_any_maze
+
 	def has_plate(self):
 		return True
 

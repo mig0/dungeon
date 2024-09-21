@@ -1,6 +1,9 @@
 from . import *
 
 class GatePuzzle(Puzzle):
+	def assert_config(self):
+		return flags.is_any_maze
+
 	def is_long_generation(self):
 		return True
 

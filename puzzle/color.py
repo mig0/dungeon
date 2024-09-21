@@ -6,6 +6,9 @@ class ColorPuzzle(Puzzle):
 		self.cell_images = []
 		self.area = Area()
 
+	def assert_config(self):
+		return not flags.is_any_maze
+
 	def has_plate(self):
 		return True
 

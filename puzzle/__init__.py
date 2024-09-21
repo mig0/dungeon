@@ -6,6 +6,11 @@ from random import randint, random
 from numpy import ndarray, arange, array_equal, ix_, argwhere, copyto
 
 class Puzzle:
+	@classmethod
+	def config_name(cls):
+		cls_lower_name = cls.__name__.lower()
+		return None if cls == Puzzle else cls_lower_name[:cls_lower_name.rindex("puzzle")] + '_puzzle'
+
 	def __init__(self, level, Globals):
 		self.map = None
 		self.room = None
@@ -13,10 +18,15 @@ class Puzzle:
 		self.Globals = Globals
 		self.accessible_cells = None
 		self.finish_cell = None
+		self.config_name = self.__class__.config_name()
+		self.config = {} if type(level.get(self.config_name)) != dict else dict(level[self.config_name])
 		self.init()
 
 	def init(self):
 		pass
+
+	def assert_config(self):
+		return True
 
 	def is_long_generation(self):
 		return False
@@ -94,42 +104,25 @@ class Puzzle:
 	def finish(self):
 		pass
 
-from .barrel    import BarrelPuzzle
-from .color     import ColorPuzzle
-from .fifteen   import FifteenPuzzle
-from .gate      import GatePuzzle
-from .lock      import LockPuzzle
-from .memory    import MemoryPuzzle
-from .portal    import PortalPuzzle
-from .rotatepic import RotatepicPuzzle
-from .stoneage  import StoneagePuzzle
-from .trivial   import TrivialPuzzle
+import os, pkgutil
+for _, module, _ in pkgutil.iter_modules([os.path.dirname(__file__)]):
+	__import__(__name__ + "." + module)
 
 def create_puzzle(level, Globals):
-	is_any_maze = flags.is_random_maze or flags.is_spiral_maze or flags.is_grid_maze
+	if not Puzzle.__subclasses__():
+		print("Internal bug. Didn't find any Puzzle subclasses")
+		quit()
 
-	if level.get("barrel_puzzle") and not is_any_maze:
-		puzzle_class = BarrelPuzzle
-	elif level.get("color_puzzle") and not is_any_maze:
-		puzzle_class = ColorPuzzle
-	elif level.get("fifteen_puzzle") and not is_any_maze:
-		puzzle_class = FifteenPuzzle
-	elif level.get("gate_puzzle") and is_any_maze:
-		puzzle_class = GatePuzzle
-	elif level.get("lock_puzzle") and is_any_maze:
-		puzzle_class = LockPuzzle
-	elif level.get("memory_puzzle") and not is_any_maze:
-		puzzle_class = MemoryPuzzle
-	elif level.get("portal_puzzle") and not is_any_maze and flags.NUM_ROOMS is None:
-		puzzle_class = PortalPuzzle
-	elif level.get("rotatepic_puzzle"):
-		puzzle_class = RotatepicPuzzle
-	elif level.get("stoneage_puzzle") and not is_any_maze:
-		puzzle_class = StoneagePuzzle
-	elif level.get("trivial_puzzle"):
-		puzzle_class = TrivialPuzzle
-	else:
-		puzzle_class = Puzzle
+	puzzle_class = Puzzle
+	for cls in Puzzle.__subclasses__():
+		if cls.config_name() in level:
+			puzzle_class = cls
 
-	return puzzle_class(level, Globals)
+	puzzle = puzzle_class(level, Globals)
+
+	if not puzzle.assert_config():
+		print("Level #%s: Requested %s, but config is incompatible, so ignoring it" % (level.get("n"), puzzle.__class__.__name__))
+		puzzle = Puzzle(level, Globals)
+
+	return puzzle
 

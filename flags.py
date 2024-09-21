@@ -16,6 +16,8 @@ class Flags:
 		self.has_start         = level.get("has_start")
 		self.has_finish        = level.get("has_finish")
 
+		self.is_any_maze = self.is_random_maze or self.is_spiral_maze or self.is_grid_maze
+
 		if self.is_four_rooms:
 			self.NUM_ROOMS = 4
 			self.ROOM_SIZE_X = ROOM_4_SIZE_X

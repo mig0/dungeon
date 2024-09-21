@@ -10,6 +10,9 @@ class RotatepicPuzzle(Puzzle):
 		self.image = None
 		self.draw_solved_mode = False
 
+	def assert_config(self):
+		return not flags.is_any_maze
+
 	def on_create_map(self, map):
 		super().on_create_map(map)
 		self.rotatepic_map = ndarray((MAP_SIZE_X, MAP_SIZE_X), dtype=int)

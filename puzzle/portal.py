@@ -28,6 +28,9 @@ class PortalPuzzle(Puzzle):
 		self.draw_hint_mode = False
 		self.num_portals_per_hall = self.level.get("portal_puzzle_num_portals_per_hall", 0)
 
+	def assert_config(self):
+		return not flags.is_any_maze and flags.NUM_ROOMS is None
+
 	def has_finish(self):
 		return True
 

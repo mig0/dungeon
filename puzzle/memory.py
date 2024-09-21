@@ -17,6 +17,9 @@ class MemoryPuzzle(Puzzle):
 		self.reveal_time = self.level.get("memory_puzzle_reveal_time", 0)
 		self.unset_open_cells()
 
+	def assert_config(self):
+		return not flags.is_any_maze
+
 	def unset_open_cells(self):
 		self.open_cell1 = None
 		self.open_cell2 = None
