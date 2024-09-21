@@ -28,9 +28,6 @@ class PortalPuzzle(Puzzle):
 		self.draw_hint_mode = False
 		self.num_portals_per_hall = self.level.get("portal_puzzle_num_portals_per_hall", 0)
 
-	def is_long_generation(self):
-		return True
-
 	def has_finish(self):
 		return True
 

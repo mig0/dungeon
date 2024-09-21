@@ -163,7 +163,7 @@ class GatePuzzle(Puzzle):
 			print("Can't generate gate puzzle, sorry")
 			quit()
 
-	def generate_room():
+	def generate_room(self):
 		self.generate_random_solvable_room(self.accessible_cells, self.finish_cell)
 
 	def on_press_key(self, keyboard):
