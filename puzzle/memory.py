@@ -13,8 +13,8 @@ class MemoryPuzzle(Puzzle):
 		self.area = Area()
 		self.use_colors = False
 		self.level_time = 0
-		self.is_revealed = self.level.get("memory_puzzle_revealed", False)
-		self.reveal_time = self.level.get("memory_puzzle_reveal_time", 0)
+		self.is_revealed = self.config.get("is_revealed", False)
+		self.reveal_time = self.config.get("reveal_time", 0)
 		self.unset_open_cells()
 
 	def assert_config(self):
@@ -34,8 +34,9 @@ class MemoryPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		self.area.size_x = self.level["memory_puzzle_size"][0] if "memory_puzzle_size" in self.level else flags.ROOM_SIZE_X[room.idx] if room.idx is not None else PLAY_SIZE_X
-		self.area.size_y = self.level["memory_puzzle_size"][1] if "memory_puzzle_size" in self.level else flags.ROOM_SIZE_Y[room.idx] if room.idx is not None else PLAY_SIZE_Y
+		size = self.config.get("size", (flags.ROOM_SIZE_X[room.idx], flags.ROOM_SIZE_Y[room.idx]) if room.idx is not None else (PLAY_SIZE_X, PLAY_SIZE_Y))
+		self.area.size_x = size[0]
+		self.area.size_y = size[1]
 		self.area.x1 = room.x1 + (room.size_x - self.area.size_x) // 2
 		self.area.x2 = self.area.x1 + self.area.size_x - 1
 		self.area.y1 = room.y1 + (room.size_y - self.area.size_y) // 2

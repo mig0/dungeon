@@ -24,8 +24,9 @@ class ColorPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		self.area.size_x = self.level["color_puzzle_size"][0] if "color_puzzle_size" in self.level else flags.DEFAULT_PUZZLE_ROOM_SIZE_X(room.idx) if room.idx is not None else flags.DEFAULT_PUZZLE_PLAY_SIZE_X
-		self.area.size_y = self.level["color_puzzle_size"][1] if "color_puzzle_size" in self.level else flags.DEFAULT_PUZZLE_ROOM_SIZE_Y(room.idx) if room.idx is not None else flags.DEFAULT_PUZZLE_PLAY_SIZE_Y
+		size = self.config.get("size", (flags.DEFAULT_PUZZLE_ROOM_SIZE_X(room.idx), flags.DEFAULT_PUZZLE_ROOM_SIZE_Y(room.idx)) if room.idx is not None else (flags.DEFAULT_PUZZLE_PLAY_SIZE_X, flags.DEFAULT_PUZZLE_PLAY_SIZE_Y))
+		self.area.size_x = size[0]
+		self.area.size_y = size[1]
 		self.area.x1 = room.x1 + int((room.size_x - self.area.size_x) / 2)
 		self.area.x2 = self.area.x1 + self.area.size_x - 1
 		self.area.y1 = room.y1 + int((room.size_y - self.area.size_y) / 2)
@@ -39,7 +40,7 @@ class ColorPuzzle(Puzzle):
 		self.color_map.fill(COLOR_PUZZLE_VALUE_OUTSIDE)
 
 	def get_num_values(self):
-		return self.level["color_puzzle_values"] if "color_puzzle_values" in self.level else MAX_COLOR_PUZZLE_VALUES
+		return self.config.get("num_values", MAX_COLOR_PUZZLE_VALUES)
 
 	def press_cell(self, cell):
 		self.color_map[cell] = (self.color_map[cell] + 1) % self.get_num_values()
@@ -47,7 +48,7 @@ class ColorPuzzle(Puzzle):
 	def press_plate(self, cell):
 		for neigh in self.Globals.get_all_neighbors(cell):
 			self.press_cell(neigh)
-			if "color_puzzle_extended" in self.level and (neigh[0] != cell[0] and neigh[1] != cell[1]) ^ (cell[0] % 3 != 0 or cell[2] % 3 != 0):
+			if "is_extended" in self.config and (neigh[0] != cell[0] and neigh[1] != cell[1]) ^ (cell[0] % 3 != 0 or cell[2] % 3 != 0):
 				self.press_cell(neigh)
 
 	def get_cell_image(self, cell):

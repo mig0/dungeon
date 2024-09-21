@@ -24,10 +24,10 @@ class GatePuzzle(Puzzle):
 		return passed_gates
 
 	def get_num_plates(self):
-		return self.level["num_gate_puzzle_plates"] if "num_gate_puzzle_plates" in self.level else DEFAULT_NUM_GATE_PUZZLE_PLATES
+		return self.config.get("num_plates", DEFAULT_NUM_GATE_PUZZLE_PLATES)
 
 	def get_num_gates(self):
-		return self.level["num_gate_puzzle_gates"] if "num_gate_puzzle_gates" in self.level else DEFAULT_NUM_GATE_PUZZLE_GATES
+		return self.config.get("num_gates", DEFAULT_NUM_GATE_PUZZLE_GATES)
 
 	def toggle_gate(self, cx, cy):
 		self.map[cx, cy] = CELL_GATE1 if self.map[cx, cy] == CELL_GATE0 else CELL_GATE0

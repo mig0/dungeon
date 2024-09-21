@@ -26,7 +26,7 @@ class PortalPuzzle(Puzzle):
 		self.hall_center_cell_to_idx = {}
 		self.dst_hall_idx_to_src_hall_idxs = {i: [] for i in range(0, 9)}
 		self.draw_hint_mode = False
-		self.num_portals_per_hall = self.level.get("portal_puzzle_num_portals_per_hall", 0)
+		self.num_portals_per_hall = self.config.get("num_portals_per_hall", 4)
 
 	def assert_config(self):
 		return not flags.is_any_maze and flags.NUM_ROOMS is None

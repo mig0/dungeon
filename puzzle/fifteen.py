@@ -40,8 +40,9 @@ class FifteenPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		self.area.size_x = self.level["fifteen_puzzle_size"][0] if "fifteen_puzzle_size" in self.level else flags.ROOM_SIZE_X[room.idx] if room.idx is not None else PLAY_SIZE_X
-		self.area.size_y = self.level["fifteen_puzzle_size"][1] if "fifteen_puzzle_size" in self.level else flags.ROOM_SIZE_Y[room.idx] if room.idx is not None else PLAY_SIZE_Y
+		size = self.config.get("size", (flags.ROOM_SIZE_X[room.idx], flags.ROOM_SIZE_Y[room.idx]) if room.idx is not None else (PLAY_SIZE_X, PLAY_SIZE_Y))
+		self.area.size_x = size[0]
+		self.area.size_y = size[1]
 		if self.area.size_x <= 1:
 			self.area.size_x = 2
 		if self.area.size_y <= 1:

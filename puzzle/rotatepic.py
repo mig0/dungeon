@@ -36,8 +36,9 @@ class RotatepicPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		self.area.size_x = self.level["rotatepic_puzzle_size"][0] if "rotatepic_puzzle_size" in self.level else flags.ROOM_SIZE_X[room.idx] if room.idx is not None else PLAY_SIZE_X
-		self.area.size_y = self.level["rotatepic_puzzle_size"][1] if "rotatepic_puzzle_size" in self.level else flags.ROOM_SIZE_Y[room.idx] if room.idx is not None else PLAY_SIZE_Y
+		size = self.config.get("size", (flags.ROOM_SIZE_X[room.idx], flags.ROOM_SIZE_Y[room.idx]) if room.idx is not None else (PLAY_SIZE_X, PLAY_SIZE_Y))
+		self.area.size_x = size[0]
+		self.area.size_y = size[1]
 		if self.area.size_x <= 1:
 			self.area.size_x = 2
 		if self.area.size_y <= 1:
@@ -55,7 +56,7 @@ class RotatepicPuzzle(Puzzle):
 		self.max_num = self.area.size_x * self.area.size_y
 		self.is_shared_bg = self.level.get("bg_image") is not None
 		if not self.is_shared_bg:
-			self.image = self.Globals.load_image(self.level.get("rotatepic_puzzle_image", "bg/stonehenge.jpg"), (self.area.size_x * CELL_W, self.area.size_y * CELL_H), self.level.get("rotatepic_puzzle_image_crop", False))
+			self.image = self.Globals.load_image(self.config.get("image", "bg/stonehenge.jpg"), (self.area.size_x * CELL_W, self.area.size_y * CELL_H), self.config.get("image_crop", False))
 
 	def rotate_cell(self, cell, delta=1):
 		if self.rotatepic_map[cell] == ROTATEPIC_PUZZLE_VALUE_OUTSIDE:

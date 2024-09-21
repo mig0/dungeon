@@ -101,7 +101,7 @@ class BarrelPuzzle(Puzzle):
 		return False
 
 	def generate_random_solvable_room(self):
-		num_barrels = self.level["num_barrels"] if "num_barrels" in self.level else DEFAULT_NUM_BARRELS
+		num_barrels = self.config.get("num_barrels", DEFAULT_NUM_BARRELS)
 
 		def get_random_cell():
 			return (randint(self.room.x1, self.room.x2), randint(self.room.y1, self.room.y2))
