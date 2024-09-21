@@ -257,14 +257,15 @@ def assert_room():
 		quit()
 
 def set_room(idx):
-	room.size_x = flags.ROOM_SIZE_X[idx] if idx is not None else PLAY_SIZE_X
-	room.size_y = flags.ROOM_SIZE_Y[idx] if idx is not None else PLAY_SIZE_Y
-	room.x1 = flags.ROOM_X1[idx] if idx is not None else PLAY_X1
-	room.x2 = flags.ROOM_X2[idx] if idx is not None else PLAY_X2
-	room.y1 = flags.ROOM_Y1[idx] if idx is not None else PLAY_Y1
-	room.y2 = flags.ROOM_Y2[idx] if idx is not None else PLAY_Y2
-	room.x_range = flags.ROOM_X_RANGE[idx] if idx is not None else PLAY_X_RANGE
-	room.y_range = flags.ROOM_Y_RANGE[idx] if idx is not None else PLAY_Y_RANGE
+	room.size = flags.ROOM_SIZE(idx)
+	room.size_x = flags.ROOM_SIZE_X[idx]
+	room.size_y = flags.ROOM_SIZE_Y[idx]
+	room.x1 = flags.ROOM_X1[idx]
+	room.x2 = flags.ROOM_X2[idx]
+	room.y1 = flags.ROOM_Y1[idx]
+	room.y2 = flags.ROOM_Y2[idx]
+	room.x_range = flags.ROOM_X_RANGE[idx]
+	room.y_range = flags.ROOM_Y_RANGE[idx]
 	room.idx = idx
 
 	puzzle.on_set_room(room)
@@ -682,7 +683,7 @@ def generate_map():
 			if cx == 0 or cx == PLAY_SIZE_X + 1 or cy == 0 or cy == PLAY_SIZE_Y + 1:
 				cell_type = CELL_WALL
 			else:
-				if flags.NUM_ROOMS and (cx in flags.ROOM_BORDERS_X or cy in flags.ROOM_BORDERS_Y):
+				if cx in flags.ROOM_BORDERS_X or cy in flags.ROOM_BORDERS_Y:
 					cell_type = CELL_WALL
 				else:
 					cell_type = get_random_floor_cell_type()
@@ -690,11 +691,8 @@ def generate_map():
 
 	puzzle.on_create_map(map)
 
-	if flags.NUM_ROOMS:
-		for idx in range(flags.NUM_ROOMS):
-			generate_room(idx)
-	else:
-		generate_room(None)
+	for idx in range(flags.NUM_ROOMS):
+		generate_room(idx)
 
 	puzzle.on_generate_map()
 
@@ -902,7 +900,7 @@ def init_new_level(offset=1, reload_stored=False):
 	if is_level_intro_enabled:
 		reset_level_and_target_timer()
 
-	room_idx = 0 if flags.NUM_ROOMS else None
+	room_idx = 0
 	set_room(room_idx)
 
 	if reload_stored:
@@ -936,12 +934,10 @@ def init_new_level(offset=1, reload_stored=False):
 def init_new_room():
 	global room_idx, mode
 
-	if flags.NUM_ROOMS:
-		room_idx += 1
-
-	if not flags.NUM_ROOMS or room_idx == flags.NUM_ROOMS:
+	if not flags.MULTI_ROOMS or room_idx == flags.NUM_ROOMS - 1:
 		init_new_level()
 	else:
+		room_idx += 1
 		set_room(room_idx)
 		place_char_in_first_free_spot()
 		reveal_map_near_char()

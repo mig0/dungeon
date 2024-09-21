@@ -24,15 +24,7 @@ class ColorPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		size = self.config.get("size", (flags.DEFAULT_PUZZLE_ROOM_SIZE_X(room.idx), flags.DEFAULT_PUZZLE_ROOM_SIZE_Y(room.idx)) if room.idx is not None else (flags.DEFAULT_PUZZLE_PLAY_SIZE_X, flags.DEFAULT_PUZZLE_PLAY_SIZE_Y))
-		self.area.size_x = size[0]
-		self.area.size_y = size[1]
-		self.area.x1 = room.x1 + int((room.size_x - self.area.size_x) / 2)
-		self.area.x2 = self.area.x1 + self.area.size_x - 1
-		self.area.y1 = room.y1 + int((room.size_y - self.area.size_y) / 2)
-		self.area.y2 = self.area.y1 + self.area.size_y - 1
-		self.area.x_range = range(self.area.x1, self.area.x2 + 1)
-		self.area.y_range = range(self.area.y1, self.area.y2 + 1)
+		super().set_area_from_config(request_odd_size=True, align_to_center=True)
 
 	def on_create_map(self, map):
 		super().on_create_map(map)

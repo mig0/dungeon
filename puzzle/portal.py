@@ -29,7 +29,7 @@ class PortalPuzzle(Puzzle):
 		self.num_portals_per_hall = self.config.get("num_portals_per_hall", 4)
 
 	def assert_config(self):
-		return not flags.is_any_maze and flags.NUM_ROOMS is None
+		return not flags.is_any_maze and not flags.MULTI_ROOMS
 
 	def has_finish(self):
 		return True

@@ -34,15 +34,7 @@ class MemoryPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		size = self.config.get("size", (flags.ROOM_SIZE_X[room.idx], flags.ROOM_SIZE_Y[room.idx]) if room.idx is not None else (PLAY_SIZE_X, PLAY_SIZE_Y))
-		self.area.size_x = size[0]
-		self.area.size_y = size[1]
-		self.area.x1 = room.x1 + (room.size_x - self.area.size_x) // 2
-		self.area.x2 = self.area.x1 + self.area.size_x - 1
-		self.area.y1 = room.y1 + (room.size_y - self.area.size_y) // 2
-		self.area.y2 = self.area.y1 + self.area.size_y - 1
-		self.area.x_range = range(self.area.x1, self.area.x2 + 1)
-		self.area.y_range = range(self.area.y1, self.area.y2 + 1)
+		super().set_area_from_config()
 		self.use_colors = self.get_num_pairs() <= len(COLOR_PUZZLE_RGB_VALUES)
 		self.unset_open_cells()
 

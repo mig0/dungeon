@@ -40,23 +40,7 @@ class FifteenPuzzle(Puzzle):
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
-		size = self.config.get("size", (flags.ROOM_SIZE_X[room.idx], flags.ROOM_SIZE_Y[room.idx]) if room.idx is not None else (PLAY_SIZE_X, PLAY_SIZE_Y))
-		self.area.size_x = size[0]
-		self.area.size_y = size[1]
-		if self.area.size_x <= 1:
-			self.area.size_x = 2
-		if self.area.size_y <= 1:
-			self.area.size_y = 2
-		if self.area.size_x > self.room.size_x:
-			self.area.size_x = self.room.size_x
-		if self.area.size_y > self.room.size_y:
-			self.area.size_y = self.room.size_y
-		self.area.x1 = room.x1 + (room.size_x - self.area.size_x) // 2 + (room.size_x - self.area.size_x) % 2 * ((room.idx + 1 if room.idx is not None else 0) % 2)
-		self.area.x2 = self.area.x1 + self.area.size_x - 1
-		self.area.y1 = room.y1 + (room.size_y - self.area.size_y) // 2 + (room.size_y - self.area.size_y) % 2 * (1 - ((room.idx if room.idx is not None else 2) // 2) % 2)
-		self.area.y2 = self.area.y1 + self.area.size_y - 1
-		self.area.x_range = range(self.area.x1, self.area.x2 + 1)
-		self.area.y_range = range(self.area.y1, self.area.y2 + 1)
+		super().set_area_from_config(align_to_center=True)
 		self.max_num = self.area.size_x * self.area.size_y
 
 	def is_empty_cell(self, cell):

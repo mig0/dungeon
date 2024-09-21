@@ -43,16 +43,23 @@ class Flags:
 			self.ROOM_BORDERS_X = ROOM_9_BORDERS_X
 			self.ROOM_BORDERS_Y = ROOM_9_BORDERS_Y
 		else:
-			self.NUM_ROOMS = None
+			self.NUM_ROOMS = 1
+			self.ROOM_SIZE_X = [PLAY_SIZE_X]
+			self.ROOM_SIZE_Y = [PLAY_SIZE_Y]
+			self.ROOM_X1 = [PLAY_X1]
+			self.ROOM_X2 = [PLAY_X2]
+			self.ROOM_Y1 = [PLAY_Y1]
+			self.ROOM_Y2 = [PLAY_Y2]
+			self.ROOM_X_RANGE = [PLAY_X_RANGE]
+			self.ROOM_Y_RANGE = [PLAY_Y_RANGE]
+			self.ROOM_BORDERS_X = []
+			self.ROOM_BORDERS_Y = []
 
-	DEFAULT_PUZZLE_PLAY_SIZE_X = round_odd(PLAY_SIZE_X)
+		self.MULTI_ROOMS = self.NUM_ROOMS > 1
 
-	DEFAULT_PUZZLE_PLAY_SIZE_Y = round_odd(PLAY_SIZE_Y)
-
-	def DEFAULT_PUZZLE_ROOM_SIZE_X(self, room_idx):
-		return round_odd(self.ROOM_SIZE_X[room_idx])
-
-	def DEFAULT_PUZZLE_ROOM_SIZE_Y(self, room_idx):
-		return round_odd(self.ROOM_SIZE_Y[room_idx])
+	def ROOM_SIZE(self, room_idx, request_odd=False):
+		if request_odd:
+			return (round_odd(self.ROOM_SIZE_X[room_idx]), round_odd(self.ROOM_SIZE_Y[room_idx]))
+		return (self.ROOM_SIZE_X[room_idx], self.ROOM_SIZE_Y[room_idx])
 
 flags = Flags()
