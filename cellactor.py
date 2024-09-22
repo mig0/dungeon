@@ -13,8 +13,15 @@ active_inplace_animation_actors = []
 def cmp(n1, n2):
 	return 1 if n1 > n2 else 0 if n1 == n2 else -1
 
-def product(x_range, y_range):
-	return ((x, y) for x in x_range for y in y_range)
+def product(x_range, y_range, run_by_y=False):
+	if run_by_y:
+		for x in x_range:
+			for y in y_range:
+				yield (x, y)
+	else:
+		for y in y_range:
+			for x in x_range:
+				yield (x, y)
 
 def apply_diff(orig, diff, subtract=False):
 	factor = -1 if subtract else 1
