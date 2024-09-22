@@ -880,6 +880,8 @@ def init_new_level(offset=1, reload_stored=False):
 			create_barrel(barrel_cell)
 		for lift_info in stored_level["lift_infos"]:
 			create_lift(*lift_info)
+		for portal_cell, dst_cell in stored_level["portal_destinations"].items():
+			create_portal(portal_cell, dst_cell)
 		puzzle.restore_level(stored_level)
 	else:
 		if puzzle.is_long_generation():
@@ -926,6 +928,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.drop) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
+		"portal_destinations": dict(portal_destinations),
 	}
 	puzzle.store_level(stored_level)
 
