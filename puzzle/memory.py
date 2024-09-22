@@ -162,6 +162,9 @@ class MemoryPuzzle(Puzzle):
 		if keyboard.space:
 			self.press_cell(char.c)
 
+		if keyboard.enter:
+			self.reveal_time = self.level_time + 5
+
 	def set_char_opacity_if_needed(self):
 		if not self.use_colors:
 			char.set_default_opacity(MEMORY_PUZZLE_CHAR_OPACITY if self.memory_map[char.c] != MEMORY_PUZZLE_VALUE_OUTSIDE else 1)
