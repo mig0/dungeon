@@ -7,6 +7,7 @@ from numpy import ndarray, chararray
 from copy import deepcopy
 from random import randint
 from constants import *
+from leveltools import *
 from translations import *
 from cellactor import *
 from objects import *
@@ -98,7 +99,6 @@ level_title_timer = 0
 level_target_timer = 0
 
 level = None
-level_idx = -1
 
 room = Area()
 room_idx = None
@@ -818,7 +818,7 @@ def reset_idle_time():
 	last_autogeneration_time = 0
 
 def init_new_level(offset=1, reload_stored=False):
-	global level_idx, level, level_time, mode, is_game_won
+	global level, level_time, mode, is_game_won
 	global puzzle
 	global bg_image
 	global revealed_map
@@ -831,7 +831,7 @@ def init_new_level(offset=1, reload_stored=False):
 		print("Can't reload a non-current level")
 		quit()
 
-	if level_idx + offset < 0 or level_idx + offset > len(LEVELS):
+	if is_level_out_of_range(offset):
 		print("Requested level is out of range")
 		return
 
@@ -843,14 +843,12 @@ def init_new_level(offset=1, reload_stored=False):
 	clear_level_and_target_timer()
 	mode = "init"
 
-	level_idx += offset
-	if level_idx == len(LEVELS):
+	level = set_level(offset)
+	if not level:
 		mode = "end"
 		is_game_won = True
 		start_music()
 		return
-
-	level = LEVELS[level_idx]
 
 	flags.parse_level(level)
 
@@ -1136,11 +1134,14 @@ def on_key_down(key):
 		return
 
 	if keyboard.p:
-		init_new_level(-1)
+		offset = get_prev_level_group_offset() if keyboard.lctrl else get_prev_level_offset()
+		init_new_level(offset)
 	if keyboard.r:
-		init_new_level(0, bool(keyboard.lalt))
+		offset = get_curr_level_group_offset() if keyboard.lctrl else 0
+		init_new_level(offset, keyboard.lalt and not keyboard.lctrl)
 	if keyboard.n:
-		init_new_level(+1)
+		offset = get_next_level_group_offset() if keyboard.lctrl else get_next_level_offset()
+		init_new_level(offset)
 
 	if keyboard.w:
 		win_room()
