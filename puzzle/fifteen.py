@@ -9,6 +9,7 @@ class FifteenPuzzle(Puzzle):
 		self.fifteen_map = None
 		self.frame_image = None
 		self.max_num = 0
+		self.draw_solved_mode = False
 
 	def assert_config(self):
 		return not flags.is_any_maze
@@ -24,13 +25,12 @@ class FifteenPuzzle(Puzzle):
 	def is_target_to_be_solved(self):
 		return True
 
-	def get_real_fifteen_map(self):
-		return self.fifteen_map[ix_(self.area.x_range, self.area.y_range)]
+	def get_num_solved(self, cell):
+		return (cell[1] - self.area.y1) * self.area.size_x + (cell[0] - self.area.x1) + 1
 
 	def is_solved(self):
-		real_fifteen_map = self.get_real_fifteen_map()
-		for idx, num in enumerate(self.get_real_fifteen_map().transpose().flat):
-			if num != idx + 1:
+		for cell in self.area.cells:
+			if self.fifteen_map[cell] != self.get_num_solved(cell):
 				return False
 		return True
 
@@ -115,7 +115,7 @@ class FifteenPuzzle(Puzzle):
 		if self.fifteen_map[cell] == FIFTEEN_PUZZLE_VALUE_OUTSIDE:
 			return
 		cell_types.append(CELL_FIFTEEN_FRAME)
-		if self.is_empty_cell(cell):
+		if self.is_empty_cell(cell) and (not self.draw_solved_mode or not self.is_in_area(cell)) or cell == (self.area.x2, self.area.y2) and self.draw_solved_mode:
 			return
 		cell_types.append(CELL_FIFTEEN_VALUE)
 
@@ -123,13 +123,15 @@ class FifteenPuzzle(Puzzle):
 		if cell_type == CELL_FIFTEEN_FRAME:
 			return self.frame_image
 		if cell_type == CELL_FIFTEEN_VALUE:
-			return self.Globals.create_text_cell_image(str(self.fifteen_map[cell]), color='#FFFFC0', gcolor="#808040", owidth=1, ocolor="#404030")
+			num = self.fifteen_map[cell] if not self.draw_solved_mode or not self.is_in_area(cell) else self.get_num_solved(cell)
+			return self.Globals.create_text_cell_image(str(num), color='#FFFFC0', gcolor="#808040", owidth=1, ocolor="#404030")
 		return None
 
 	def on_press_key(self, keyboard):
 		if keyboard.space:
 			self.press_char_cell()
-		return True
+
+		self.draw_solved_mode = keyboard.enter and not self.draw_solved_mode
 
 	def set_char_opacity_if_needed(self):
 		char.set_default_opacity(MEMORY_PUZZLE_CHAR_OPACITY if self.fifteen_map[char.c] != FIFTEEN_PUZZLE_VALUE_OUTSIDE else 1)
