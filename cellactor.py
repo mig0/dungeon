@@ -40,6 +40,13 @@ def cell_to_pos(cell):
 def example(n):
 	return n
 
+class Area:
+	# x1, y1, x2, y2, size_x, size_y, x_range, y_range, idx
+
+	@property
+	def cells(self):
+		return product(self.x_range, self.y_range)
+
 class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, scale=None, **kwargs):
 		self._cell = None

@@ -4,7 +4,6 @@ class ColorPuzzle(Puzzle):
 	def init(self):
 		self.color_map = None
 		self.cell_images = []
-		self.area = Area()
 
 	def assert_config(self):
 		return not flags.is_any_maze
@@ -46,14 +45,11 @@ class ColorPuzzle(Puzzle):
 	def get_cell_image(self, cell):
 		return self.cell_images[self.color_map[cell]]
 
-	def is_in_area(self, cell):
-		return self.Globals.is_cell_in_area(cell, self.area.x_range, self.area.y_range)
-
 	def is_plate(self, cell):
 		return self.is_in_area(cell) and (cell[0] - self.area.x1) % 2 == 1 and (cell[1] - self.area.y1) % 2 == 1
 
 	def is_solved(self):
-		for cell in product(self.area.x_range, self.area.y_range):
+		for cell in self.area.cells:
 			if not self.is_plate(cell) and self.color_map[cell] != COLOR_PUZZLE_VALUE_GREEN:
 				return False
 		return True
@@ -70,7 +66,7 @@ class ColorPuzzle(Puzzle):
 		return None
 
 	def generate_room(self):
-		for cell in product(self.area.x_range, self.area.y_range):
+		for cell in self.area.cells:
 			self.color_map[cell] = COLOR_PUZZLE_VALUE_GREEN
 			if self.is_plate(cell):
 				self.map[cell] = CELL_PLATE

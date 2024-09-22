@@ -10,7 +10,6 @@ class MemoryPuzzle(Puzzle):
 		self.memory_map = None
 		self.room_memory_pairs = {}
 		self.cell_images = []
-		self.area = Area()
 		self.use_colors = False
 		self.level_time = 0
 		self.is_revealed = self.config.get("is_revealed", False)
@@ -99,7 +98,7 @@ class MemoryPuzzle(Puzzle):
 
 	def generate_room(self):
 		memory_pairs = {}
-		for cell1 in product(self.area.x_range, self.area.y_range):
+		for cell1 in self.area.cells:
 			if self.is_empty_central_cell(cell1):
 				continue
 			if self.memory_map[cell1] == MEMORY_PUZZLE_VALUE_OUTSIDE:

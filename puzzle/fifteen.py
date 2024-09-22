@@ -7,7 +7,6 @@ CELL_FIFTEEN_VALUE = '~v'
 class FifteenPuzzle(Puzzle):
 	def init(self):
 		self.fifteen_map = None
-		self.area = Area()
 		self.frame_image = None
 		self.max_num = 0
 
@@ -27,9 +26,6 @@ class FifteenPuzzle(Puzzle):
 
 	def get_real_fifteen_map(self):
 		return self.fifteen_map[ix_(self.area.x_range, self.area.y_range)]
-
-	def is_in_area(self, cell):
-		return self.Globals.is_cell_in_area(cell, self.area.x_range, self.area.y_range)
 
 	def is_solved(self):
 		real_fifteen_map = self.get_real_fifteen_map()

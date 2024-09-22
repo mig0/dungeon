@@ -6,7 +6,6 @@ CELL_ROTATEPIC_BOX = '~b'
 class RotatepicPuzzle(Puzzle):
 	def init(self):
 		self.rotatepic_map = None
-		self.area = Area()
 		self.image = None
 		self.draw_solved_mode = False
 
@@ -23,9 +22,6 @@ class RotatepicPuzzle(Puzzle):
 
 	def get_real_rotatepic_map(self):
 		return self.rotatepic_map[ix_(self.area.x_range, self.area.y_range)]
-
-	def is_in_area(self, cell):
-		return self.Globals.is_cell_in_area(cell, self.area.x_range, self.area.y_range)
 
 	def is_solved(self):
 		real_rotatepic_map = self.get_real_rotatepic_map()
@@ -52,7 +48,7 @@ class RotatepicPuzzle(Puzzle):
 		self.rotate_cell(char.c, 1 if clockwise else -1)
 
 	def scramble(self):
-		for cell in product(self.area.x_range, self.area.y_range):
+		for cell in self.area.cells:
 			# make 0 to be twice less frequent than 1, 2 or 3
 			delta = randint(1, 7) // 2
 			self.rotate_cell(cell, delta)

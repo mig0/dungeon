@@ -18,6 +18,7 @@ class Puzzle:
 		self.Globals = Globals
 		self.accessible_cells = None
 		self.finish_cell = None
+		self.area = Area()
 		self.config_name = self.__class__.config_name()
 		self.config = {} if type(level.get(self.config_name)) != dict else dict(level[self.config_name])
 		self.init()
@@ -87,6 +88,9 @@ class Puzzle:
 		self.area.y2 = self.area.y1 + self.area.size_y - 1
 		self.area.x_range = range(self.area.x1, self.area.x2 + 1)
 		self.area.y_range = range(self.area.y1, self.area.y2 + 1)
+
+	def is_in_area(self, cell):
+		return self.Globals.is_cell_in_area(cell, self.area.x_range, self.area.y_range)
 
 	def on_set_theme(self):
 		pass
