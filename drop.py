@@ -1,6 +1,7 @@
 import sys
 from constants import *
 from cellactor import *
+from sizetools import import_size_constants
 
 class Drop:
 	def __init__(self, name):
@@ -21,6 +22,8 @@ class Drop:
 		self.num_contained = 0
 		self.num_collected = 0
 		self.cells = []
+
+		import_size_constants()
 
 	def has_instance(self, cell):
 		return cell in self.cells

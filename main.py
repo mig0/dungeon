@@ -14,6 +14,7 @@ from objects import *
 from drop import draw_status_drops
 from flags import flags
 from puzzle import create_puzzle
+from sizetools import *
 
 lang = 'en'
 
@@ -850,6 +851,9 @@ def init_new_level(offset=1, reload_stored=False):
 		is_game_won = True
 		start_music()
 		return
+
+	set_map_size(level.get("map_size", DEFAULT_MAP_SIZE))
+	import_size_constants()
 
 	flags.parse_level(level)
 

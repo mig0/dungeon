@@ -2,7 +2,7 @@ import pygame
 from pgzero.actor import Actor, POS_TOPLEFT, ANCHOR_CENTER, transform_anchor
 from pgzero.animation import *
 from typing import Union, Tuple
-from constants import CELL_W, CELL_H
+from sizetools import CELL_W, CELL_H
 
 MAX_ALPHA = 255  # based on pygame
 

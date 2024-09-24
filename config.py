@@ -1,14 +1,6 @@
 TITLE = "Skull Labyrinth"
 FPS = 30
 
-# playing area size
-PLAY_SIZE_X = 11
-PLAY_SIZE_Y = 11
-
-# sprite size
-CELL_W = 64
-CELL_H = 64
-
 DEBUG_LEVEL = 1  # 0 means no debug at all, 2 means more verbose
 MIN_ENEMY_HEALTH = 5
 MAX_ENEMY_HEALTH = 15

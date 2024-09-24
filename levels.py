@@ -3,6 +3,7 @@ from config import *
 levels = [
 	{
 		"n": 1.1,
+		"map_size": (11, 9),
 		"num_enemies": 5,
 		"theme": "classic",
 		"music": "a_new_path",
@@ -11,6 +12,7 @@ levels = [
 	},
 	{
 		"n": 1.2,
+		"map_size": (11, 12),
 		"num_enemies": 0,
 		"theme": "modern1",
 		"music": "inspire",
@@ -42,6 +44,7 @@ levels = [
 	},
 	{
 		"n": 2.1,
+		"map_size": (13, 13),
 		"num_enemies": 5,
 		"theme": "classic",
 		"music": "a_new_path",
@@ -387,6 +390,7 @@ levels = [
 	},
 	{
 		"n": 10.1,
+		"map_size": (20, 11),
 		"theme": "stoneage1",
 		"music": "stoneage/01_stardust_falling",
 		"bg_image": "bg/remains_of_a_threat.jpg",

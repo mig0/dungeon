@@ -1,4 +1,5 @@
 from constants import *
+from sizetools import import_size_constants
 
 def round_odd(n):
 	return (n - 1) // 2 * 2 + 1
@@ -17,6 +18,8 @@ class Flags:
 		self.has_finish        = level.get("has_finish")
 
 		self.is_any_maze = self.is_random_maze or self.is_spiral_maze or self.is_grid_maze
+
+		import_size_constants()
 
 		if self.is_four_rooms:
 			self.NUM_ROOMS = 4

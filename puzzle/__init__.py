@@ -4,6 +4,7 @@ from objects import *
 from flags import flags
 from random import randint, random
 from numpy import ndarray, arange, array_equal, ix_, argwhere, copyto
+from sizetools import import_size_constants
 
 class Puzzle:
 	@classmethod
@@ -154,6 +155,8 @@ def create_puzzle(level, Globals):
 	if not puzzle.assert_config():
 		print("Level #%s: Requested %s, but config is incompatible, so ignoring it" % (level.get("n"), puzzle.__class__.__name__))
 		puzzle = Puzzle(level, Globals)
+
+	import_size_constants(puzzle)
 
 	return puzzle
 
