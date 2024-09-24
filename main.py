@@ -38,6 +38,55 @@ def _(str_key):
 
 autodetect_lang()
 
+def load_map_file(filename):
+	global map
+
+	def print_error(error):
+		print("File %s: %s. Ignoring map file" % (filename, error))
+
+	try:
+		file = open(filename, "r")
+	except:
+		print_error("Failed to open")
+		return
+
+	words = file.readline().split(" ")
+	if len(words) <= 1:
+		print_error("Invalid signature line, no expected space")
+		return
+	size_str = words[-1].rstrip("\n")
+	sizes = size_str.split("x")
+	if len(sizes) != 2 or not sizes[0].isdigit() or not sizes[1].isdigit():
+		print_error("Invalid signature line, invalid size '%s'" % size_str)
+		return
+	size_x = int(sizes[0])
+	size_y = int(sizes[1])
+	if size_x != MAP_SIZE_X or size_y != MAP_SIZE_Y:
+		print_error("Invalid size %dx%d instead of %dx%d" % (size_x, size_y, MAP_SIZE_X, MAP_SIZE_Y))
+		return
+
+	orig_map = map.copy()
+
+	for y in range(0, size_y):
+		line = file.readline().rstrip("\n")
+		if not line:
+			map = orig_map.copy()
+			print_error("Failed to read map line #%d" % (y + 1))
+			return
+		for x in range(0, size_x):
+			if len(line) <= x:
+				map = orig_map.copy()
+				print_error("Failed to read char #%d in map line #%d" % (x + 1, y + 1))
+				return
+			ch = line[x]
+			if ch == CELL_START:
+				set_char_cell((x, y))
+			if ch in LIFT_TYPES_BY_CHAR:
+				create_lift((x, y), LIFT_TYPES_BY_CHAR[ch])
+				ch = CELL_VOID
+			map[x, y] = ch
+	file.close()
+
 def is_cell_in_area(cell, x_range, y_range):
 	return cell[0] in x_range and cell[1] in y_range
 
@@ -690,6 +739,10 @@ def generate_map():
 				else:
 					cell_type = get_random_floor_cell_type()
 			map[cx, cy] = cell_type
+
+	if "map_file" in level:
+		load_map_file(level["map_file"])
+		return
 
 	puzzle.on_create_map(map)
 
