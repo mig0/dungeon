@@ -631,6 +631,7 @@ class Globals:
 	replace_random_floor_cell = replace_random_floor_cell
 	create_portal = create_portal
 	create_portal_pair = create_portal_pair
+	create_lift = create_lift
 	create_enemy = create_enemy
 
 def generate_room(idx):
@@ -1307,12 +1308,14 @@ def move_char(diff_x, diff_y):
 
 	# process lift movement if available
 	if lift_target := get_lift_target(old_char_cell, diff):
+		distance = get_distance(old_char_cell, lift_target)
 		lift = get_actor_on_cell(old_char_cell, lifts)
 		lift.move(diff)
 		for i in range(1, distance):
 			char.move(diff)
 			lift.move(diff)
 		if is_move_animate_enabled:
+			animate_time_factor = distance - (distance - 1) / 2
 			lift.pos = old_char_pos
 			lift.animate(animate_time_factor * ARROW_KEYS_RESOLUTION)
 
