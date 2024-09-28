@@ -798,7 +798,10 @@ def set_theme(theme_name):
 	}
 
 	for barrel in barrels:
-		barrel.image = get_theme_image_name('barrel')
+		barrel.image = get_theme_image_name("barrel")
+
+	for lift in lifts:
+		lift.image = get_theme_image_name("lift" + lift.type)
 
 	for drop in drops:
 		drop.set_image(get_theme_image_name(drop.name))
