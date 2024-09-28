@@ -44,7 +44,7 @@ ACTOR_CHARS = {
 	'char':   '☻',
 }
 
-LIFT_A = ''
+LIFT_A = 'a'
 LIFT_H = 'h'
 LIFT_V = 'v'
 LIFT_L = 'l'
