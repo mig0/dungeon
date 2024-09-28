@@ -932,7 +932,9 @@ def init_new_level(offset=1, reload_stored=False):
 	for drop in drops:
 		drop.reset()
 
-	set_theme(level["theme"])
+	theme_name = stored_level["theme_name"] if reload_stored else level["theme"]
+	set_theme(theme_name)
+
 	if reload_stored:
 		map = stored_level["map"]
 		for enemy_info in stored_level["enemy_infos"]:
@@ -990,6 +992,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 		"portal_destinations": dict(portal_destinations),
+		"theme_name": theme_name,
 	}
 	puzzle.store_level(stored_level)
 
