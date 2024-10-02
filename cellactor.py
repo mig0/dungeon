@@ -51,6 +51,8 @@ class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, scale=None, **kwargs):
 		self._cell = None
 		self._default_opacity = 1.0
+		self.hidden = False
+		self.cell_to_draw = None
 		self.reset_inplace()
 		self.unset_inplace_animation()
 		self._unset_animation()
@@ -65,6 +67,16 @@ class CellActor(Actor):
 		if scale is not None:
 			self._scale = scale
 			self.transform_surf()
+
+	def draw(self):
+		if self.hidden:
+			return
+		if self.cell_to_draw:
+			real_cell = self.c
+			self.c = self.cell_to_draw
+		super().draw()
+		if self.cell_to_draw:
+			self.c = real_cell
 
 	@property
 	def c(self):
