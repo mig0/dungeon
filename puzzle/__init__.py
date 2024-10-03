@@ -81,11 +81,13 @@ class Puzzle:
 		self.area.size = size
 		self.area.size_x = size[0]
 		self.area.size_y = size[1]
-		self.area.x1 = self.room.x1 + (self.room.size_x - self.area.size_x) // 2 + \
-			((self.room.size_x - self.area.size_x) % 2 * ((self.room.idx + 1 if self.room.idx is not None else 0) % 2) if align_to_center else 0)
+		self.area.x1 = self.room.x1 + (self.room.size_x - self.area.size_x) // 2 \
+			+ ((self.room.size_x - self.area.size_x) % 2 * ((self.room.idx + 1 if self.room.idx is not None else 0) % 2) if align_to_center and flags.NUM_ROOMS == 4 else 0) \
+			+ ((self.room.size_x - self.area.size_x) % 2 * ((self.room.idx + 1 if self.room.idx is not None else 0) % 3) if align_to_center and flags.NUM_ROOMS == 9 else 0)
 		self.area.x2 = self.area.x1 + self.area.size_x - 1
-		self.area.y1 = self.room.y1 + (self.room.size_y - self.area.size_y) // 2 + \
-			((self.room.size_y - self.area.size_y) % 2 * (1 - ((self.room.idx if self.room.idx is not None else 2) // 2) % 2) if align_to_center else 0)
+		self.area.y1 = self.room.y1 + (self.room.size_y - self.area.size_y) // 2 \
+			+ ((self.room.size_y - self.area.size_y) % 2 * (1 - ((self.room.idx if self.room.idx is not None else 2) // 2) % 2) if align_to_center and flags.NUM_ROOMS == 4 else 0) \
+			+ ((self.room.size_y - self.area.size_y) % 2 * int(1.5 - ((self.room.idx if self.room.idx is not None else 3) // 3) % 3) if align_to_center and flags.NUM_ROOMS == 9 else 0)
 		self.area.y2 = self.area.y1 + self.area.size_y - 1
 		self.area.x_range = range(self.area.x1, self.area.x2 + 1)
 		self.area.y_range = range(self.area.y1, self.area.y2 + 1)
