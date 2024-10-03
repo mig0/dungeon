@@ -1483,10 +1483,10 @@ def update(dt):
 
 	if ARROW_KEY_R in last_processed_arrow_keys:
 		diff_x += 1
-		char.set_image('stand')
+		char.image = "stand"
 	if ARROW_KEY_L in last_processed_arrow_keys:
 		diff_x -= 1
-		char.set_image('left')
+		char.image = "left"
 	if ARROW_KEY_D in last_processed_arrow_keys:
 		diff_y += 1
 	if ARROW_KEY_U in last_processed_arrow_keys:

@@ -1,6 +1,7 @@
 import pygame
 from pgzero.actor import Actor, POS_TOPLEFT, ANCHOR_CENTER, transform_anchor
 from pgzero.animation import *
+from pgzero import loaders
 from typing import Union, Tuple
 from sizetools import CELL_W, CELL_H
 
@@ -49,24 +50,24 @@ class Area:
 
 class CellActor(Actor):
 	def __init__(self, image:Union[str, pygame.Surface], pos=POS_TOPLEFT, anchor=ANCHOR_CENTER, scale=None, **kwargs):
-		self._cell = None
+		self._image_name = None
 		self._default_opacity = 1.0
+		self._opacity = self._default_opacity
+		self._scale = 1.0
+		self._flip = None
+		self._cell = None
 		self.hidden = False
 		self.cell_to_draw = None
-		self.reset_inplace()
-		self.unset_inplace_animation()
+		self._deferred_transform = False
+		self._pending_transform = False
+
+		self.reset_inplace_animation()
 		self._unset_animation()
 
-		image_str = None
-		if isinstance(image, str):
-			image_str = image
-		super().__init__(image_str, pos, anchor, **kwargs)
-		if isinstance(image, pygame.Surface):
-			self._orig_surf = image
-			self._update_pos()
-		if scale is not None:
-			self._scale = scale
-			self.transform_surf()
+		self.defer_transform()
+		super().__init__(image, pos, anchor, **kwargs)
+		self.scale = scale
+		self.apply_transform()
 
 	def draw(self):
 		if self.hidden:
@@ -77,6 +78,14 @@ class CellActor(Actor):
 		super().draw()
 		if self.cell_to_draw:
 			self.c = real_cell
+
+	def defer_transform(self):
+		self._deferred_transform = True
+
+	def apply_transform(self):
+		self._deferred_transform = False
+		if self._pending_transform:
+			self._transform()
 
 	@property
 	def c(self):
@@ -95,10 +104,69 @@ class CellActor(Actor):
 		self._cell = NONE_CELL if cell is None else cell
 		self.x, self.y = self.get_pos()
 
-	def set_image(self, image):
-		if self.image != image:
-			self.image = image
-			self.transform_surf()
+	@property
+	def angle(self):
+		return self._angle
+
+	@angle.setter
+	def angle(self, angle):
+		if angle is not None and angle != self._angle:
+			self._angle = angle
+			self._transform()
+
+	@property
+	def opacity(self):
+		return self._opacity
+
+	@opacity.setter
+	def opacity(self, opacity):
+		opacity = min(1.0, max(0.0, opacity))
+		if opacity != self._opacity:
+			self._opacity = opacity
+			self._transform()
+
+	@property
+	def scale(self):
+		return self._scale
+
+	@scale.setter
+	def scale(self, scale):
+		if scale is not None and scale != self._scale:
+			self._scale = scale
+			self._transform()
+
+	@property
+	def flip(self):
+		return self._flip
+
+	@flip.setter
+	def flip(self, flip):
+		if flip != self._flip:
+			self._flip = flip
+			self._transform()
+
+	@property
+	def image(self):
+		return self._image_name
+
+	@image.setter
+	def image(self, image:Union[str, pygame.Surface]):
+		if isinstance(image, pygame.Surface):
+			if hasattr(self, '_orig_surf') and self._orig_surf == image:
+				return
+			self._image_name = ''
+			self._surf = self._orig_surf = image
+			self._update_pos()
+			self._transform()
+		elif isinstance(image, str):
+			if self.image == image:
+				return
+			self._image_name = image
+			self._orig_surf = loaders.images.load(image)
+			self._transform()
+		else:
+			print("CellActor.image: Unsupported type " + type(image))
+			pass
 
 	def get_pos(self):
 		return cell_to_pos(self._cell)
@@ -115,7 +183,15 @@ class CellActor(Actor):
 	def move(self, diff, undo=False):
 		self.c = apply_diff(self.c, diff, undo)
 
-	def transform_surf(self):
+	def _transform(self):
+		if not hasattr(self, '_orig_surf'):
+			return
+
+		if self._deferred_transform:
+			self._pending_transform = True
+			return
+		self._pending_transform = False
+
 		self._surf = self._orig_surf
 		p = self.pos
 
@@ -143,12 +219,12 @@ class CellActor(Actor):
 		self.pos = p
 
 	def reset_inplace(self):
-		self._opacity = self._default_opacity
-		self._scale = 1.0
-		self._angle = 0.0
-		self._flip  = None
-		if hasattr(self, '_orig_surf'):
-			self.transform_surf()
+		self.defer_transform()
+		self.opacity = self._default_opacity
+		self.scale = 1.0
+		self.angle = 0.0
+		self.flip  = None
+		self.apply_transform()
 
 	def is_inplace_animation_active(self):
 		return self._inplace_animation_active
@@ -166,39 +242,27 @@ class CellActor(Actor):
 		self._inplace_animation_duration    = None
 		self._inplace_animation_on_finished = None
 
-	def reset_inplace_animation(self, hard=True):
+	def reset_inplace_animation(self):
 		self.unset_inplace_animation()
-		is_changed = False
-		if self._opacity != self._default_opacity:
-			self._opacity = self._default_opacity
-			is_changed = True
-		if self._scale != 1:
-			self._scale = 1
-			is_changed = True
-		if self._angle != 0:
-			self._angle = 0
-			is_changed = True
-		if self._angle is not None:
-			self._flip = None
-			is_changed = True
-		if is_changed:
-			self.transform_surf()
+		self.reset_inplace()
 
 	def activate_inplace_animation(self, start_time, duration, opacity:Tuple[float, float]=None, scale:Tuple[float, float]=None, angle:Tuple[float, float]=None, flip:Tuple[bool, bool, int]=None, tween="linear", on_finished=None):
 		self.unset_inplace_animation()
 
+		self.defer_transform()
+
 		is_defined = False
 		if opacity:
 			self._inplace_animation_opacity = opacity
-			self._opacity = opacity[0]
+			self.opacity = opacity[0]
 			is_defined = True
 		if scale:
 			self._inplace_animation_scale = scale
-			self._scale = scale[0]
+			self.scale = scale[0]
 			is_defined = True
 		if angle:
 			self._inplace_animation_angle = angle
-			self._angle = angle[0]
+			self.angle = angle[0]
 			is_defined = True
 		if flip and (flip[0] or flip[1]):
 			self._inplace_animation_flip = flip
@@ -207,12 +271,12 @@ class CellActor(Actor):
 			print("activate_inplace_animation called without opacity, scale or angle or flip, skipping")
 			return
 
+		self.apply_transform()
+
 		self._inplace_animation_tween       = tween
 		self._inplace_animation_start_time  = start_time
 		self._inplace_animation_duration    = duration
 		self._inplace_animation_on_finished = on_finished
-
-		self.transform_surf()
 
 		self._inplace_animation_active = True
 		active_inplace_animation_actors.append(self)
@@ -231,20 +295,22 @@ class CellActor(Actor):
 			factor = 0
 		factor = TWEEN_FUNCTIONS[self._inplace_animation_tween](factor)
 
-		if self._inplace_animation_opacity:
-			self._opacity = self._inplace_animation_opacity[0] + factor * (self._inplace_animation_opacity[1] - self._inplace_animation_opacity[0])
-		if self._inplace_animation_scale:
-			self._scale   = self._inplace_animation_scale[0]   + factor * (self._inplace_animation_scale[1]   - self._inplace_animation_scale[0])
-		if self._inplace_animation_angle:
-			self._angle   = self._inplace_animation_angle[0]   + factor * (self._inplace_animation_angle[1]   - self._inplace_animation_angle[0])
-		if self._inplace_animation_flip:
-			self._flip = [ False, False ]
-			if self._inplace_animation_flip[0] and int((0.999 if factor > 0.999 else factor) * self._inplace_animation_flip[2]) % 2 == self._inplace_animation_flip[2] % 2:
-				self._flip[0] = True
-			if self._inplace_animation_flip[1] and int((0.999 if factor > 0.999 else factor) * self._inplace_animation_flip[2]) % 2 == self._inplace_animation_flip[2] % 2:
-				self._flip[1] = True
+		self.defer_transform()
 
-		self.transform_surf()
+		if self._inplace_animation_opacity:
+			self.opacity = self._inplace_animation_opacity[0] + factor * (self._inplace_animation_opacity[1] - self._inplace_animation_opacity[0])
+		if self._inplace_animation_scale:
+			self.scale   = self._inplace_animation_scale[0]   + factor * (self._inplace_animation_scale[1]   - self._inplace_animation_scale[0])
+		if self._inplace_animation_angle:
+			self.angle   = self._inplace_animation_angle[0]   + factor * (self._inplace_animation_angle[1]   - self._inplace_animation_angle[0])
+		if self._inplace_animation_flip:
+			self.flip = [ False, False ]
+			if self._inplace_animation_flip[0] and int((0.999 if factor > 0.999 else factor) * self._inplace_animation_flip[2]) % 2 == self._inplace_animation_flip[2] % 2:
+				self.flip[0] = True
+			if self._inplace_animation_flip[1] and int((0.999 if factor > 0.999 else factor) * self._inplace_animation_flip[2]) % 2 == self._inplace_animation_flip[2] % 2:
+				self.flip[1] = True
+
+		self.apply_transform()
 
 		if factor == 1:
 			on_finished = self._inplace_animation_on_finished
@@ -273,7 +339,7 @@ class CellActor(Actor):
 		self._default_opacity = default_opacity
 		if is_default_opacity and self._opacity != self._default_opacity:
 			self._opacity = self._default_opacity
-			self.transform_surf()
+			self._transform()
 
 def create_actor(image_name, cell):
 	actor = CellActor(image_name)
