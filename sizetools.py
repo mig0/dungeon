@@ -53,7 +53,7 @@ ROOM_9_Y_RANGE = None
 ROOM_9_BORDERS_X = None
 ROOM_9_BORDERS_Y = None
 
-def set_map_size(size):
+def set_map_size(size, has_border=True):
 	global MAP_SIZE
 	global MAP_SIZE_X
 	global MAP_SIZE_Y
@@ -99,7 +99,9 @@ def set_map_size(size):
 	global ROOM_9_BORDERS_X
 	global ROOM_9_BORDERS_Y
 
-	if size == MAP_SIZE:
+	border_width = 1 if has_border else 0
+
+	if size == MAP_SIZE and PLAY_X1 == border_width:
 		return
 
 	MAP_SIZE = size
@@ -107,8 +109,8 @@ def set_map_size(size):
 	MAP_SIZE_X = size[0]
 	MAP_SIZE_Y = size[1]
 
-	PLAY_SIZE_X = MAP_SIZE_X - 2
-	PLAY_SIZE_Y = MAP_SIZE_Y - 2
+	PLAY_SIZE_X = MAP_SIZE_X - 2 * border_width
+	PLAY_SIZE_Y = MAP_SIZE_Y - 2 * border_width
 
 	MAP_W = CELL_W * MAP_SIZE_X
 	MAP_H = CELL_H * MAP_SIZE_Y
@@ -119,9 +121,9 @@ def set_map_size(size):
 	POS_CENTER_Y = HEIGHT / 2
 	POS_STATUS_Y = HEIGHT - CELL_H / 2
 
-	PLAY_X1 = 1
+	PLAY_X1 = border_width
 	PLAY_X2 = PLAY_X1 + PLAY_SIZE_X - 1
-	PLAY_Y1 = 1
+	PLAY_Y1 = border_width
 	PLAY_Y2 = PLAY_Y1 + PLAY_SIZE_Y - 1
 
 	PLAY_X_RANGE = range(PLAY_X1, PLAY_X2 + 1)

@@ -30,6 +30,9 @@ class Puzzle:
 	def assert_config(self):
 		return True
 
+	def has_border(self):
+		return True
+
 	def is_long_generation(self):
 		return False
 
@@ -157,8 +160,6 @@ def create_puzzle(level, Globals):
 	if not puzzle.assert_config():
 		print("Level #%s: Requested %s, but config is incompatible, so ignoring it" % (level.get("n"), puzzle.__class__.__name__))
 		puzzle = Puzzle(level, Globals)
-
-	import_size_constants(puzzle)
 
 	return puzzle
 

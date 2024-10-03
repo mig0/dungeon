@@ -19,10 +19,19 @@ class Flags:
 
 		self.is_any_maze = self.is_random_maze or self.is_spiral_maze or self.is_grid_maze
 
+		if self.is_four_rooms:
+			self.NUM_ROOMS = 4
+		elif self.is_nine_rooms:
+			self.NUM_ROOMS = 9
+		else:
+			self.NUM_ROOMS = 1
+
+		self.MULTI_ROOMS = self.NUM_ROOMS > 1
+
+	def apply_sizes(self):
 		import_size_constants()
 
 		if self.is_four_rooms:
-			self.NUM_ROOMS = 4
 			self.ROOM_SIZE_X = ROOM_4_SIZE_X
 			self.ROOM_SIZE_Y = ROOM_4_SIZE_Y
 			self.ROOM_X1 = ROOM_4_X1
@@ -34,7 +43,6 @@ class Flags:
 			self.ROOM_BORDERS_X = ROOM_4_BORDERS_X
 			self.ROOM_BORDERS_Y = ROOM_4_BORDERS_Y
 		elif self.is_nine_rooms:
-			self.NUM_ROOMS = 9
 			self.ROOM_SIZE_X = ROOM_9_SIZE_X
 			self.ROOM_SIZE_Y = ROOM_9_SIZE_Y
 			self.ROOM_X1 = ROOM_9_X1
@@ -46,7 +54,6 @@ class Flags:
 			self.ROOM_BORDERS_X = ROOM_9_BORDERS_X
 			self.ROOM_BORDERS_Y = ROOM_9_BORDERS_Y
 		else:
-			self.NUM_ROOMS = 1
 			self.ROOM_SIZE_X = [PLAY_SIZE_X]
 			self.ROOM_SIZE_Y = [PLAY_SIZE_Y]
 			self.ROOM_X1 = [PLAY_X1]
@@ -57,8 +64,6 @@ class Flags:
 			self.ROOM_Y_RANGE = [PLAY_Y_RANGE]
 			self.ROOM_BORDERS_X = []
 			self.ROOM_BORDERS_Y = []
-
-		self.MULTI_ROOMS = self.NUM_ROOMS > 1
 
 	def ROOM_SIZE(self, room_idx, request_odd=False):
 		if request_odd:

@@ -729,9 +729,10 @@ def generate_map():
 	global map
 
 	map = chararray((MAP_SIZE_X, MAP_SIZE_Y), itemsize=5, unicode=True)
+	bw = 0 if flags.MULTI_ROOMS and not puzzle.has_border() else 1
 	for cy in MAP_Y_RANGE:
 		for cx in MAP_X_RANGE:
-			if cx == 0 or cx == PLAY_SIZE_X + 1 or cy == 0 or cy == PLAY_SIZE_Y + 1:
+			if cx == PLAY_X1 - bw or cx == PLAY_X2 + bw or cy == PLAY_Y1 - bw or cy == PLAY_Y2 + bw:
 				cell_type = CELL_WALL
 			else:
 				if cx in flags.ROOM_BORDERS_X or cy in flags.ROOM_BORDERS_Y:
@@ -908,12 +909,15 @@ def init_new_level(offset=1, reload_stored=False):
 		start_music()
 		return
 
-	set_map_size(level.get("map_size", DEFAULT_MAP_SIZE))
-	import_size_constants()
-
 	flags.parse_level(level)
 
 	puzzle = create_puzzle(level, Globals)
+
+	set_map_size(level.get("map_size", DEFAULT_MAP_SIZE), puzzle.has_border())
+	import_size_constants()
+	import_size_constants(puzzle)
+
+	flags.apply_sizes()
 
 	bg_image = None
 	if "bg_image" in level:

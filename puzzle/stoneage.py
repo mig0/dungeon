@@ -4,6 +4,9 @@ class StoneagePuzzle(Puzzle):
 	def assert_config(self):
 		return not flags.is_any_maze
 
+	def has_border(self):
+		return False
+
 	def has_finish(self):
 		return True
 
