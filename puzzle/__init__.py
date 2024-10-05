@@ -2,7 +2,7 @@ from constants import *
 from cellactor import *
 from objects import *
 from flags import flags
-from random import randint, random
+from random import randint, random, shuffle
 from numpy import ndarray, arange, array_equal, ix_, argwhere, copyto
 from sizetools import import_size_constants
 
