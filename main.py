@@ -90,6 +90,7 @@ def load_map_file(filename):
 def is_cell_in_area(cell, x_range, y_range):
 	return cell[0] in x_range and cell[1] in y_range
 
+# get 4 neughbour cells for actor
 def get_actor_neighbors(actor, x_range=None, y_range=None):
 	neighbors = []
 	for diff in ((-1, 0), (+1, 0), (0, -1), (0, +1)):
@@ -99,6 +100,7 @@ def get_actor_neighbors(actor, x_range=None, y_range=None):
 	debug(3, "* get_actor_neighbors %s - %s" % (str(actor.c), neighbors))
 	return neighbors
 
+# get 8 or 9 neughbour cells for cell
 def get_all_neighbors(cell, include_self=False):
 	neighbors = []
 	for dy in (-1, 0, +1):
@@ -204,11 +206,19 @@ def is_inner_wall(cell):
 			return False
 	return True
 
-def convert_inner_walls():
+def convert_inner_walls(cell_type=None):
 	for cy in MAP_Y_RANGE:
 		for cx in MAP_X_RANGE:
 			if is_inner_wall((cx, cy)):
 				map[cx, cy] = CELL_INNER_WALL
+
+	if cell_type is None:
+		return
+
+	for cy in MAP_Y_RANGE:
+		for cx in MAP_X_RANGE:
+			if map[cx, cy] == CELL_INNER_WALL:
+				map[cx, cy] = cell_type
 
 def get_theme_image_name(image_name):
 	for full_image_name in (theme_prefix + image_name, DEFAULT_IMAGE_PREFIX + image_name):
@@ -302,7 +312,7 @@ def get_revealed_actors(actors):
 	return revealed_actors
 
 def assert_room():
-	if mode != 'game' and mode != 'init':
+	if mode != 'game' and mode != 'init' and mode != 'next':
 		print("Called room function when not inside game or init (mode=%s). Fix this bug" % mode)
 		quit()
 
@@ -327,6 +337,9 @@ def is_actor_in_room(actor):
 	assert_room()
 
 	return actor.cx >= room.x1 and actor.cx <= room.x2 and actor.cy >= room.y1 and actor.cy <= room.y2
+
+def get_actors_in_room(actors):
+	return [actor for actor in actors if is_actor_in_room(actor)]
 
 def is_cell_in_room(cell):
 	return is_cell_in_area(cell, room.x_range, room.y_range)
@@ -448,6 +461,10 @@ def place_char_in_first_free_spot():
 			if is_cell_accessible(cx, cy, place=True):
 				char.c = (cx, cy)
 				return
+
+	if lifts:
+		char.c = get_actors_in_room(lifts)[0].c
+		return
 
 	print("Was not able to find free spot for char, fix the level or a bug")
 	if DEBUG_LEVEL:
@@ -621,11 +638,11 @@ def create_portal_pair(cell1, cell2):
 	create_portal(cell1, cell2)
 	create_portal(cell2, cell1)
 
-def create_lift(cell, type):
+def create_lift(cell, type, surface=None):
 	global lifts
 
 	image_name = "lift" + type
-	lift = create_theme_actor(image_name, cell)
+	lift = create_actor(surface, cell) if surface else create_theme_actor(image_name, cell)
 	lift.type = type
 	lifts.append(lift)
 
@@ -633,12 +650,14 @@ def get_lift_target(cell, diff):
 	lift = get_actor_on_cell(cell, lifts)
 	if not lift or diff not in LIFT_TYPE_DIRECTIONS[lift.type]:
 		return None
-	returned_cell = None
 	while True:
 		next_cell = apply_diff(cell, diff)
 		if not is_cell_in_room(next_cell) or map[next_cell] != CELL_VOID or is_cell_in_actors(next_cell, lifts):
-			return returned_cell
-		returned_cell = cell = next_cell
+			return cell if cell != lift.c else None
+		cell = next_cell
+
+def get_lift_target_at_neigh(lift, neigh):
+	return get_lift_target(lift.c, cell_diff(lift.c, neigh))
 
 def create_enemy(cell, health=None, attack=None, drop=None):
 	global enemies
@@ -658,6 +677,7 @@ class Globals:
 	get_bg_image = get_bg_image
 	debug = debug
 	debug_map = debug_map
+	is_cell_in_map = is_cell_in_map
 	convert_inner_walls = convert_inner_walls
 	load_image = load_image
 	load_theme_cell_image = load_theme_cell_image
@@ -667,6 +687,8 @@ class Globals:
 	is_cell_occupied = is_cell_occupied
 	get_max_room_distance = get_max_room_distance
 	is_actor_in_room = is_actor_in_room
+	is_cell_in_room = is_cell_in_room
+	get_actors_in_room = get_actors_in_room
 	get_distance = get_distance
 	get_all_accessible_cells = get_all_accessible_cells
 	get_num_accessible_target_directions = get_num_accessible_target_directions
@@ -682,6 +704,7 @@ class Globals:
 	create_portal = create_portal
 	create_portal_pair = create_portal_pair
 	create_lift = create_lift
+	get_lift_target_at_neigh = get_lift_target_at_neigh
 	create_enemy = create_enemy
 
 def generate_room(idx):
@@ -802,7 +825,8 @@ def set_theme(theme_name):
 		barrel.image = get_theme_image_name("barrel")
 
 	for lift in lifts:
-		lift.image = get_theme_image_name("lift" + lift.type)
+		if lift.image:
+			lift.image = get_theme_image_name("lift" + lift.type)
 
 	for drop in drops:
 		drop.set_image(get_theme_image_name(drop.name))
