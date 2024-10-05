@@ -162,7 +162,7 @@ class MemoryPuzzle(Puzzle):
 		if keyboard.space:
 			self.press_cell(char.c)
 
-		if keyboard.enter:
+		if keyboard.kp_enter:
 			self.reveal_time = self.level_time + 5
 
 	def set_char_opacity_if_needed(self):

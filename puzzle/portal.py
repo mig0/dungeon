@@ -109,5 +109,5 @@ class PortalPuzzle(Puzzle):
 		return None
 
 	def on_press_key(self, keyboard):
-		self.draw_hint_mode = keyboard.enter and not self.draw_hint_mode
+		self.draw_hint_mode = keyboard.kp_enter and not self.draw_hint_mode
 

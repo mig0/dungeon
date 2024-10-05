@@ -131,7 +131,7 @@ class FifteenPuzzle(Puzzle):
 		if keyboard.space:
 			self.press_char_cell()
 
-		self.draw_solved_mode = keyboard.enter and not self.draw_solved_mode
+		self.draw_solved_mode = keyboard.kp_enter and not self.draw_solved_mode
 
 	def set_char_opacity_if_needed(self):
 		char.set_default_opacity(MEMORY_PUZZLE_CHAR_OPACITY if self.fifteen_map[char.c] != FIFTEEN_PUZZLE_VALUE_OUTSIDE else 1)
