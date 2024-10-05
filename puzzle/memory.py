@@ -27,14 +27,14 @@ class MemoryPuzzle(Puzzle):
 	def on_set_theme(self):
 		gray_frame_image = self.Globals.load_theme_cell_image('floor_gray_frame')
 		self.cell_images = [gray_frame_image]
-		for color in COLOR_PUZZLE_RGB_VALUES:
+		for color in MAIN_COLOR_RGB_VALUES:
 			cell_image = self.Globals.colorize_cell_image(gray_frame_image, color)
 			self.cell_images.append(cell_image)
 
 	def on_set_room(self, room):
 		super().on_set_room(room)
 		super().set_area_from_config()
-		self.use_colors = self.get_num_pairs() <= len(COLOR_PUZZLE_RGB_VALUES)
+		self.use_colors = self.get_num_pairs() <= len(MAIN_COLOR_RGB_VALUES)
 		self.unset_open_cells()
 
 	def has_empty_central_cell(self):
