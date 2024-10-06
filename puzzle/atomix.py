@@ -308,9 +308,12 @@ class AtomixPuzzle(Puzzle):
 		for lift in stored_level["lifts"]:
 			lift.orig_cell = lift.c
 
-	def restore_level(self, stored_level):
+	def init_dummy_room(self):
 		self.room = Area()
 		self.room.idx = 0
+
+	def restore_level(self, stored_level):
+		self.init_dummy_room()
 		for molecule in stored_level["goal_molecules"]:
 			self.goal_molecule = molecule
 			self.room.idx += 1
@@ -353,6 +356,24 @@ class AtomixPuzzle(Puzzle):
 
 		return was_scrambled
 
+	def create_atom(self, cell, atom_id, goal_cell):
+		non_bonus_mode = type(atom_id) == str
+		atom_base = atom_id[0] if non_bonus_mode else ''
+		num_uniq_atom_ids = len(set(self.get_goal_molecule_atom_ids()))
+
+		if non_bonus_mode or num_uniq_atom_ids <= len(EXTENDED_COLOR_RGB_VALUES):
+			lift_image = self.Globals.load_theme_cell_image('sphere-gray')
+			lift_image.fill(atom_colors.get(atom_base) or EXTENDED_COLOR_RGB_VALUES[atom_id - 1], special_flags=pygame.BLEND_RGB_MULT)
+		else:
+			lift_image = self.Globals.load_theme_cell_image('lift-empty')
+		text_surface = self.Globals.create_text_cell_image(self.get_atom_str(atom_id), color='#FFFFC0', gcolor="#808040", owidth=1, ocolor="#404030")
+		lift_image.blit(text_surface, (0, 0))
+
+		self.Globals.create_lift(cell, LIFT_A, lift_image)
+		lift = lifts[-1]
+		lift.atom_id = atom_id
+		lift.goal_cell = goal_cell
+
 	def generate_room(self):
 		# determine the configured goal molecule
 		bonus_mode = self.config.get("bonus_mode")
@@ -371,8 +392,6 @@ class AtomixPuzzle(Puzzle):
 
 		goal_molecule = molecules[randint(0, len(molecules) - 1)] if type(molecules) == tuple else molecules
 		self.goal_molecule = goal_molecule
-
-		num_uniq_atom_ids = len(set(self.get_goal_molecule_atom_ids()))
 
 		if "size" not in self.config:
 			sizes = bonus_sizes.get(bonus_mode) if bonus_mode else (len(goal_molecule[0]) + 1, len(goal_molecule))
@@ -398,21 +417,8 @@ class AtomixPuzzle(Puzzle):
 				atom_id = row[x]
 				if atom_id == '':
 					continue
-				atom_base = atom_id[0] if type(atom_id) == str else ''
-
-				if not bonus_mode or num_uniq_atom_ids <= len(EXTENDED_COLOR_RGB_VALUES):
-					lift_image = self.Globals.load_theme_cell_image('sphere-gray')
-					lift_image.fill(atom_colors.get(atom_base) or EXTENDED_COLOR_RGB_VALUES[atom_id - 1], special_flags=pygame.BLEND_RGB_MULT)
-				else:
-					lift_image = self.Globals.load_theme_cell_image('lift-empty')
-				text_surface = self.Globals.create_text_cell_image(self.get_atom_str(atom_id), color='#FFFFC0', gcolor="#808040", owidth=1, ocolor="#404030")
-				lift_image.blit(text_surface, (0, 0))
-
 				goal_cell = (self.area.x1 + x, self.area.y1 + y)
-				self.Globals.create_lift(goal_cell, LIFT_A, lift_image)
-				lift = lifts[-1]
-				lift.atom_id = atom_id
-				lift.goal_cell = goal_cell
+				self.create_atom(goal_cell, atom_id, goal_cell)
 
 		if not bonus_mode:
 			self.map[self.area.x2, self.area.y2] = CELL_SAND
@@ -428,10 +434,36 @@ class AtomixPuzzle(Puzzle):
 				self.map[x, PLAY_Y1] = CELL_FLOOR
 			self.map[PLAY_X2, PLAY_Y1] = CELL_FINISH
 
-	def on_press_key(self, keyboard):
-		if keyboard.space:
-			self.press_char_cell()
+	def on_load_map(self, special_cell_values, extra_values):
+		self.init_dummy_room()
 
+		goal_size_x, goal_size_y = map(int, extra_values.pop(0).split(' '))
+		goal_molecule = [[''] * goal_size_x for _ in range(goal_size_y)]
+
+		atom_id_goal_cells = {}
+		for goal_atom_value in extra_values:
+			goal_cell_x_str, goal_cell_y_str, atom_id = goal_atom_value.split(' ')
+			goal_cell_x, goal_cell_y = int(goal_cell_x_str), int(goal_cell_y_str)
+			goal_molecule[goal_cell_y][goal_cell_x] = atom_id
+			if atom_id not in atom_id_goal_cells:
+				atom_id_goal_cells[atom_id] = []
+			atom_id_goal_cells[atom_id].append((goal_cell_x, goal_cell_y))
+
+		self.goal_molecule = goal_molecule
+
+		for cell_value in special_cell_values:
+			cell, atom_id = cell_value
+			# get random goal cell of all corresponding goal cells for atom_id
+			goal_cell = atom_id_goal_cells[atom_id].pop()
+			goal_cell = (goal_cell[0] + (MAP_SIZE_X - goal_size_x) // 2, goal_cell[1] + (MAP_SIZE_Y - goal_size_y) // 2)
+			self.create_atom(cell, atom_id, goal_cell)
+			self.map[cell] = CELL_VOID
+
+	def modify_cell_types_to_draw(self, cell, cell_types):
+		if self.draw_solved_mode and "map_file" in self.level:
+			cell_types.clear()
+
+	def on_press_key(self, keyboard):
 		self.draw_solved_mode = keyboard.kp_enter and not self.draw_solved_mode
 
 	def set_char_opacity_if_needed(self):
