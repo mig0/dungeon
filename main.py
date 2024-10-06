@@ -70,6 +70,7 @@ def load_map_file(filename):
 
 	orig_map = map.copy()
 
+	special_cells = []
 	for y in range(0, size_y):
 		line = file.readline().rstrip("\n")
 		if not line:
@@ -82,13 +83,35 @@ def load_map_file(filename):
 				print_error("Failed to read char #%d in map line #%d" % (x + 1, y + 1))
 				return
 			ch = line[x]
+			cell = (x, y)
 			if ch == CELL_START:
-				set_char_cell((x, y))
+				set_char_cell(cell)
 			if ch in LIFT_TYPES_BY_CHAR:
-				create_lift((x, y), LIFT_TYPES_BY_CHAR[ch])
+				create_lift(cell, LIFT_TYPES_BY_CHAR[ch])
 				ch = CELL_VOID
+			if ch.isdigit():
+				special_cells.append(cell)
 			map[x, y] = ch
+
+	special_cell_values = []
+	for cell in special_cells:
+		line = file.readline().rstrip("\n")
+		if not line:
+			map = orig_map.copy()
+			print_error("Failed to read value for special map cell %s" % str(cell))
+			return
+		special_cell_values.append([cell, line])
+
+	extra_values = []
+	while True:
+		line = file.readline().rstrip("\n")
+		if not line:
+			break
+		extra_values.append(line)
+
 	file.close()
+
+	return (special_cell_values, extra_values)
 
 def is_cell_in_area(cell, x_range, y_range):
 	return cell[0] in x_range and cell[1] in y_range
@@ -768,8 +791,10 @@ def generate_map():
 			map[cx, cy] = cell_type
 
 	if "map_file" in level:
-		load_map_file(level["map_file"])
-		return
+		if ret := load_map_file(level["map_file"]):
+			puzzle.on_create_map(map)
+			puzzle.on_load_map(*ret)
+			return
 
 	puzzle.on_create_map(map)
 

@@ -104,6 +104,9 @@ class Puzzle:
 	def on_create_map(self, map):
 		self.map = map
 
+	def on_load_map(self, special_cell_values, extra_values):
+		pass
+
 	def on_set_room(self, room):
 		self.room = room
 
