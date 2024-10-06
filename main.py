@@ -54,6 +54,9 @@ def load_map_file(filename):
 	if len(words) <= 1:
 		print_error("Invalid signature line, no expected space")
 		return
+	if words[0] != '#' or words[1] != 'Dungeon':
+		print_error("Invalid signature line, no expected '# Dungeon'")
+		return
 	size_str = words[-1].rstrip("\n")
 	sizes = size_str.split("x")
 	if len(sizes) != 2 or not sizes[0].isdigit() or not sizes[1].isdigit():

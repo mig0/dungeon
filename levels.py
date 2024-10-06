@@ -452,7 +452,7 @@ levels = [
 	{
 		"n": 11.1,
 		"map_size": (20, 11),
-		"map_file": "stoneage/maps/1.map",
+		"map_file": "maps/stoneage/1.map",
 		"theme": "stoneage1",
 		"music": "stoneage/01_stardust_falling",
 		"bg_image": "bg/remains_of_a_threat.jpg",
