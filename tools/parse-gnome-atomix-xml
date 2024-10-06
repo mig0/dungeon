@@ -1,0 +1,124 @@
+#!/usr/bin/python
+
+# Parse GNOME Atomix level xml files
+
+import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--map-mode', help="print dungeon map only", action="store_true")
+parser.add_argument('-o', '--orig-size', help="use original map size, don't force 13x13", action="store_true")
+parser.add_argument('-g', '--molecule-mode', help="print goal molecule only", action="store_true")
+parser.add_argument('xml_filename', help='file name of GNOME Atomix level xml')
+args = parser.parse_args()
+
+info_mode = not args.map_mode and not args.molecule_mode
+
+import xml.etree.ElementTree as xml
+
+# useful arrows page: https://www.unicode.org/charts/nameslist/n_2190.html
+link_types = {
+	'link-bottom': '↓',
+	'link-top': '↑',
+	'link-right': '→',
+	'link-left': '←',
+	'link-bottom-left': '↙',
+	'link-bottom-right': '↘',
+	'link-bottom-double': '⇊',
+	'link-left-double': '⇇',
+	'link-right-double': '⇉',
+	'link-top-left': '↖',
+	'link-top-right': '↗',
+	'link-top-double': '⇈',
+}
+
+def parse_atom(position):
+	x = int(position.get("col"))
+	y = int(position.get("row"))
+	tile = position.find("tile")
+	atom_base = tile.get("base")[5:].upper()
+	all_links = [ link_types[underlay.text] for underlay in tile.findall("underlay") ]
+	all_links.sort()
+	links_str = ''.join(all_links)
+	atom_id = atom_base + links_str
+	return x, y, atom_id
+
+root = xml.parse(args.xml_filename)
+level = root.find(".")
+level_name = level.get("_name")
+
+environment = root.find("environment")
+num_cols = int(environment.get("n_columns"))
+num_rows = int(environment.get("n_rows"))
+
+# The map sizes vary, but all are under 15x15 that includes empty first
+# and last rows and cols. Force map size to be 13x13 if needed, and
+# remove empty first and last row and col unless --orig-size is given.
+x_offset = 0
+y_offset = 0
+if not args.orig_size:
+	if num_cols != 13:
+		x_offset = 1 if num_cols > 13 else 0
+		num_cols = 13
+	if num_rows != 13:
+		y_offset = 1 if num_rows > 13 else 0
+		num_rows = 13
+
+map = [[' '] * num_cols for _ in range(num_rows)]
+
+for position in root.findall("environment/position"):
+	x = int(position.get("col")) - x_offset
+	y = int(position.get("row")) - y_offset
+	map[y][x] = '▓'
+
+scen_atom_ids = []
+atom_id_scen_cells = {}
+for position in root.findall("scenario/position"):
+	(x, y, atom_id) = parse_atom(position)
+	x -= x_offset
+	y -= y_offset
+	map[y][x] = '0'
+	scen_atom_ids.append(atom_id)
+	atom_id_scen_cells[atom_id] = ('??', '??') if atom_id in atom_id_scen_cells else (x, y)
+
+if args.map_mode or info_mode:
+	print("# Dungeon Atomix %s map %dx%d" % (level_name, len(map[0]), len(map)))
+	for y in range(len(map)):
+		for x in range(len(map[y])):
+			print(map[y][x], end='')
+		print()
+if args.map_mode:
+	for atom_id in scen_atom_ids:
+		print(atom_id)
+
+goal = root.find("goal")
+num_rows = int(goal.get("n_rows"))
+num_cols = int(goal.get("n_columns"))
+
+molecule = [[None] * num_cols for _ in range(num_rows)]
+max_col_lens = [8] * num_cols
+
+if args.map_mode:
+	print(num_cols, num_rows)
+
+for position in root.findall("goal/position"):
+	(x, y, atom_id) = parse_atom(position)
+	molecule[y][x] = atom_id
+
+	if info_mode:
+		print("⚛ (%d, %d) ⇦ (%2s, %2s) %s" % (x, y, *atom_id_scen_cells[atom_id], atom_id))
+	if args.map_mode:
+		print(x, y, atom_id)
+
+if args.molecule_mode:
+	print('\t"%s": [' % level_name.lower())
+	for y in range(len(molecule)):
+		print("\t\t[", end='')
+		row_atom_strs = []
+		for x in range(len(molecule[y])):
+			atom_id = molecule[y][x]
+			atom_id_str = "''" if atom_id is None else "'%s'" % atom_id
+			row_atom_strs.append(atom_id_str + " " * (max_col_lens[x] - len(atom_id_str)))
+		print(', '.join(row_atom_strs), end='')
+		print("],")
+	print('\t],')

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Create dungeon map files from GNOME Atomix xml files
+
+GNOME_ATOMIX_GIT_ROOT="$1"
+GNOME_ATOMIX_LEVEL_DIR="$GNOME_ATOMIX_GIT_ROOT/data/level"
+
+if test ! -d "$GNOME_ATOMIX_LEVEL_DIR"; then
+	echo "Usage: $0 GNOME-ATOMIX-GIT-ROOT"
+	exit 1
+fi
+
+if test ! -d maps/atomix; then
+	echo "No maps/atomix subdirectory found in the current tree"
+	exit 1
+fi
+
+for xml_file in $GNOME_ATOMIX_LEVEL_DIR/*.atomix.xml.in; do
+	level_name="`grep 'level _name' $xml_file | cut -d'"' -f2`"
+	map_file=maps/atomix/"`echo $level_name | tr ' ' - | tr '[A-Z]' '[a-z]'`".map
+	echo "Storing $map_file"
+	`dirname $0`/parse-gnome-atomix-xml -m "$xml_file" >$map_file
+done
