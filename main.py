@@ -979,6 +979,7 @@ def init_new_level(offset=1, reload_stored=False):
 	killed_enemies.clear()
 	portal_destinations.clear()
 
+	cursor.reset()
 	for drop in drops:
 		drop.reset()
 
@@ -1143,6 +1144,7 @@ def draw():
 				continue
 			screen.draw.text(str(actor.health), center=apply_diff(actor.pos, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
 			screen.draw.text(str(actor.attack), center=apply_diff(actor.pos, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+		cursor.draw()
 
 	if mode == "end":
 		end_line = _('victory-text') if is_game_won else _('defeat-text')
@@ -1263,8 +1265,15 @@ def on_key_down(key):
 	if keyboard.w:
 		win_room()
 
-	if keyboard.space and map[char.c] == CELL_PORTAL:
+	if keyboard.space and cursor.is_char_selected() and map[char.c] == CELL_PORTAL:
 		teleport_char()
+
+	if keyboard.enter:
+		cursor.toggle()
+
+	if keyboard.space or keyboard.escape:
+		if not cursor.is_char_selected():
+			cursor.reset()
 
 	puzzle.on_press_key(keyboard)
 
@@ -1439,11 +1448,23 @@ def move_char(diff_x, diff_y):
 
 	reveal_map_near_char()
 
+def move_selected_lift(diff):
+	lift = cursor.selected_actor
+	if lift_target := get_lift_target(lift.c, diff):
+		for actor in [lift, char] if char.c == lift.c else [lift]:
+			actor.move_animated(target=lift_target, enable_animation=is_move_animate_enabled)
+
 def can_move(diff):
-	dest_cell = apply_diff(char.c, diff)
+	dest_cell = apply_diff(cursor.selected_actor.c, diff)
 
 	if not is_cell_in_room(dest_cell):
 		return False
+
+	if cursor.is_active():
+		return True
+
+	if cursor.is_lift_selected():
+		return map[dest_cell] == CELL_VOID and not is_cell_in_actors(dest_cell, lifts)
 
 	return map[dest_cell] not in CELL_CHAR_MOVE_OBSTACLES \
 		or map[dest_cell] == CELL_LOCK1 and drop_key1.num_collected > 0 \
@@ -1528,14 +1549,22 @@ def update(dt):
 
 	if ARROW_KEY_R in last_processed_arrow_keys:
 		diff_x += 1
-		char.image = "stand"
+		if cursor.is_char_selected():
+			char.image = "stand"
 	if ARROW_KEY_L in last_processed_arrow_keys:
 		diff_x -= 1
-		char.image = "left"
+		if cursor.is_char_selected():
+			char.image = "left"
 	if ARROW_KEY_D in last_processed_arrow_keys:
 		diff_y += 1
 	if ARROW_KEY_U in last_processed_arrow_keys:
 		diff_y -= 1
 
 	if diff_x or diff_y:
-		move_char(diff_x, diff_y)
+		diff = (diff_x, diff_y)
+		if cursor.is_active():
+			cursor.move_animated(diff, enable_animation=is_move_animate_enabled)
+		elif cursor.is_lift_selected():
+			move_selected_lift(diff)
+		else:
+			move_char(diff_x, diff_y)

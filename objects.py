@@ -15,3 +15,7 @@ drop_key1  = Drop('key1')
 drop_key2  = Drop('key2')
 
 drops = (drop_heart, drop_sword, drop_key1, drop_key2)
+
+from cursor import Cursor
+
+cursor = Cursor('cursor')
