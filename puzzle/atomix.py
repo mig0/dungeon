@@ -212,6 +212,7 @@ class AtomixPuzzle(Puzzle):
 		self.atom_indexes_per_room = [{} for i in range(flags.NUM_ROOMS)]
 		self.draw_solved_mode = False
 		self.last_draw_solved_mode = False
+		self.is_loaded = False
 
 	def assert_config(self):
 		return not flags.is_any_maze
@@ -226,7 +227,7 @@ class AtomixPuzzle(Puzzle):
 		return True
 
 	def has_finish(self):
-		return not flags.MULTI_ROOMS
+		return not flags.MULTI_ROOMS and not self.is_loaded
 
 	def has_sand(self):
 		return True
@@ -435,6 +436,7 @@ class AtomixPuzzle(Puzzle):
 			self.map[PLAY_X2, PLAY_Y1] = CELL_FINISH
 
 	def on_load_map(self, special_cell_values, extra_values):
+		self.is_loaded = True
 		self.init_dummy_room()
 
 		goal_size_x, goal_size_y = map(int, extra_values.pop(0).split(' '))
