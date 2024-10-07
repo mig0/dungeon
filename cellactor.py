@@ -4,6 +4,7 @@ from pgzero.animation import *
 from pgzero import loaders
 from typing import Union, Tuple
 from sizetools import CELL_W, CELL_H
+from config import ARROW_KEYS_RESOLUTION
 
 MAX_ALPHA = 255  # based on pygame
 
@@ -187,6 +188,23 @@ class CellActor(Actor):
 
 	def move(self, diff, undo=False):
 		self.c = apply_diff(self.c, diff, undo)
+
+	def move_animated(self, diff=None, target=None, enable_animation=True):
+		if diff is None and target is None:
+			return
+		if diff is None:
+			diff = cell_diff(self.c, target)
+		if target is None:
+			target = apply_diff(self.c, diff)
+
+		old_pos = self.pos
+		old_cell = self.c
+		self.move(diff)
+		if enable_animation:
+			self.pos = old_pos
+			distance = get_distance(old_cell, target)
+			animate_time_factor = distance - (distance - 1) / 2
+			self.animate(animate_time_factor * ARROW_KEYS_RESOLUTION)
 
 	def _transform(self):
 		if not hasattr(self, '_orig_surf'):
