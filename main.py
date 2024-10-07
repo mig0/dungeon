@@ -370,11 +370,6 @@ def get_actors_in_room(actors):
 def is_cell_in_room(cell):
 	return is_cell_in_area(cell, room.x_range, room.y_range)
 
-def get_distance(cx, cy, tx=None, ty=None):
-	if type(cx) is tuple and type(cy) is tuple:
-		return get_distance(*cx, *cy)
-	return abs(tx - cx) + abs(ty - cy)
-
 def is_cell_accessible(cx, cy, place=False):
 	if map[cx, cy] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
 		return False
@@ -715,7 +710,6 @@ class Globals:
 	is_actor_in_room = is_actor_in_room
 	is_cell_in_room = is_cell_in_room
 	get_actors_in_room = get_actors_in_room
-	get_distance = get_distance
 	get_all_accessible_cells = get_all_accessible_cells
 	get_num_accessible_target_directions = get_num_accessible_target_directions
 	find_path = find_path

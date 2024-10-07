@@ -37,6 +37,11 @@ def cell_direction(cell1, cell2):
 def cell_to_pos(cell):
 	return (CELL_W * (cell[0] + 0.5), CELL_H * (cell[1] + 0.5))
 
+def get_distance(cx, cy, tx=None, ty=None):
+	if type(cx) is tuple and type(cy) is tuple:
+		return get_distance(*cx, *cy)
+	return abs(tx - cx) + abs(ty - cy)
+
 @tweener
 def example(n):
 	return n
