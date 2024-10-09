@@ -40,9 +40,21 @@ ACTOR_CHARS = {
 	'key1':   '¹',
 	'key2':   '²',
 	'enemy':  '🕱',
-	'barrel': '☐',
+	'barrel': '■',
 	'char':   '☻',
 }
+
+ACTOR_ON_PLATE_CHARS = {
+	'heart':  '♡',
+	'sword':  '⸷',
+	'key1':   '₁',
+	'key2':   '₂',
+	'enemy':  '☠',
+	'barrel': '□',
+	'char':   '☺',
+}
+
+ACTOR_AND_PLATE_BY_CHAR = {v: (k, v != ACTOR_CHARS[k]) for k, v in {*ACTOR_CHARS.items(), *ACTOR_ON_PLATE_CHARS.items(),}}
 
 LIFT_A = 'a'
 LIFT_H = 'h'

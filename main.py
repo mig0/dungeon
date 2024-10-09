@@ -89,6 +89,15 @@ def load_map_file(filename):
 			if ch in LIFT_TYPES_BY_CHAR:
 				create_lift(cell, LIFT_TYPES_BY_CHAR[ch])
 				ch = CELL_VOID
+			if ch in ACTOR_AND_PLATE_BY_CHAR:
+				actor_name, is_plate = ACTOR_AND_PLATE_BY_CHAR[ch]
+				ch = CELL_PLATE if is_plate else CELL_FLOOR
+				if actor_name == "enemy":
+					create_enemy(cell)
+				if actor_name == "barrel":
+					create_barrel(cell)
+				if actor_name == "char":
+					set_char_cell(cell)
 			if ch.isdigit():
 				special_cells.append(cell)
 			map[x, y] = ch
@@ -205,16 +214,17 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
 				cell = (cx, cy)
 				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell] or ' '
+				actor_chars = ACTOR_ON_PLATE_CHARS if cell_ch == CELL_PLATE else ACTOR_CHARS
 				if drop := get_drop_on_cell(cell):
-					cell_ch = ACTOR_CHARS[drop.name]
+					cell_ch = actor_chars[drop.name]
 				if is_cell_in_actors(cell, enemies):
-					cell_ch = ACTOR_CHARS['enemy']
+					cell_ch = actor_chars['enemy']
 				if is_cell_in_actors(cell, barrels):
-					cell_ch = ACTOR_CHARS['barrel']
+					cell_ch = actor_chars['barrel']
 				if lift := get_actor_on_cell(cell, lifts):
 					cell_ch = LIFT_CHARS[lift.type]
 				if char.c is not None and char.c == cell:
-					cell_ch = ACTOR_CHARS['char']
+					cell_ch = actor_chars['char']
 				print(cell_ch, end="")
 		print()
 	if endl:
