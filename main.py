@@ -1,4 +1,5 @@
 import os
+import io
 import random
 import pygame
 import pgzero
@@ -38,17 +39,28 @@ def _(str_key):
 
 autodetect_lang()
 
-def load_map_file(filename):
+def load_map(filename_or_stringio):
 	global map
+
+	is_stringio = type(filename_or_stringio) == io.StringIO
+	filename = "<from-string>" if is_stringio else filename_or_stringio
 
 	def print_error(error):
 		print("File %s: %s. Ignoring map file" % (filename, error))
+		if is_stringio:
+			print(filename_or_stringio.getvalue())
+		enemies.clear()
+		barrels.clear()
+		set_char_cell(None)
 
-	try:
-		file = open(filename, "r")
-	except:
-		print_error("Failed to open")
-		return
+	if is_stringio:
+		file = filename_or_stringio
+	else:
+		try:
+			file = open(filename, "r")
+		except:
+			print_error("Failed to open")
+			return
 
 	words = file.readline().split(" ")
 	if len(words) <= 1:
@@ -72,11 +84,12 @@ def load_map_file(filename):
 
 	special_cells = []
 	for y in range(0, size_y):
-		line = file.readline().rstrip("\n")
-		if not line:
+		line = file.readline()
+		if line == '':
 			map = orig_map.copy()
 			print_error("Failed to read map line #%d" % (y + 1))
 			return
+		line = line.rstrip("\n")
 		for x in range(0, size_x):
 			if len(line) <= x:
 				map = orig_map.copy()
@@ -104,19 +117,19 @@ def load_map_file(filename):
 
 	special_cell_values = []
 	for cell in special_cells:
-		line = file.readline().rstrip("\n")
-		if not line:
+		line = file.readline()
+		if line == '':
 			map = orig_map.copy()
 			print_error("Failed to read value for special map cell %s" % str(cell))
 			return
-		special_cell_values.append([cell, line])
+		special_cell_values.append([cell, line.rstrip("\n")])
 
 	extra_values = []
 	while True:
-		line = file.readline().rstrip("\n")
-		if not line:
+		line = file.readline()
+		if line == '':
 			break
-		extra_values.append(line)
+		extra_values.append(line.rstrip("\n"))
 
 	file.close()
 
@@ -794,8 +807,8 @@ def generate_map():
 					cell_type = get_random_floor_cell_type()
 			map[cx, cy] = cell_type
 
-	if "map_file" in level:
-		if ret := load_map_file(level["map_file"]):
+	if "map_file" in level or "map_string" in level:
+		if ret := load_map(level.get("map_file") or io.StringIO(level["map_string"])):
 			puzzle.on_create_map(map)
 			puzzle.on_load_map(*ret)
 			return
