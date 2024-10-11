@@ -1,4 +1,5 @@
 from random import randint
+from sokobanparser import parse_sokoban_levels
 
 atomix_molecule_names = [
 	"Water",
@@ -508,4 +509,8 @@ levels = [
 		"trivial_puzzle": True,
 	},
 	*atomix_levels,
+	*parse_sokoban_levels(30, 'Thinking-Rabbit-Original-Plus-Extra.txt'),
+	*parse_sokoban_levels(31, 'DrFogh-Original-1.txt'),
+	*parse_sokoban_levels(32, 'DrFogh-Original-2.txt'),
+	*parse_sokoban_levels(33, 'DrFogh-Original-3.txt'),
 ]
