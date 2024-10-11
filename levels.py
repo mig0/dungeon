@@ -161,6 +161,7 @@ levels = [
 	{
 		"n": 4.1,
 		"num_enemies": 3,
+		"bg_image": "bg/starry-sky.webp",
 		"theme": "modern2",
 		"music": "breath",
 		"char_health": 100,
@@ -172,8 +173,8 @@ levels = [
 	{
 		"n": 4.2,
 		"num_enemies": 5,
-		"theme": "modern2",
-		"music": "breath",
+		"theme": "default",
+		"music": "the_last_kingdom",
 		"char_health": 100,
 		"target": 'complete-barrel-puzzle',
 		"barrel_puzzle": {
@@ -183,8 +184,8 @@ levels = [
 	{
 		"n": 4.3,
 		"num_enemies": 7,
-		"theme": "modern2",
-		"music": "breath",
+		"theme": "moss",
+		"music": "adventures",
 		"char_health": 150,
 		"target": 'complete-barrel-puzzle',
 		"barrel_puzzle": {

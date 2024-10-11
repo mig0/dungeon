@@ -14,7 +14,7 @@ class BarrelPuzzle(Puzzle):
 		return True
 
 	def on_generate_map(self):
-		self.Globals.convert_inner_walls()
+		self.Globals.convert_inner_walls(CELL_VOID if "bg_image" in self.level else None)
 
 	def pull_barrel_randomly(self, barrel, visited_cell_pairs, num_moves):
 		idx = barrels.index(barrel)
