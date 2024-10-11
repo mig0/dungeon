@@ -1495,6 +1495,11 @@ def can_move(diff):
 		or is_cell_in_actors(dest_cell, lifts) \
 		or get_lift_target(char.c, diff)
 
+ARROW_KEY_R = pygame.K_RIGHT
+ARROW_KEY_L = pygame.K_LEFT
+ARROW_KEY_D = pygame.K_DOWN
+ARROW_KEY_U = pygame.K_UP
+
 def update(dt):
 	global level_title_timer, level_target_timer
 	global game_time, level_time, idle_time, last_autogeneration_time

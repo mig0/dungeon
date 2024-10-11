@@ -1,10 +1,4 @@
-import pygame
 from config import *
-
-ARROW_KEY_R = pygame.K_RIGHT
-ARROW_KEY_L = pygame.K_LEFT
-ARROW_KEY_D = pygame.K_DOWN
-ARROW_KEY_U = pygame.K_UP
 
 CELL_WALL = '▓'
 CELL_FLOOR  = '·'
