@@ -1443,11 +1443,7 @@ def move_char(diff_x, diff_y):
 			return
 		else:
 			# can push, animate the push
-			old_barrel_pos = barrel.pos
-			barrel.move(diff)
-			if is_move_animate_enabled:
-				barrel.pos = old_barrel_pos
-				barrel.animate(ARROW_KEYS_RESOLUTION)
+			barrel.move_animated(diff, enable_animation=is_move_animate_enabled)
 
 	# can move, animate the move
 	new_char_pos = char.pos
