@@ -31,7 +31,7 @@ class Puzzle:
 		return True
 
 	def has_border(self):
-		return True
+		return self.level.get("has_border", True)
 
 	def is_long_generation(self):
 		return False
