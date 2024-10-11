@@ -393,11 +393,11 @@ def get_actors_in_room(actors):
 def is_cell_in_room(cell):
 	return is_cell_in_area(cell, room.x_range, room.y_range)
 
-def is_cell_accessible(cx, cy, place=False):
-	if map[cx, cy] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
+def is_cell_accessible(cell, place=False):
+	if map[cell] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
 		return False
 	for actor in enemies + barrels:
-		if actor.cx == cx and actor.cy == cy:
+		if actor.c == cell:
 			return False
 	return True
 
@@ -409,7 +409,7 @@ def get_accessible_neighbors(cell, allow_closed_gate=False):
 		directions = ((-1, 0), (+1, 0), (0, -1), (0, +1))
 	for diff in directions:
 		neigh = apply_diff(cell, diff)
-		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(*neigh)):
+		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(neigh)):
 			neighbors.append(neigh)
 	debug(3, "* get_accessible_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
@@ -500,11 +500,10 @@ def place_char_in_closest_accessible_cell(c):
 	char.c = best_cell
 
 def place_char_in_first_free_spot():
-	for cy in room.y_range:
-		for cx in room.x_range:
-			if is_cell_accessible(cx, cy, place=True):
-				char.c = (cx, cy)
-				return
+	for cell in room.cells:
+		if is_cell_accessible(cell, place=True):
+			char.c = cell
+			return
 
 	if lifts:
 		char.c = get_actors_in_room(lifts)[0].c
@@ -1436,7 +1435,7 @@ def move_char(diff_x, diff_y):
 	# collision with barrels
 	barrel = get_actor_on_cell(char.c, barrels)
 	if barrel:
-		if not is_cell_accessible(barrel.cx + diff_x, barrel.cy + diff_y):
+		if not is_cell_accessible(apply_diff(barrel.c, diff)):
 			# can't push, cancel the move
 			char.move(diff, undo=True)
 			return
