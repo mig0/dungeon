@@ -2,8 +2,11 @@
 
 # Parse GNOME Atomix level xml files
 
+import os
 import sys
 import argparse
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/..')
+from constants import CELL_VOID, CELL_WALL, CELL_SPECIAL0
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-m', '--map-mode', help="print dungeon map only", action="store_true")
@@ -64,12 +67,12 @@ if not args.orig_size:
 		y_offset = 1 if num_rows > 13 else 0
 		num_rows = 13
 
-map = [[' '] * num_cols for _ in range(num_rows)]
+map = [[CELL_VOID] * num_cols for _ in range(num_rows)]
 
 for position in root.findall("environment/position"):
 	x = int(position.get("col")) - x_offset
 	y = int(position.get("row")) - y_offset
-	map[y][x] = '▓'
+	map[y][x] = CELL_WALL
 
 scen_atom_ids = []
 atom_id_scen_cells = {}
@@ -77,7 +80,7 @@ for position in root.findall("scenario/position"):
 	(x, y, atom_id) = parse_atom(position)
 	x -= x_offset
 	y -= y_offset
-	map[y][x] = '0'
+	map[y][x] = CELL_SPECIAL0
 	scen_atom_ids.append(atom_id)
 	atom_id_scen_cells[atom_id] = ('??', '??') if atom_id in atom_id_scen_cells else (x, y)
 

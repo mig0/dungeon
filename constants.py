@@ -16,6 +16,7 @@ CELL_LOCK1  = '𝟙'
 CELL_LOCK2  = '𝟚'
 CELL_VOID   = '⸳'
 
+CELL_SPECIAL0 = '0'
 CELL_INTERNAL1 = '1'
 CELL_INNER_WALL = '▒'
 
