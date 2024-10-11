@@ -14,7 +14,7 @@ CELL_PORTAL = '𝟘'
 CELL_SAND   = '⧘'
 CELL_LOCK1  = '𝟙'
 CELL_LOCK2  = '𝟚'
-CELL_VOID   = ''
+CELL_VOID   = '⸳'
 
 CELL_INTERNAL1 = '1'
 CELL_INNER_WALL = '▒'

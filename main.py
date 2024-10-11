@@ -226,7 +226,7 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 		if dual or combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
 				cell = (cx, cy)
-				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell] or ' '
+				cell_ch = CELL_FLOOR if clean and map[cell] in CELL_FLOOR_TYPES else map[cell]
 				actor_chars = ACTOR_ON_PLATE_CHARS if cell_ch == CELL_PLATE else ACTOR_CHARS
 				if drop := get_drop_on_cell(cell):
 					cell_ch = actor_chars[drop.name]
