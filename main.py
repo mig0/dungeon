@@ -395,10 +395,10 @@ def get_actors_in_room(actors):
 def is_cell_in_room(cell):
 	return is_cell_in_area(cell, room.x_range, room.y_range)
 
-def is_cell_accessible(cell, place=False):
+def is_cell_accessible(cell, place=False, allow_enemy=False):
 	if map[cell] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
 		return False
-	for actor in enemies + barrels:
+	for actor in barrels if allow_enemy else barrels + enemies:
 		if actor.c == cell:
 			return False
 	return True
@@ -1387,6 +1387,29 @@ def get_move_animate_duration(old_char_cell):
 	animate_time_factor = distance - (distance - 1) / 2
 	return animate_time_factor * ARROW_KEYS_RESOLUTION
 
+def activate_beat_animation(actor, diff, tween):
+	actor.move_pos((diff[0] * ENEMY_BEAT_OFFSET, diff[1] * ENEMY_BEAT_OFFSET))
+	actor.animate(ENEMY_BEAT_ANIMATION_TIME, tween)
+
+def beat_or_kill_enemy(enemy, diff):
+	enemy.health -= char.attack
+	# can't move if we face enemy, cancel the move
+	char.move(diff, undo=True)
+	# animate beat or kill
+	if enemy.health > 0:
+		play_sound("beat")
+		activate_beat_animation(enemy, diff, 'decelerate')
+	else:
+		play_sound("kill")
+		enemies.remove(enemy)
+		# fallen drops upon enemy death
+		if enemy.drop:
+			enemy.drop.instantiate(enemy)
+		enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
+		killed_enemies.append(enemy)
+		clock.schedule(kill_enemy, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
+	activate_beat_animation(char, diff, 'bounce_end')
+
 def move_char(diff_x, diff_y):
 	global last_move_diff
 
@@ -1414,34 +1437,25 @@ def move_char(diff_x, diff_y):
 	# collision with enemies
 	enemy = get_actor_on_cell(char.c, enemies)
 	if enemy:
-		enemy.health -= char.attack
 		char.health -= enemy.attack
-		# can't move if we face enemy, cancel the move
-		char.move(diff, undo=True)
-		# animate beat or kill
-		if enemy.health > 0:
-			enemy.move_pos((diff_x * ENEMY_BEAT_OFFSET, diff_y * ENEMY_BEAT_OFFSET))
-			play_sound("beat")
-			enemy.animate(ENEMY_BEAT_ANIMATION_TIME, 'bounce_end')
-		else:
-			play_sound("kill")
-			enemies.remove(enemy)
-			# fallen drops upon enemy death
-			if enemy.drop:
-				enemy.drop.instantiate(enemy)
-			enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
-			killed_enemies.append(enemy)
-			clock.schedule(kill_enemy, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
+		beat_or_kill_enemy(enemy, diff)
 		return
 
 	# collision with barrels
 	barrel = get_actor_on_cell(char.c, barrels)
 	if barrel:
-		if not is_cell_accessible(apply_diff(barrel.c, diff)):
+		next_barrel_cell = apply_diff(barrel.c, diff)
+		if not is_cell_accessible(next_barrel_cell, allow_enemy=True):
 			# can't push, cancel the move
 			char.move(diff, undo=True)
 			return
 		else:
+			# if enemy is in the next barrel cell, don't move, beat or kill it
+			if enemy := get_actor_on_cell(next_barrel_cell, enemies):
+				beat_or_kill_enemy(enemy, diff)
+				activate_beat_animation(barrel, diff, 'bounce_end')
+				return
+
 			# can push, animate the push
 			barrel.move_animated(diff, enable_animation=is_move_animate_enabled)
 
