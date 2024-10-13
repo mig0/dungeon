@@ -140,15 +140,19 @@ def load_map(filename_or_stringio):
 def is_cell_in_area(cell, x_range, y_range):
 	return cell[0] in x_range and cell[1] in y_range
 
-# get 4 neughbour cells for actor
-def get_actor_neighbors(actor, x_range=None, y_range=None):
+# get 4 neughbour cells for cell
+def get_cell_neighbors(cell, x_range=None, y_range=None):
 	neighbors = []
 	for diff in ((-1, 0), (+1, 0), (0, -1), (0, +1)):
-		neigh = apply_diff(actor.c, diff)
+		neigh = apply_diff(cell, diff)
 		if x_range is None or y_range is None or is_cell_in_area(neigh, x_range, y_range):
 			neighbors.append(neigh)
-	debug(3, "* get_actor_neighbors %s - %s" % (str(actor.c), neighbors))
+	debug(3, "* get_cell_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
+
+# get 4 neughbour cells for actor
+def get_actor_neighbors(actor, x_range=None, y_range=None):
+	return get_cell_neighbors(actor.c, x_range, y_range)
 
 # get 8 or 9 neughbour cells for cell
 def get_all_neighbors(cell, include_self=False):
@@ -395,15 +399,17 @@ def get_actors_in_room(actors):
 def is_cell_in_room(cell):
 	return is_cell_in_area(cell, room.x_range, room.y_range)
 
-def is_cell_accessible(cell, place=False, allow_enemy=False):
+def is_cell_accessible(cell, obstacles=None, place=False, allow_enemy=False):
 	if map[cell] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
 		return False
+	if obstacles is not None:
+		return cell not in obstacles
 	for actor in barrels if allow_enemy else barrels + enemies:
 		if actor.c == cell:
 			return False
 	return True
 
-def get_accessible_neighbors(cell, allow_closed_gate=False):
+def get_accessible_neighbors(cell, obstacles=None, allow_closed_gate=False):
 	neighbors = []
 	if ALLOW_DIAGONAL_MOVES and False:
 		directions = ((-1, -1), (0, -1), (+1, -1), (-1, 0), (+1, 0), (-1, +1), (0, +1), (+1, +1))
@@ -411,24 +417,24 @@ def get_accessible_neighbors(cell, allow_closed_gate=False):
 		directions = ((-1, 0), (+1, 0), (0, -1), (0, +1))
 	for diff in directions:
 		neigh = apply_diff(cell, diff)
-		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(neigh)):
+		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(neigh, obstacles)):
 			neighbors.append(neigh)
 	debug(3, "* get_accessible_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
 
-def get_accessible_cells(start_cell):
+def get_accessible_cells(start_cell, obstacles=None):
 	accessible_cells = []
 	unprocessed_cells = [start_cell]
 	while unprocessed_cells:
 		cell = unprocessed_cells.pop(0)
 		accessible_cells.append(cell)
-		neigbours = get_accessible_neighbors(cell)
+		neigbours = get_accessible_neighbors(cell, obstacles)
 		for n in neigbours:
 			if n not in accessible_cells and n not in unprocessed_cells:
 				unprocessed_cells.append(n)
 	return accessible_cells
 
-def get_accessible_cell_distances(start_cell):
+def get_accessible_cell_distances(start_cell, obstacles=None):
 	accessible_cells = []
 	accessible_cell_distances = {start_cell: 0}
 	unprocessed_cells = [start_cell]
@@ -436,7 +442,7 @@ def get_accessible_cell_distances(start_cell):
 		cell = unprocessed_cells.pop(0)
 		accessible_distance = accessible_cell_distances[cell]
 		accessible_cells.append(cell)
-		neigbours = get_accessible_neighbors(cell)
+		neigbours = get_accessible_neighbors(cell, obstacles)
 		for n in neigbours:
 			if n not in accessible_cells and n not in unprocessed_cells:
 				unprocessed_cells.append(n)
@@ -466,8 +472,10 @@ def get_num_accessible_target_directions(start_cell, target_cells):
 
 	return num_accessible_directions
 
-def find_path(start_cell, target_cell):
-	accessible_cell_distances = get_accessible_cell_distances(start_cell)
+def find_path(start_cell, target_cell, obstacles=None):
+	if start_cell == target_cell:
+		return []
+	accessible_cell_distances = get_accessible_cell_distances(start_cell, obstacles)
 	accessible_distance = accessible_cell_distances.get(target_cell)
 	if accessible_distance is None:
 		return None
@@ -475,7 +483,7 @@ def find_path(start_cell, target_cell):
 	current_cell = target_cell
 	while accessible_distance > 1:
 		accessible_distance -= 1
-		for neigh_cell in get_accessible_neighbors(current_cell):
+		for neigh_cell in get_accessible_neighbors(current_cell, obstacles):
 			neigh_distance = accessible_cell_distances.get(neigh_cell)
 			if neigh_distance == accessible_distance:
 				current_cell = neigh_cell
@@ -483,8 +491,8 @@ def find_path(start_cell, target_cell):
 				break
 	return path_cells
 
-def is_path_found(start_cell, target_cell):
-	return target_cell in get_accessible_cells(start_cell)
+def is_path_found(start_cell, target_cell, obstacles=None):
+	return target_cell in get_accessible_cells(start_cell, obstacles)
 
 def set_char_cell(cell):
 	global char_cell
@@ -734,6 +742,7 @@ class Globals:
 	is_actor_in_room = is_actor_in_room
 	is_cell_in_room = is_cell_in_room
 	get_actors_in_room = get_actors_in_room
+	get_accessible_cells = get_accessible_cells
 	get_all_accessible_cells = get_all_accessible_cells
 	get_num_accessible_target_directions = get_num_accessible_target_directions
 	find_path = find_path
