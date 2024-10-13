@@ -98,6 +98,9 @@ class Puzzle:
 	def is_in_area(self, cell):
 		return self.Globals.is_cell_in_area(cell, self.area.x_range, self.area.y_range)
 
+	def is_in_room(self, cell):
+		return self.Globals.is_cell_in_area(cell, self.room.x_range, self.room.y_range)
+
 	def on_set_theme(self):
 		pass
 

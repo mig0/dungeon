@@ -1616,3 +1616,5 @@ def update(dt):
 			move_selected_lift(diff)
 		else:
 			move_char(diff_x, diff_y)
+
+Globals.move_char = move_char

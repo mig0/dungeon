@@ -1,6 +1,11 @@
 from . import *
 
+MAX_SOLUTION_DEPTH = 500
+
 class BarrelPuzzle(Puzzle):
+	def init(self):
+		self.solution_mode = False
+
 	def assert_config(self):
 		return not flags.is_any_maze
 
@@ -12,6 +17,60 @@ class BarrelPuzzle(Puzzle):
 
 	def is_target_to_be_solved(self):
 		return True
+
+	def get_room_barrels(self):
+		return [ barrel for barrel in barrels if self.Globals.is_actor_in_room(barrel) ]
+
+	def find_solution(self, init=True):
+		if init:
+			self.solution = []
+			self.char_cell = char.c
+			self.plate_cells = [tuple(cell) for cell in argwhere(self.map == CELL_PLATE) ]
+			self.plate_cells.sort()
+			self.barrel_cells = [ barrel.c for barrel in self.get_room_barrels() ]
+			self.barrel_cells.sort()
+			self.visited_positions = []
+
+		if len(self.solution) >= MAX_SOLUTION_DEPTH:
+			return False
+
+		accessible_cells = self.Globals.get_accessible_cells(self.char_cell, self.barrel_cells)
+		accessible_cells.sort()
+
+		position_id = [ *accessible_cells, *self.barrel_cells, ]
+		if position_id in self.visited_positions:
+			return False
+		self.visited_positions.append(position_id)
+
+#		if all(cell in self.barrel_cells for cell in self.plate_cells):
+		if self.plate_cells == self.barrel_cells:
+			return True
+
+		accessible_cells_near_barrels = [ (cell, barrel_cell) for cell in accessible_cells for barrel_cell in self.barrel_cells if get_distance(cell, barrel_cell) == 1 ]
+
+		for cell, barrel_cell in accessible_cells_near_barrels:
+			next_barrel_cell = apply_diff(barrel_cell, cell_diff(cell, barrel_cell))
+			if not self.is_in_room(next_barrel_cell) or self.map[next_barrel_cell] in CELL_CHAR_MOVE_OBSTACLES or next_barrel_cell in self.barrel_cells:
+				continue
+
+			char_path = self.Globals.find_path(self.char_cell, cell, self.barrel_cells)
+
+			old_barrel_cells = [ *self.barrel_cells ]
+			self.barrel_cells.remove(barrel_cell)
+			self.barrel_cells.append(next_barrel_cell)
+			self.barrel_cells.sort()
+			old_char_cell = self.char_cell
+			self.char_cell = barrel_cell
+
+			self.solution.append(char_path + [barrel_cell])
+			if self.find_solution(init=False):
+				return True
+			self.solution.pop()
+
+			self.barrel_cells = old_barrel_cells
+			self.char_cell = old_char_cell
+
+		return False
 
 	def on_generate_map(self):
 		self.Globals.convert_inner_walls(CELL_VOID if "bg_image" in self.level else None)
@@ -158,9 +217,29 @@ class BarrelPuzzle(Puzzle):
 		self.generate_random_solvable_room()
 
 	def is_solved(self):
-		room_barrels = [ barrel for barrel in barrels if self.Globals.is_actor_in_room(barrel) ]
-		for barrel in room_barrels:
+		for barrel in self.get_room_barrels():
 			if self.map[barrel.c] != CELL_PLATE:
 				return False
 		return True
 
+	def on_press_key(self, keyboard):
+		if keyboard.kp_enter:
+			solution = self.find_solution()
+			self.solution = [cell for cells in self.solution for cell in cells]
+			self.solution_time = 0
+			self.solution_mode = True
+		else:
+			self.solution_mode = False
+
+	def on_update(self, level_time):
+		if self.solution_mode:
+			if level_time > self.solution_time:
+				if self.solution:
+					new_cell = self.solution[0]
+					dx, dy = cell_diff(char.c, new_cell)
+					self.Globals.move_char(dx, dy)
+					if char.c == new_cell:
+						self.solution.pop(0)
+						if not self.solution:
+							self.solution_mode = False
+					self.solution_time = level_time + 0.3
