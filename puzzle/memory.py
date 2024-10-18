@@ -68,6 +68,14 @@ class MemoryPuzzle(Puzzle):
 	def is_time_to_reveal(self):
 		return self.get_reveal_time_left() > 0
 
+	def store_level(self, stored_level):
+		stored_level["memory_map"] = self.memory_map.copy()
+		stored_level["room_memory_pairs"] = self.room_memory_pairs.copy()
+
+	def restore_level(self, stored_level):
+		self.memory_map = stored_level["memory_map"]
+		self.room_memory_pairs = stored_level["room_memory_pairs"]
+
 	def handle_open_cell2(self):
 		pair_idx = self.memory_map[self.open_cell1]
 		if self.memory_map[self.open_cell2] == pair_idx:

@@ -34,6 +34,12 @@ class FifteenPuzzle(Puzzle):
 				return False
 		return True
 
+	def store_level(self, stored_level):
+		stored_level["fifteen_map"] = self.fifteen_map.copy()
+
+	def restore_level(self, stored_level):
+		self.fifteen_map = stored_level["fifteen_map"]
+
 	def on_set_room(self, room):
 		super().on_set_room(room)
 		super().set_area_from_config(align_to_center=True)

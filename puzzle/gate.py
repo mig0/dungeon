@@ -16,6 +16,12 @@ class GatePuzzle(Puzzle):
 	def has_gate(self):
 		return True
 
+	def store_level(self, stored_level):
+		stored_level["attached_plate_gates"] = self.attached_plate_gates
+
+	def restore_level(self, stored_level):
+		self.attached_plate_gates = stored_level["attached_plate_gates"]
+
 	def get_passed_gates(self, start_cell, target_cell):
 		passed_gates = []
 		for cell in self.Globals.find_path(start_cell, target_cell) or ():

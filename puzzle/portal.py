@@ -37,6 +37,12 @@ class PortalPuzzle(Puzzle):
 	def has_portal(self):
 		return True
 
+	def store_level(self, stored_level):
+		stored_level["portal_cell_to_hall_idx"] = self.portal_cell_to_hall_idx
+
+	def restore_level(self, stored_level):
+		self.portal_cell_to_hall_idx = stored_level["portal_cell_to_hall_idx"]
+
 	def is_fully_reachable_and_solvable(self):
 		# disallow the trivial solution
 		if 0 in self.dst_hall_idx_to_src_hall_idxs[4]:

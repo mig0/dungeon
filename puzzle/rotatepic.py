@@ -30,6 +30,12 @@ class RotatepicPuzzle(Puzzle):
 				return False
 		return True
 
+	def store_level(self, stored_level):
+		stored_level["rotatepic_map"] = self.rotatepic_map.copy()
+
+	def restore_level(self, stored_level):
+		self.rotatepic_map = stored_level["rotatepic_map"]
+
 	def on_set_room(self, room):
 		super().on_set_room(room)
 		super().set_area_from_config(min_size=(1, 1), align_to_center=True)

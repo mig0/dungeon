@@ -1021,6 +1021,7 @@ def init_new_level(offset=1, reload_stored=False):
 
 	if reload_stored:
 		map = stored_level["map"]
+		puzzle.on_create_map(map)
 		for enemy_info in stored_level["enemy_infos"]:
 			create_enemy(*enemy_info)
 		for barrel_cell in stored_level["barrel_cells"]:
@@ -1029,6 +1030,8 @@ def init_new_level(offset=1, reload_stored=False):
 			create_lift(*lift_info)
 		for portal_cell, dst_cell in stored_level["portal_destinations"].items():
 			create_portal(portal_cell, dst_cell)
+		for drop in drops:
+			drop.restore(stored_level["drop_infos"][drop.name])
 		puzzle.restore_level(stored_level)
 	else:
 		if puzzle.is_long_generation():
@@ -1076,6 +1079,7 @@ def init_new_level(offset=1, reload_stored=False):
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 		"portal_destinations": dict(portal_destinations),
+		"drop_infos": dict([(drop.name, drop.store()) for drop in drops]),
 		"theme_name": theme_name,
 	}
 	puzzle.store_level(stored_level)
