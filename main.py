@@ -969,7 +969,6 @@ def init_new_level(offset=1, reload_stored=False):
 	global bg_image
 	global revealed_map
 	global char_cell, room_idx
-	global status_message
 	global enemies, barrels, killed_enemies, lifts
 	global level_time
 	global map, stored_level
@@ -1061,8 +1060,7 @@ def init_new_level(offset=1, reload_stored=False):
 
 	room_idx = 0
 	set_room(room_idx)
-
-	status_message = None
+	set_status_message()
 
 	if reload_stored:
 		char_cell = stored_level["char_cell"]
@@ -1103,6 +1101,7 @@ def init_new_room():
 	else:
 		room_idx += 1
 		set_room(room_idx)
+		set_status_message()
 		place_char_in_first_free_spot()
 		reveal_map_near_char()
 		char.reset_inplace()
