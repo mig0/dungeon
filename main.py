@@ -259,7 +259,7 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 def is_cell_in_map(cell):
 	return is_cell_in_area(cell, MAP_X_RANGE, MAP_Y_RANGE)
 
-def is_inner_wall(cell):
+def is_outer_wall(cell):
 	if map[cell] not in CELL_WALLS:
 		return False
 
@@ -268,19 +268,20 @@ def is_inner_wall(cell):
 			return False
 	return True
 
-def convert_inner_walls(cell_type=None):
+def replace_outer_walls(cell_type):
 	for cy in MAP_Y_RANGE:
 		for cx in MAP_X_RANGE:
-			if is_inner_wall((cx, cy)):
-				map[cx, cy] = CELL_INNER_WALL
-
-	if cell_type is None:
-		return
-
-	for cy in MAP_Y_RANGE:
-		for cx in MAP_X_RANGE:
-			if map[cx, cy] == CELL_INNER_WALL:
+			if map[cx, cy] == CELL_OUTER_WALL:
 				map[cx, cy] = cell_type
+
+def convert_outer_walls(cell_type=None):
+	for cy in MAP_Y_RANGE:
+		for cx in MAP_X_RANGE:
+			if is_outer_wall((cx, cy)):
+				map[cx, cy] = CELL_OUTER_WALL
+
+	if cell_type is not None:
+		replace_outer_walls(cell_type)
 
 def get_theme_image_name(image_name):
 	for full_image_name in (theme_prefix + image_name, DEFAULT_IMAGE_PREFIX + image_name):
@@ -739,7 +740,7 @@ class Globals:
 	debug = debug
 	debug_map = debug_map
 	is_cell_in_map = is_cell_in_map
-	convert_inner_walls = convert_inner_walls
+	convert_outer_walls = convert_outer_walls
 	load_image = load_image
 	load_theme_cell_image = load_theme_cell_image
 	colorize_cell_image = colorize_cell_image
@@ -863,8 +864,8 @@ def set_theme(theme_name):
 
 	puzzle.on_set_theme()
 
-	inner_wall_image = load_theme_cell_image('wall')
-	inner_wall_image.fill((50, 50, 50), special_flags=pygame.BLEND_RGB_SUB)
+	outer_wall_image = load_theme_cell_image('wall')
+	outer_wall_image.fill((50, 50, 50), special_flags=pygame.BLEND_RGB_SUB)
 
 	cell_images = {
 		CELL_WALL:   image1,
@@ -881,7 +882,7 @@ def set_theme(theme_name):
 		CELL_SAND:   image12,
 		CELL_LOCK1:  image13,
 		CELL_LOCK2:  image14,
-		CELL_INNER_WALL: inner_wall_image,
+		CELL_OUTER_WALL: outer_wall_image,
 	}
 
 	for barrel in barrels:

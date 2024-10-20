@@ -409,7 +409,7 @@ class AtomixPuzzle(Puzzle):
 			self.map[cell] = CELL_VOID if self.is_in_area(cell) else CELL_FLOOR if flags.MULTI_ROOMS else CELL_WALL
 
 		if not flags.MULTI_ROOMS:
-			self.Globals.convert_inner_walls(CELL_FLOOR if flags.MULTI_ROOMS else CELL_VOID)
+			self.Globals.convert_outer_walls(CELL_FLOOR if flags.MULTI_ROOMS else CELL_VOID)
 
 		# create lifts
 		for y in range(len(goal_molecule)):
