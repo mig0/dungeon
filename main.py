@@ -201,8 +201,8 @@ def get_drop_on_cell(cell):
 
 killed_enemies = []
 
-level_title_timer = 0
-level_target_timer = 0
+level_title_time = 0
+level_target_time = 0
 
 level = None
 
@@ -937,17 +937,17 @@ def play_sound(name):
 	sound = getattr(sounds, name)
 	sound.play()
 
-def reset_level_and_target_timer():
-	global level_title_timer, level_target_timer
+def reset_level_title_and_target_time():
+	global level_title_time, level_target_time
 
-	level_title_timer = 4 * 60  # 4 seconds
-	level_target_timer = 3 * 60  # 3 seconds
+	level_title_time = level_time + LEVEL_TITLE_TIME
+	level_target_time = level_title_time + LEVEL_TARGET_TIME
 
-def clear_level_and_target_timer():
-	global level_title_timer, level_target_timer
+def clear_level_title_and_target_time():
+	global level_title_time, level_target_time
 
-	level_title_timer = 0
-	level_target_timer = 0
+	level_title_time = 0
+	level_target_time = 0
 
 def reset_idle_time():
 	global idle_time, last_autogeneration_time
@@ -978,7 +978,7 @@ def init_new_level(offset=1, reload_stored=False):
 		puzzle.finish()
 
 	stop_music()
-	clear_level_and_target_timer()
+	clear_level_title_and_target_time()
 	mode = "init"
 
 	level = set_level(offset)
@@ -1048,7 +1048,7 @@ def init_new_level(offset=1, reload_stored=False):
 	level_time = 0
 	reset_idle_time()
 	if is_level_intro_enabled:
-		reset_level_and_target_timer()
+		reset_level_title_and_target_time()
 
 	room_idx = 0
 	set_room(room_idx)
@@ -1188,13 +1188,13 @@ def draw():
 		draw_central_flash()
 		screen.draw.text(end_line, center=(POS_CENTER_X, POS_CENTER_Y), color='white', gcolor=("#008080" if is_game_won else "#800000"), owidth=0.8, ocolor="#202020", alpha=1, fontsize=60)
 
-	if mode == "game" and level_title_timer > 0:
+	if mode == "game" and level_title_time > 0:
 		draw_central_flash()
 		level_line_1 = _('level-label') + " " + str(level["n"])
 		level_line_2 = _(level.get("name", 'level-' + str(level["n"]) + '-name'))
 		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 20), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
 		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 18), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
-	elif mode == "game" and level_target_timer > 0:
+	elif mode == "game" and level_target_time > 0:
 		target_line = _('level-target-label') + ": " + _(level["target"])
 		draw_central_flash()
 		screen.draw.text(target_line, center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=40)
@@ -1229,9 +1229,9 @@ def on_key_down(key):
 		if keyboard.l:
 			is_level_intro_enabled = not is_level_intro_enabled
 			if is_level_intro_enabled:
-				reset_level_and_target_timer()
+				reset_level_title_and_target_time()
 			else:
-				clear_level_and_target_timer()
+				clear_level_title_and_target_time()
 
 		if keyboard.s:
 			flags.is_stopless = not flags.is_stopless
@@ -1269,7 +1269,7 @@ def on_key_down(key):
 		pygame.mouse.set_visible(not pygame.mouse.get_visible())
 
 	if keyboard.l:
-		reset_level_and_target_timer()
+		reset_level_title_and_target_time()
 
 	if keyboard.m:
 		if is_music_enabled:
@@ -1525,7 +1525,7 @@ ARROW_KEY_D = pygame.K_DOWN
 ARROW_KEY_U = pygame.K_UP
 
 def update(dt):
-	global level_title_timer, level_target_timer
+	global level_title_time, level_target_time
 	global game_time, level_time, idle_time, last_autogeneration_time
 	global last_time_arrow_keys_processed, last_processed_arrow_keys, last_processed_arrow_diff
 
@@ -1542,10 +1542,10 @@ def update(dt):
 
 	puzzle.on_update(level_time)
 
-	if level_title_timer > 0:
-		level_title_timer -= 1
-	elif level_target_timer > 0:
-		level_target_timer -= 1
+	if level_title_time < level_time:
+		level_title_time = 0
+	if level_target_time < level_time:
+		level_target_time = 0
 
 	if char.health is not None and (
 		last_autogeneration_time == 0 and idle_time >= AUTOGENERATION_IDLE_TIME or
