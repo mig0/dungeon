@@ -31,7 +31,7 @@ class Puzzle:
 		return True
 
 	def has_border(self):
-		return self.level.get("has_border", True)
+		return self.level.get("has_border", True) and self.level.get("map_file") is None and self.level.get("map_string") is None
 
 	def is_long_generation(self):
 		return False

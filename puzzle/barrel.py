@@ -175,6 +175,10 @@ class BarrelPuzzle(Puzzle):
 
 		return False
 
+	def on_load_map(self, special_cell_values, extra_values):
+		self.Globals.convert_outer_floors(CELL_VOID if "bg_image" in self.level else None)
+		self.on_generate_map()
+
 	def on_generate_map(self):
 		self.Globals.convert_outer_walls(CELL_VOID if "bg_image" in self.level else None)
 

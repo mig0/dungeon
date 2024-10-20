@@ -283,6 +283,18 @@ def convert_outer_walls(cell_type=None):
 	if cell_type is not None:
 		replace_outer_walls(cell_type)
 
+def convert_outer_floors(cell_type=None):
+	floor_cells_to_convert = set()
+	for cy in (0, MAP_SIZE_Y - 1):
+		for cx in (0, MAP_SIZE_X - 1):
+			if map[cx, cy] in CELL_FLOOR_TYPES:
+				floor_cells_to_convert.update(get_accessible_cells((cx, cy)))
+	for cell in floor_cells_to_convert:
+		map[cell] = CELL_OUTER_WALL
+
+	if cell_type is not None:
+		replace_outer_walls(cell_type)
+
 def get_theme_image_name(image_name):
 	for full_image_name in (theme_prefix + image_name, DEFAULT_IMAGE_PREFIX + image_name):
 		if os.path.isfile(IMAGES_DIR_PREFIX + full_image_name + '.png'):
@@ -741,6 +753,7 @@ class Globals:
 	debug_map = debug_map
 	is_cell_in_map = is_cell_in_map
 	convert_outer_walls = convert_outer_walls
+	convert_outer_floors = convert_outer_floors
 	load_image = load_image
 	load_theme_cell_image = load_theme_cell_image
 	colorize_cell_image = colorize_cell_image
@@ -828,6 +841,7 @@ def generate_map():
 
 	if "map_file" in level or "map_string" in level:
 		if ret := load_map(level.get("map_file") or io.StringIO(level["map_string"])):
+			set_room(0)
 			puzzle.on_create_map(map)
 			puzzle.on_load_map(*ret)
 			return
