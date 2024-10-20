@@ -209,6 +209,13 @@ level = None
 room = Area()
 room_idx = None
 
+status_message = None
+
+def set_status_message(msg=None):
+	global status_message
+
+	status_message = msg
+
 def get_bg_image():
 	return bg_image
 
@@ -727,6 +734,7 @@ class Globals:
 	is_cell_in_area = is_cell_in_area
 	get_actor_neighbors = get_actor_neighbors
 	get_all_neighbors = get_all_neighbors
+	set_status_message = set_status_message
 	get_bg_image = get_bg_image
 	debug = debug
 	debug_map = debug_map
@@ -961,6 +969,7 @@ def init_new_level(offset=1, reload_stored=False):
 	global bg_image
 	global revealed_map
 	global char_cell, room_idx
+	global status_message
 	global enemies, barrels, killed_enemies, lifts
 	global level_time
 	global map, stored_level
@@ -1053,6 +1062,8 @@ def init_new_level(offset=1, reload_stored=False):
 	room_idx = 0
 	set_room(room_idx)
 
+	status_message = None
+
 	if reload_stored:
 		char_cell = stored_level["char_cell"]
 	if char_cell:
@@ -1144,6 +1155,9 @@ def draw_status():
 		status_image.draw()
 
 	draw_status_drops(screen, drops)
+
+	if status_message is not None:
+		screen.draw.text(status_message, center=(POS_CENTER_X, POS_STATUS_Y), color="#FFF0A0", gcolor="#A09060", owidth=1.2, ocolor="#303020", alpha=1, fontsize=26)
 
 	if mode == "game":
 		color, gcolor = ("#60C0FF", "#0080A0") if "time_limit" not in level else ("#FFC060", "#A08000") if level["time_limit"] - level_time > CRITICAL_REMAINING_LEVEL_TIME else ("#FF6060", "#A04040")
