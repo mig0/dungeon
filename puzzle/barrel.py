@@ -380,4 +380,4 @@ class BarrelPuzzle(Puzzle):
 							self.show_solution_mode = False
 							self.solution = None
 							self.solution_depth = None
-					self.solution_time = level_time + 0.3
+					self.solution_time = level_time + BARREL_PUZZLE_SOLUTION_MOVE_DELAY
