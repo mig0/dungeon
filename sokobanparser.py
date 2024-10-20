@@ -76,6 +76,8 @@ def parse_sokoban_levels(major, filename):
 	is_in_map = False
 	map_lines = None
 	level_name = None
+	is_pre_level_name = False
+	pre_level_name = None
 	i = 0
 	while True:
 		line = file.readline()
@@ -110,9 +112,18 @@ def parse_sokoban_levels(major, filename):
 		if is_in_map:
 			if not old_is_in_map:
 				map_lines = []
-				level_name = None
+				level_name = pre_level_name
+				is_pre_level_name = False
+				pre_level_name = None
 			map_lines.append(line)
 		else:
+			if is_pre_level_name:
+				if line.startswith("'") and line.endswith("'"):
+					pre_level_name = pre_level_name + ": " + line[1:-1]
+				continue
+			if line.startswith('Level ') and line[6:].isdigit():
+				is_pre_level_name = True
+				pre_level_name = line
 			if map_lines and line.startswith('Title: '):
 				level_name = line[7:]
 
