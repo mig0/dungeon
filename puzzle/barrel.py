@@ -327,9 +327,12 @@ class BarrelPuzzle(Puzzle):
 		plate_cells = self.get_room_plate_cells()
 		barrel_cells = [ barrel.c for barrel in self.get_room_barrels() ]
 		if len(plate_cells) >= len(barrel_cells):
-			return len([cell for cell in barrel_cells if cell in plate_cells]) == len(barrel_cells)
+			is_solved = len([cell for cell in barrel_cells if cell in plate_cells]) == len(barrel_cells)
 		else:
-			return len([cell for cell in plate_cells if cell in barrel_cells]) == len(plate_cells)
+			is_solved = len([cell for cell in plate_cells if cell in barrel_cells]) == len(plate_cells)
+		if is_solved:
+			self.Globals.set_status_message("Puzzle solved!")
+		return is_solved
 
 	def on_draw(self, mode):
 		if self.find_solution_mode:
