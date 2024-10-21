@@ -1355,6 +1355,9 @@ def loose_game():
 def win_room():
 	global mode
 
+	if level.get("disable_win"):
+		return
+
 	play_sound("finish")
 	mode = "next"
 	clock.schedule(init_new_room, WIN_NEW_DELAY)
