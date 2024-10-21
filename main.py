@@ -1337,6 +1337,8 @@ def on_key_down(key):
 
 	if keyboard.enter:
 		cursor.toggle()
+		if not cursor.is_active():
+			set_status_message()
 
 	if keyboard.space or keyboard.escape:
 		if not cursor.is_char_selected():
@@ -1602,6 +1604,9 @@ def update(dt):
 		last_autogeneration_time = idle_time
 
 	check_victory()
+
+	if cursor.is_active():
+		set_status_message(str(cursor.c))
 
 	if char.is_animated():
 		return
