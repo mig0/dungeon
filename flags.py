@@ -14,6 +14,7 @@ class Flags:
 		self.is_cloud_mode     = level.get("cloud_mode")
 		self.is_enemy_key_drop = level.get("enemy_key_drop")
 		self.is_stopless       = level.get("stopless")
+		self.allow_barrel_pull = level.get("allow_barrel_pull")
 		self.has_start         = level.get("has_start")
 		self.has_finish        = level.get("has_finish")
 

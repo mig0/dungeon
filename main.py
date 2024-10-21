@@ -1480,6 +1480,15 @@ def move_char(diff_x, diff_y):
 			char.animate(get_move_animate_duration(old_char_cell), on_finished=continue_move_char)
 			return
 
+	should_pull = flags.allow_barrel_pull and keyboard.lshift
+	pull_barrel_cell = None
+	if should_pull:
+		if not is_cell_accessible(char.c):
+			# can't pull into obstacle
+			char.move(diff, undo=True)
+			return
+		pull_barrel_cell = apply_diff(old_char_cell, diff, subtract=True)
+
 	# collision with enemies
 	enemy = get_actor_on_cell(char.c, enemies)
 	if enemy:
@@ -1488,7 +1497,7 @@ def move_char(diff_x, diff_y):
 		return
 
 	# collision with barrels
-	barrel = get_actor_on_cell(char.c, barrels)
+	barrel = get_actor_on_cell(pull_barrel_cell or char.c, barrels)
 	if barrel:
 		next_barrel_cell = apply_diff(barrel.c, diff)
 		if not is_cell_accessible(next_barrel_cell, allow_enemy=True):
@@ -1551,6 +1560,9 @@ def can_move(diff):
 		or map[dest_cell] == CELL_LOCK2 and drop_key2.num_collected > 0 \
 		or is_cell_in_actors(dest_cell, lifts) \
 		or get_lift_target(char.c, diff)
+
+def get_char_image_name(is_left):
+	return "left" if is_left ^ (not flags.allow_barrel_pull or not keyboard.lshift) else "stand"
 
 ARROW_KEY_R = pygame.K_RIGHT
 ARROW_KEY_L = pygame.K_LEFT
@@ -1635,11 +1647,11 @@ def update(dt):
 	if ARROW_KEY_R in last_processed_arrow_keys:
 		diff_x += 1
 		if cursor.is_char_selected():
-			char.image = "stand"
+			char.image = get_char_image_name(True)
 	if ARROW_KEY_L in last_processed_arrow_keys:
 		diff_x -= 1
 		if cursor.is_char_selected():
-			char.image = "left"
+			char.image = get_char_image_name(False)
 	if ARROW_KEY_D in last_processed_arrow_keys:
 		diff_y += 1
 	if ARROW_KEY_U in last_processed_arrow_keys:
