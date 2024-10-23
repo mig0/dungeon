@@ -40,6 +40,8 @@ class RotatepicPuzzle(Puzzle):
 		super().on_set_room(room)
 		super().set_area_from_config(min_size=(1, 1), align_to_center=True)
 		self.max_num = self.area.size_x * self.area.size_y
+
+	def on_enter_room(self):
 		self.is_shared_bg = self.level.get("bg_image") is not None
 		if not self.is_shared_bg:
 			self.image = self.Globals.load_image(self.config.get("image", "bg/stonehenge.jpg"), (self.area.size_x * CELL_W, self.area.size_y * CELL_H), self.config.get("image_crop", False))

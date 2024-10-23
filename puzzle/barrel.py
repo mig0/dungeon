@@ -25,8 +25,7 @@ class BarrelPuzzle(Puzzle):
 	def is_target_to_be_solved(self):
 		return True
 
-	def on_set_room(self, room):
-		super().on_set_room(room)
+	def on_enter_room(self):
 		self.num_total_cells = self.room.size_x * self.room.size_y
 
 	def get_room_plate_cells(self):
@@ -314,8 +313,7 @@ class BarrelPuzzle(Puzzle):
 					continue
 				if not self.map[c] in CELL_CHAR_MOVE_OBSTACLES:
 					char.c = c
-					if self.room.idx == 0:
-						self.Globals.set_char_cell(c)
+					self.Globals.set_char_cell(c)
 					break
 			else:
 				break

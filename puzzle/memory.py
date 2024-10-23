@@ -35,6 +35,8 @@ class MemoryPuzzle(Puzzle):
 		super().on_set_room(room)
 		super().set_area_from_config()
 		self.use_colors = self.get_num_pairs() <= len(MAIN_COLOR_RGB_VALUES)
+
+	def on_enter_room(self):
 		self.unset_open_cells()
 
 	def has_empty_central_cell(self):
@@ -131,8 +133,7 @@ class MemoryPuzzle(Puzzle):
 				memory_pairs[pair_idx] = (cell1, cell2)  # or True
 		self.room_memory_pairs[self.room.idx] = memory_pairs
 
-		if self.room.idx in (0, None):
-			self.Globals.set_char_cell(self.get_empty_central_cell())
+		self.Globals.set_char_cell(self.get_empty_central_cell())
 
 	def get_reveal_fade_factor(self):
 		if self.is_time_to_reveal() and self.get_reveal_time_left() < MEMORY_PUZZLE_REVEAL_FADE_TIME:

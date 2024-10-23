@@ -113,6 +113,9 @@ class Puzzle:
 	def on_set_room(self, room):
 		self.room = room
 
+	def on_enter_room(self):
+		pass
+
 	def set_finish_cell(self, accessible_cells, finish_cell):
 		self.accessible_cells = accessible_cells
 		self.finish_cell = finish_cell

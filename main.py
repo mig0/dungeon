@@ -51,7 +51,7 @@ def load_map(filename_or_stringio):
 			print(filename_or_stringio.getvalue())
 		enemies.clear()
 		barrels.clear()
-		set_char_cell(None)
+		set_char_cell(None, 0)
 
 	if is_stringio:
 		file = filename_or_stringio
@@ -84,6 +84,8 @@ def load_map(filename_or_stringio):
 
 	orig_map = map.copy()
 
+	set_char_cell(None, 0)
+
 	special_cells = []
 	for y in range(0, size_y):
 		line = file.readline()
@@ -100,7 +102,7 @@ def load_map(filename_or_stringio):
 			ch = line[x]
 			cell = (x, y)
 			if ch == CELL_START:
-				set_char_cell(cell)
+				set_char_cell(cell, 0)
 			if ch in LIFT_TYPES_BY_CHAR:
 				create_lift(cell, LIFT_TYPES_BY_CHAR[ch])
 				ch = CELL_VOID
@@ -112,7 +114,7 @@ def load_map(filename_or_stringio):
 				if actor_name == "barrel":
 					create_barrel(cell)
 				if actor_name == "char":
-					set_char_cell(cell)
+					set_char_cell(cell, 0)
 			if ch.isdigit():
 				special_cells.append(cell)
 			map[x, y] = ch
@@ -207,7 +209,7 @@ level_target_time = 0
 level = None
 
 room = Area()
-room_idx = None
+enter_room_idx = None
 
 status_message = None
 
@@ -405,6 +407,29 @@ def set_room(idx):
 
 	puzzle.on_set_room(room)
 
+def enter_room(idx):
+	global mode, char_cells
+
+	set_room(idx)
+	set_status_message()
+
+	if char_cells[idx]:
+		char.c = char_cells[idx]
+	else:
+		place_char_in_first_free_spot()
+		char_cells[idx] = char.c  # needed for Alt-R
+
+	reveal_map_near_char()
+
+	char.reset_inplace()
+	char.reset_inplace_animation()
+	if map[char.c] == CELL_START:
+		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(180, 720), flip=(True, True, 1))
+
+	mode = "game"
+
+	puzzle.on_enter_room()
+
 def get_max_room_distance():
 	return get_distance((room.x1, room.y1), (room.x2, room.y2))
 
@@ -514,10 +539,10 @@ def find_path(start_cell, target_cell, obstacles=None):
 def is_path_found(start_cell, target_cell, obstacles=None):
 	return target_cell in get_accessible_cells(start_cell, obstacles)
 
-def set_char_cell(cell):
-	global char_cell
+def set_char_cell(cell, room_idx=None):
+	global char_cells
 
-	char_cell = cell
+	char_cells[room.idx if room_idx is None else room_idx] = cell
 
 def place_char_in_closest_accessible_cell(c):
 	best_distance = None
@@ -798,10 +823,9 @@ def generate_room(idx):
 	finish_cell = None
 	if flags.has_finish or puzzle.is_finish_cell_required():
 		char.c = (room.x1, room.y1)
-		if not room.idx:
-			set_char_cell(char.c)
-			if flags.has_start:
-				map[char_cell] = CELL_START
+		set_char_cell(char.c)
+		if flags.has_start:
+			map[char.c] = CELL_START
 		accessible_cells = get_all_accessible_cells()
 		accessible_cells.pop(0)  # remove char cell
 		finish_cell = accessible_cells.pop()
@@ -841,6 +865,8 @@ def generate_map():
 
 	if "map_file" in level or "map_string" in level:
 		if ret := load_map(level.get("map_file") or io.StringIO(level["map_string"])):
+			if flags.MULTI_ROOMS:
+				print("Ignoring multi-room level config when loading map")
 			set_room(0)
 			puzzle.on_create_map(map)
 			puzzle.on_load_map(*ret)
@@ -983,7 +1009,7 @@ def init_new_level(offset=1, reload_stored=False):
 	global puzzle
 	global bg_image
 	global revealed_map
-	global char_cell, room_idx
+	global char_cells, enter_room_idx
 	global enemies, barrels, killed_enemies, lifts
 	global level_time
 	global map, stored_level
@@ -1025,7 +1051,7 @@ def init_new_level(offset=1, reload_stored=False):
 	if "bg_image" in level:
 		bg_image = load_image(level["bg_image"], (MAP_W, MAP_H), level.get("bg_image_crop", False))
 
-	char_cell = None
+	char_cells = [None] * flags.NUM_ROOMS
 	char.health = level["char_health"]
 	char.attack = INITIAL_CHAR_ATTACK
 
@@ -1073,32 +1099,21 @@ def init_new_level(offset=1, reload_stored=False):
 	if is_level_intro_enabled:
 		reset_level_title_and_target_time()
 
-	room_idx = 0
-	set_room(room_idx)
-	set_status_message()
-
 	if reload_stored:
-		char_cell = stored_level["char_cell"]
-	if char_cell:
-		char.c = char_cell
-	else:
-		place_char_in_first_free_spot()
+		char_cells = stored_level["char_cells"]
 
 	if flags.is_cloud_mode:
 		revealed_map = ndarray((MAP_SIZE_X, MAP_SIZE_Y), dtype=bool)
 		revealed_map.fill(False)
-	reveal_map_near_char()
 
-	char.reset_inplace_animation()
-	if map[char.c] == CELL_START:
-		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(180, 720), flip=(True, True, 1))
+	enter_room_idx = 0
+	enter_room(enter_room_idx)
 
-	mode = "game"
 	start_music()
 
 	stored_level = {
 		"map": map.copy(),
-		"char_cell": char.c,
+		"char_cells": char_cells.copy(),
 		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.drop) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
@@ -1109,18 +1124,13 @@ def init_new_level(offset=1, reload_stored=False):
 	puzzle.store_level(stored_level)
 
 def init_new_room():
-	global room_idx, mode
+	global enter_room_idx
 
-	if not flags.MULTI_ROOMS or room_idx == flags.NUM_ROOMS - 1:
+	if not flags.MULTI_ROOMS or enter_room_idx == flags.NUM_ROOMS - 1:
 		init_new_level()
 	else:
-		room_idx += 1
-		set_room(room_idx)
-		set_status_message()
-		place_char_in_first_free_spot()
-		reveal_map_near_char()
-		char.reset_inplace()
-		mode = "game"
+		enter_room_idx += 1
+		enter_room(enter_room_idx)
 
 def draw_map():
 	for cy in range(len(map[0])):
