@@ -413,11 +413,8 @@ def enter_room(idx):
 	set_room(idx)
 	set_status_message()
 
-	if char_cells[idx]:
-		char.c = char_cells[idx]
-	else:
-		place_char_in_first_free_spot()
-		char_cells[idx] = char.c  # needed for Alt-R
+	place_char_in_room()
+	char_cells[idx] = char.c  # needed for Alt-R
 
 	reveal_map_near_char()
 
@@ -544,15 +541,10 @@ def set_char_cell(cell, room_idx=None):
 
 	char_cells[room.idx if room_idx is None else room_idx] = cell
 
-def place_char_in_closest_accessible_cell(c):
-	best_distance = None
-	best_cell = None
-	for cell in get_all_accessible_cells():
-		distance = get_distance(cell, c)
-		if best_distance is None or distance < best_distance:
-			best_distance = distance
-			best_cell = cell
-	char.c = best_cell
+def place_char_in_closest_accessible_cell(init_cell):
+	accessible_cells = get_all_accessible_cells()
+
+	char.c = min(accessible_cells, key=lambda cell: get_distance(init_cell, cell))
 
 def place_char_in_first_free_spot():
 	for cell in room.cells:
@@ -569,6 +561,12 @@ def place_char_in_first_free_spot():
 		char.c = (0, 0)
 	else:
 		quit()
+
+def place_char_in_room():
+	if char_cells[room.idx]:
+		char.c = char_cells[room.idx]
+	else:
+		place_char_in_first_free_spot()
 
 def get_random_floor_cell_type():
 	return CELL_FLOOR_TYPES_FREQUENT[randint(0, len(CELL_FLOOR_TYPES_FREQUENT) - 1)]
@@ -795,6 +793,7 @@ class Globals:
 	find_path = find_path
 	is_path_found = is_path_found
 	set_char_cell = set_char_cell
+	place_char_in_closest_accessible_cell = place_char_in_closest_accessible_cell
 	get_random_floor_cell_type = get_random_floor_cell_type
 	convert_to_floor_if_needed = convert_to_floor_if_needed
 	generate_random_free_path = generate_random_free_path
@@ -836,6 +835,7 @@ def generate_room(idx):
 
 	# generate enemies
 	for i in range(level["num_enemies"] if "num_enemies" in level else DEFAULT_NUM_ENEMIES):
+		place_char_in_room()
 		num_tries = 10000
 		while num_tries > 0:
 			cx = randint(room.x1, room.x2)

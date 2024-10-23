@@ -306,17 +306,8 @@ class BarrelPuzzle(Puzzle):
 			else:
 				quit()
 
-		while True:
-			for c in self.Globals.get_actor_neighbors(char, self.room.x_range, self.room.y_range):
-				cx, cy = c
-				if cx > char.cx or cy > char.cy:
-					continue
-				if not self.map[c] in CELL_CHAR_MOVE_OBSTACLES:
-					char.c = c
-					self.Globals.set_char_cell(c)
-					break
-			else:
-				break
+		self.Globals.place_char_in_closest_accessible_cell((self.room.x1, self.room.y1))
+		self.Globals.set_char_cell(char.c)
 
 	def generate_room(self):
 		self.generate_random_solvable_room()
