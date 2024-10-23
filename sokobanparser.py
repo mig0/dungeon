@@ -1,28 +1,38 @@
 from constants import *
 from random import randint
 
-NON_FLOOR_CHARS = ['#', '.', '@', '+', '$', '*']
-FLOOR_CHARS = [' ', '-']
-ALL_CHARS = NON_FLOOR_CHARS + FLOOR_CHARS
-
-CHAR_TRANSLATION = {
-	ord('#'): CELL_WALL,
-	ord('.'): CELL_PLATE,
-	ord('@'): ACTOR_CHARS["char"],
-	ord('+'): ACTOR_ON_PLATE_CHARS["char"],
-	ord('$'): ACTOR_CHARS["barrel"],
-	ord('*'): ACTOR_ON_PLATE_CHARS["barrel"],
-	ord(' '): CELL_FLOOR,
-	ord('-'): CELL_FLOOR,
+CHAR_CELL_TYPES = {
+	'#': CELL_WALL,
+	'.': CELL_PLATE,
+	'@': ACTOR_CHARS["char"],
+	'+': ACTOR_ON_PLATE_CHARS["char"],
+	'$': ACTOR_CHARS["barrel"],
+	'*': ACTOR_ON_PLATE_CHARS["barrel"],
+	' ': CELL_FLOOR,
 }
 
+CHAR_ALIASES = {
+	'p': '@',
+	'P': '+',
+	'b': '$',
+	'B': '*',
+	'-': ' ',
+	'_': ' ',
+}
+
+for ch, ch0 in CHAR_ALIASES.items():
+	CHAR_CELL_TYPES[ch] = CHAR_CELL_TYPES[ch0]
+
+CHAR_TRANSLATION = dict((ord(ch), (cell_type)) for ch, cell_type in CHAR_CELL_TYPES.items())
+
 def is_map_line(line):
-	if line.strip(FLOOR_CHARS[0]).strip(FLOOR_CHARS[1]) == '':
-		return False
+	is_all_floor = True
 	for ch in line:
-		if ch not in ALL_CHARS:
+		if ch not in CHAR_CELL_TYPES.keys():
 			return False
-	return True
+		if CHAR_CELL_TYPES[ch] != CELL_FLOOR:
+			is_all_floor = False
+	return not is_all_floor
 
 SOKOBAN_MAP_PREFIX = "maps/sokoban/"
 
