@@ -1252,6 +1252,7 @@ def on_key_down(key):
 
 	# apply workaround for the invalid syntax keyboard.return in python
 	keyboard.enter = keys.RETURN in keyboard._pressed
+	keyboard.shift = keyboard.lshift or keyboard.rshift
 
 	reset_idle_time()
 
@@ -1492,7 +1493,7 @@ def move_char(diff_x, diff_y):
 			char.animate(get_move_animate_duration(old_char_cell), on_finished=continue_move_char)
 			return
 
-	should_pull = flags.allow_barrel_pull and keyboard.lshift
+	should_pull = flags.allow_barrel_pull and keyboard.shift
 	pull_barrel_cell = None
 	if should_pull:
 		if not is_cell_accessible(char.c):
