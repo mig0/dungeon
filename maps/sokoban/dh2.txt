@@ -1,0 +1,201 @@
+David Holland's dh2
+
+Added June 19, 2001
+This is David Holland's second set of 10 levels. He describes them like this
+"There are no computer-generated levels as I am trying to evolve a puzzle-making style, and so experimenting with as many different forms as possible. Some of the puzzles are very, or slightly, symmetrical as a stylistic device (in this I am influenced by David W. Skinner's excellent sasquatch puzzle sets). Others are completely unsymmetrical and the style is in the variations alone. The puzzles are arranged in roughly ascending order of difficulty."
+
+For more about these puzzles, visit David's web page.
+
+Author: David Holland, david@noether.freeserve.co.uk
+Original level website: http://www.clickfest88.freeserve.co.uk/dh2/index.html
+
+This file downloaded from the Sokoban levels page at http://sneezingtiger.com/sokoban/levels.html.
+
+Level 1
+;Author: D Holland
+;Title: Meshed Squares
+'Meshed Squares'
+ ############
+### .*.*.$  ##
+#   * $ * $  ##
+#  $.$.*.*.$  #
+# $ * *@* * $ #
+#  $.*.*.$.$  #
+##  $ * $ *   #
+ ##  $.*.*. ###
+  ###########
+
+Level 2
+;Author: D Holland
+;Title: Square version 3
+'Square version 3'
+      #####
+      #   #
+####### # #
+#    $ $ $#
+# # ..... #
+#  $.$$$.$#
+### .@# . #
+  #$.$$$.$##
+  # .....  #
+  #$ $ $   #
+  # # ######
+  #   #
+  #####
+
+Level 3
+;Author: D Holland
+;Title: clover version 4
+'clover version 4'
+ #### ####
+##  ###  ##
+#    #  . #
+#   * *   #
+## * $ * ##
+ ## *@* ##
+## * * * ##
+#   * *   #
+#    #    #
+##  ###  ##
+ #### ####
+
+Level 4
+;Author: D Holland
+;Title: prefab #5
+'prefab #5'
+          ####
+       ####  ######
+       #  # .##   #
+       #  $  #  # #
+ #######.*.**#$## #
+ #        #     # ##
+## ##$##### $  $#  #
+#  # . *  ####  ## #
+# ##$* *$ #   #  # #
+# #  .....$@$    # #
+# #   ##  ######## #
+# ##  ##  #        #
+#  ######## ########
+##          #
+ ############
+
+Level 5
+;Author: D Holland
+;Title: Figure eight
+'Figure eight'
+ #####   #####
+ #   #####   #
+##     *     ##
+# **##$.$##** #
+#  . # * # .  #
+# ** #$.$# ** #
+##   # . #   ##
+ ### ## ## ###
+  #  ## ##  #
+  #    $    #
+  #### @ ####
+     #####
+
+Level 6
+;Author: D Holland
+;Title: Skewsymmetric pattern #6
+'Skewsymmetric pattern #6'
+         #####
+      ####   #
+   ####    # #
+####  $ # $  ##
+#   .#.$.$.$. #
+# # $.$.$.$.# #
+#  $.$.$.#.$.$##
+##  $.#.$.$.$  #
+ # #.$.$ $.$.# #
+ #  $.$.$.#.$  ##
+ ##$.$.#.$.$.$  #
+  # #.$.$.$.$ # #
+  # .$.$.$.#.   #
+  ##  $ # $  ####
+   # #  @ ####
+   #   ####
+   #####
+
+Level 7
+;Author: D Holland
+;Title: Butterfly #3
+'Butterfly #3'
+###############
+#   #     #   #
+#  . * *@*  . #
+##$##  *$ ##$##
+#    #   # $  #
+#  #*#####.#  #
+# $* #   # .$ #
+##   #*.$#   ##
+ ###     * ###
+ #  . * * $. #
+ # ## ###.## #
+ #    # #    #
+ ###### ######
+
+Level 8
+;Author:  D Holland
+;Title: Crossed Swords version 10
+'Crossed Swords version 10'
+ ##### #####
+##   ###   ######
+#  #  ##      $ ##
+# $$   ##*###  $ ##
+#  # $ #...  #  $ ##
+# $# # # *$# ##  $ #
+#    $ #...#   #$  #
+##  #####.## $    ##
+# .#...##.### ##  #
+# *.*....*.. $#####
+# .#. .##.### #####
+## # ####.#       #
+## $  ###*#$#$$ $ #
+#  ##   $@$    ## #
+# $ $ #$### # $   #
+#     #     ##    #
+###################
+
+Level 9
+;Author: D Holland
+;Title: interlocked goals
+'Interlocked goals'
+#########
+#   #   ####
+#    * ..$ #
+###$## # $ ##
+  #  $  #  @##
+  ##   .###  ###
+   ####    # $ #
+      #$.#*    #
+     ## * . ####
+     # $.*.##
+     #     #
+     #######
+
+Level 10
+;Author: D Holland
+;Title: Egg
+'Egg'
+     #######
+    ##     ##
+   ##  # #  ##
+   #  #   #  #
+  ## #  *  # ##
+ ##  # * * #  ##
+##  ##$.#.$##  ##
+#  # $  #  $ #  #
+# # *  *.* .* # #
+#  $ ##. .## $  #
+# # *. *.*  * # #
+#  # $  #  $ #  #
+##  ##$.#.$##  ##
+ ##  # * * #  ##
+  ## #  *  # ##
+   #  # @ #  #
+   ##  # #  ##
+    ##     ##
+     #######
+
