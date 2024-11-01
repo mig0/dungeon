@@ -309,15 +309,10 @@ class AtomixPuzzle(Puzzle):
 		for lift in stored_level["lifts"]:
 			lift.orig_cell = lift.c
 
-	def init_dummy_room(self):
-		self.room = Area()
-		self.room.idx = 0
-
 	def restore_level(self, stored_level):
-		self.init_dummy_room()
 		for molecule in stored_level["goal_molecules"]:
 			self.goal_molecule = molecule
-			self.room.idx += 1
+			self.Globals.advance_room()
 		lifts.clear()
 		lifts.extend(stored_level["lifts"])
 		for lift in lifts:
@@ -437,7 +432,6 @@ class AtomixPuzzle(Puzzle):
 
 	def on_load_map(self, special_cell_values, extra_values):
 		self.is_loaded = True
-		self.init_dummy_room()
 
 		goal_size_x, goal_size_y = map(int, extra_values.pop(0).split(' '))
 		goal_molecule = [[''] * goal_size_x for _ in range(goal_size_y)]

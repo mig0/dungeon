@@ -407,6 +407,13 @@ def set_room(idx):
 
 	puzzle.on_set_room(room)
 
+# only to be used by puzzle's restore_level
+def advance_room():
+	if room.idx + 1 >= flags.NUM_ROOMS:
+		return False
+	set_room(room.idx + 1)
+	return True
+
 def enter_room(idx):
 	global mode, char_cells
 
@@ -783,6 +790,7 @@ class Globals:
 	create_cell_subimage = create_cell_subimage
 	create_text_cell_image = create_text_cell_image
 	is_cell_occupied = is_cell_occupied
+	advance_room = advance_room
 	get_max_room_distance = get_max_room_distance
 	is_actor_in_room = is_actor_in_room
 	is_cell_in_room = is_cell_in_room
@@ -867,8 +875,8 @@ def generate_map():
 		if ret := load_map(level.get("map_file") or io.StringIO(level["map_string"])):
 			if flags.MULTI_ROOMS:
 				print("Ignoring multi-room level config when loading map")
-			set_room(0)
 			puzzle.on_create_map(map)
+			set_room(0)
 			puzzle.on_load_map(*ret)
 			return
 
@@ -1081,6 +1089,7 @@ def init_new_level(offset=1, reload_stored=False):
 			create_portal(portal_cell, dst_cell)
 		for drop in drops:
 			drop.restore(stored_level["drop_infos"][drop.name])
+		set_room(0)
 		puzzle.restore_level(stored_level)
 	else:
 		if puzzle.is_long_generation():
