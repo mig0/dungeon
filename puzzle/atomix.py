@@ -304,19 +304,25 @@ class AtomixPuzzle(Puzzle):
 		return curr_lift_molecule == self.goal_molecule
 
 	def store_level(self, stored_level):
+		stored_level["is_loaded"] = self.is_loaded
 		stored_level["goal_molecules"] = self.goal_molecules
 		stored_level["lifts"] = [*lifts]
 		for lift in stored_level["lifts"]:
 			lift.orig_cell = lift.c
 
 	def restore_level(self, stored_level):
+		self.is_loaded = stored_level["is_loaded"]
 		for molecule in stored_level["goal_molecules"]:
 			self.goal_molecule = molecule
 			self.Globals.advance_room()
+		# replace stock lifts with our versions holding designated atom image
 		lifts.clear()
 		lifts.extend(stored_level["lifts"])
 		for lift in lifts:
 			lift.c = lift.orig_cell
+
+	def on_enter_room(self):
+		self.Globals.set_status_message("Press KP Enter to see the goal molecule")
 
 	def scramble(self):
 		# move all lifts until possible without repetition
