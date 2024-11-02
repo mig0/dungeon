@@ -105,7 +105,7 @@ def parse_sokoban_levels(major, filename):
 				"n": major + i / 1000,
 				"name": level_name or "No Name",
 				"bg_image": "bg/starry-sky.webp",
-				"theme": ("stoneage1", "stoneage2", "default", "modern1", "moss")[randint(0, 4)],
+				"theme": ("stoneage1", "stoneage2", "stoneage3", "stoneage4", "stoneage5", "default", "modern1", "moss")[randint(0, 7)],
 				"music": ("playful_sparrow", "film", "forest_walk", "epic_cinematic_trailer", "adventures")[randint(0, 4)] + ".mp3",
 				"map_size": map_size,
 				"map_string": map_string,

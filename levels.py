@@ -1,4 +1,5 @@
 from atomixlevels import atomix_levels
+from stoneagelevels import stoneage_levels
 from sokobanparser import parse_sokoban_levels
 
 levels = [
@@ -454,15 +455,16 @@ levels = [
 	{
 		"n": 11.1,
 		"map_size": (20, 11),
-		"map_file": "maps/stoneage/1.map",
 		"theme": "stoneage1",
 		"music": "stoneage/01_stardust_falling",
 		"bg_image": "bg/remains_of_a_threat.jpg",
-		"char_health": 100,
 		"target": "reach-finish",
+		"num_enemies": 0,
+		"char_health": None,
 		"stoneage_puzzle": {
 		},
 	},
+	*stoneage_levels,
 	{
 		"n": 1.0,
 		"theme": "stoneage1",

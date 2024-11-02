@@ -109,6 +109,10 @@ def load_map(filename_or_stringio):
 			if ch in ACTOR_AND_PLATE_BY_CHAR:
 				actor_name, is_plate = ACTOR_AND_PLATE_BY_CHAR[ch]
 				ch = CELL_PLATE if is_plate else CELL_FLOOR
+				if actor_name == "key1":
+					drop_key1.instantiate(cell)
+				if actor_name == "key2":
+					drop_key2.instantiate(cell)
 				if actor_name == "enemy":
 					create_enemy(cell)
 				if actor_name == "barrel":
@@ -1298,17 +1302,19 @@ def on_key_down(key):
 	if keyboard.f3:
 		set_theme("ancient1")
 	if keyboard.f4:
-		set_theme("modern1")
+		set_theme("ancient2")
 	if keyboard.f5:
-		set_theme("modern2")
+		set_theme("modern1")
 	if keyboard.f6:
-		set_theme("stoneage1")
+		set_theme("modern2")
 	if keyboard.f7:
-		set_theme("stoneage2")
-	if keyboard.f8:
 		set_theme("minecraft")
+	if keyboard.f8:
+		set_theme("moss"      if not keyboard.shift else "stoneage3")
 	if keyboard.f9:
-		set_theme("moss")
+		set_theme("stoneage1" if not keyboard.shift else "stoneage4")
+	if keyboard.f10:
+		set_theme("stoneage2" if not keyboard.shift else "stoneage5")
 
 	if keyboard.f11:
 		pygame.display.toggle_fullscreen()
