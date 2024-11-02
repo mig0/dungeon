@@ -1,0 +1,84 @@
+#!/usr/bin/python
+
+import sys
+from pathlib import Path
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/..')
+from constants import *
+
+def show_usage_error(error):
+	print("Usage: %s FILE|- [MAP-NAME]" % sys.argv[0])
+	print("Converts file or stdin from mosaic sav file to dungeon map or vice versa")
+	print()
+	print("Error: %s" % error)
+	exit(1)
+
+if len(sys.argv) < 2:
+	show_usage_error("Missing file argument")
+
+filename = sys.argv[1]
+if filename == "-":
+	filename = "/dev/stdin"
+file = Path(filename)
+map_name = sys.argv[2] if len(sys.argv) >= 3 else "Unnamed"
+
+if not file.exists():
+	show_usage_error("File does not exist")
+
+mosaic_to_dungeon_chars = {
+	'#': CELL_WALL,
+	'~': CELL_SAND,
+	'.': CELL_FLOOR,
+	'@': ACTOR_CHARS["char"],
+	'&': ACTOR_CHARS["enemy"],
+	'O': CELL_PORTAL,
+	'*': ACTOR_CHARS["barrel"],
+	'_': CELL_PLATE,
+	'G': CELL_GATE1,
+	'^': CELL_GATE0,
+	'S': CELL_START,
+	'F': CELL_FINISH,
+	'{': CELL_LOCK1,
+	'}': CELL_LOCK2,
+	'[': ACTOR_CHARS["key1"],
+	']': ACTOR_CHARS["key2"],
+	' ': CELL_VOID,
+	',': CELL_CRACK,
+	':': CELL_BONES,
+	';': CELL_ROCKS,
+	'a': LIFT_CHARS[LIFT_A],
+	'h': LIFT_CHARS[LIFT_H],
+	'v': LIFT_CHARS[LIFT_V],
+	'l': LIFT_CHARS[LIFT_L],
+	'r': LIFT_CHARS[LIFT_R],
+	'u': LIFT_CHARS[LIFT_U],
+	'd': LIFT_CHARS[LIFT_D],
+}
+
+dungeon_to_mosaic_chars = {v: k for k, v in mosaic_to_dungeon_chars.items()}
+
+mosaic_to_dungeon_chars_translation = dict((ord(ch), (cell_type)) for ch, cell_type in mosaic_to_dungeon_chars.items())
+
+dungeon_to_mosaic_chars_translation = dict((ord(cell_type), (ch)) for cell_type, ch in dungeon_to_mosaic_chars.items())
+
+try:
+	content = file.read_text()
+except KeyboardInterrupt:
+	print()
+	quit()
+
+
+signature, map_string = content.split("\n", 1)
+map_size_string = signature.split(" ")[-1]
+
+if signature.startswith("# Dungeon "):
+	signature = "# Save file for grid %s" % map_size_string
+	map_string = map_string.translate(dungeon_to_mosaic_chars_translation)
+elif signature.startswith("# Save file "):
+	signature = "# Dungeon %s map %s" % (map_name, map_size_string)
+	map_string = map_string.translate(mosaic_to_dungeon_chars_translation)
+else:
+	show_usage_error("File is neither in mosaic sav nor dungeon map format")
+
+print(signature)
+print(map_string, end="")
