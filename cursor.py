@@ -27,7 +27,7 @@ class Cursor(CellActor):
 			return
 
 		self.hidden = True
-		if lift := get_actor_on_cell(self.c, lifts):
+		if self.c != char.c and (lift := get_actor_on_cell(self.c, lifts)):
 			self.selected_actor = lift
 		else:
 			self.selected_actor = char
