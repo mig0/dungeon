@@ -33,14 +33,14 @@ class ColorPuzzle(Puzzle):
 	def get_num_values(self):
 		return self.config.get("num_values", MAX_COLOR_PUZZLE_VALUES)
 
-	def press_cell(self, cell):
+	def increment_cell_color(self, cell):
 		self.color_map[cell] = (self.color_map[cell] + 1) % self.get_num_values()
 
 	def press_plate(self, cell):
 		for neigh in self.Globals.get_all_neighbors(cell):
-			self.press_cell(neigh)
+			self.increment_cell_color(neigh)
 			if "is_extended" in self.config and (neigh[0] != cell[0] and neigh[1] != cell[1]) ^ (cell[0] % 3 != 0 or cell[2] % 3 != 0):
-				self.press_cell(neigh)
+				self.increment_cell_color(neigh)
 
 	def get_cell_image(self, cell):
 		return self.cell_images[self.color_map[cell]]
