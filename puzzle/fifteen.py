@@ -66,17 +66,22 @@ class FifteenPuzzle(Puzzle):
 	def swap(self, cell1, cell2):
 		self.fifteen_map[cell1], self.fifteen_map[cell2] = self.fifteen_map[cell2], self.fifteen_map[cell1]
 
-	def move(self, empty_cell, cell, neigh_only=False):
+	def move(self, cell, empty_cell, neigh_only=False):
+		is_moved = False
 		if neigh_only:
 			neighbors = self.Globals.get_actor_neighbors(char, self.area.x_range, self.area.y_range)
 			if empty_cell not in neighbors:
-				return
+				return False
 			self.swap(cell, empty_cell)
+			is_moved = True
 		else:
 			last_cell = empty_cell
 			for cell in self.get_cells_on_one_line_between_two_cells(empty_cell, cell):
 				self.swap(last_cell, cell)
+				is_moved = True
 				last_cell = cell
+
+		return is_moved
 
 	def press_char_cell(self):
 		if self.fifteen_map[char.c] == FIFTEEN_PUZZLE_VALUE_OUTSIDE:
@@ -102,7 +107,7 @@ class FifteenPuzzle(Puzzle):
 				cell = (empty_cell[0], self.get_random_non_equal(self.area.y_range, empty_cell[1]))
 			else:
 				cell = (self.get_random_non_equal(self.area.x_range, empty_cell[0]), empty_cell[1])
-			self.move(empty_cell, cell)
+			self.move(cell, empty_cell)
 			empty_cell = cell
 			num_moves_left -= 1
 
