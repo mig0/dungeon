@@ -83,13 +83,6 @@ class FifteenPuzzle(Puzzle):
 
 		return is_moved
 
-	def press_char_cell(self):
-		if self.fifteen_map[char.c] == FIFTEEN_PUZZLE_VALUE_OUTSIDE:
-			return
-
-		empty_cell = self.get_empty_cell()
-		self.move(empty_cell, char.c, FIFTEEN_PUZZLE_MOVE_NEIGHBOUR_ONLY)
-
 	def get_random_non_equal(self, range, n):
 		r = n
 		while r == n:
@@ -137,6 +130,17 @@ class FifteenPuzzle(Puzzle):
 			num = self.fifteen_map[cell] if not self.draw_solved_mode or not self.is_in_area(cell) else self.get_num_solved(cell)
 			return self.Globals.create_text_cell_image(str(num), color='#FFFFC0', gcolor="#808040", owidth=1, ocolor="#404030")
 		return None
+
+	def press_cell(self, cell):
+		if self.fifteen_map[cell] == FIFTEEN_PUZZLE_VALUE_OUTSIDE:
+			return False
+
+		empty_cell = self.get_empty_cell()
+		self.move(cell, empty_cell, FIFTEEN_PUZZLE_MOVE_NEIGHBOUR_ONLY)
+		return True
+
+	def press_char_cell(self):
+		self.press_cell(char.c)
 
 	def on_press_key(self, keyboard):
 		if keyboard.space:

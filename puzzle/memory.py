@@ -88,7 +88,7 @@ class MemoryPuzzle(Puzzle):
 
 	def press_cell(self, cell):
 		if self.memory_map[cell] == MEMORY_PUZZLE_VALUE_OUTSIDE:
-			return
+			return False
 
 		if self.is_time_to_reveal():
 			# allow to cancel reveal_time (otherwise, would just return)
@@ -105,6 +105,8 @@ class MemoryPuzzle(Puzzle):
 				self.open_cell2 = cell
 		else:
 			self.open_cell1 = cell
+
+		return True
 
 	def generate_room(self):
 		memory_pairs = {}

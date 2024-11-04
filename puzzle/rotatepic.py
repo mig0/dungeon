@@ -48,12 +48,10 @@ class RotatepicPuzzle(Puzzle):
 
 	def rotate_cell(self, cell, delta=1):
 		if self.rotatepic_map[cell] == ROTATEPIC_PUZZLE_VALUE_OUTSIDE:
-			return
+			return False
 
 		self.rotatepic_map[cell] = (self.rotatepic_map[cell] + delta) % 4
-
-	def press_char_cell(self, clockwise=True):
-		self.rotate_cell(char.c, 1 if clockwise else -1)
+		return True
 
 	def scramble(self):
 		for cell in self.area.cells:
@@ -86,6 +84,12 @@ class RotatepicPuzzle(Puzzle):
 			rotate_angle = 0 if self.draw_solved_mode else self.rotatepic_map[cell] * 90
 			return self.Globals.create_cell_subimage(image, cell, starting_cell, rotate_angle)
 		return None
+
+	def press_cell(self, cell, clockwise=True):
+		return self.rotate_cell(cell, 1 if clockwise else -1)
+
+	def press_char_cell(self, clockwise=True):
+		self.press_cell(char.c, clockwise)
 
 	def on_press_key(self, keyboard):
 		if keyboard.space:

@@ -82,6 +82,15 @@ class ColorPuzzle(Puzzle):
 				break
 			num_tries -= 1
 
+	def press_cell(self, cell):
+		if not self.is_in_area(cell):
+			return False
+
+		if self.map[cell] == CELL_PLATE:
+			self.press_plate(cell)
+
+		return True
+
 	def on_press_key(self, keyboard):
 		if keyboard.space and self.map[char.c] == CELL_PLATE:
 			self.press_plate(char.c)

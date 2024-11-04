@@ -1363,9 +1363,12 @@ def on_key_down(key):
 		teleport_char()
 
 	if keyboard.enter:
-		cursor.toggle()
 		if not cursor.is_active():
+			cursor.toggle()
+		else:
 			set_status_message()
+			if not puzzle.press_cell(cursor.c):
+				cursor.toggle()
 
 	if keyboard.space or keyboard.escape:
 		if not cursor.is_char_selected():
