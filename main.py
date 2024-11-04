@@ -434,6 +434,8 @@ def enter_room(idx):
 	if map[char.c] == CELL_START:
 		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(0, 1), angle=(180, 720), flip=(True, True, 1))
 
+	cursor.reset()
+
 	mode = "game"
 
 	puzzle.on_enter_room()
@@ -1073,7 +1075,6 @@ def init_new_level(offset=1, reload_stored=False):
 	killed_enemies.clear()
 	portal_destinations.clear()
 
-	cursor.reset()
 	for drop in drops:
 		drop.reset()
 
