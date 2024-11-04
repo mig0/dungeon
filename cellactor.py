@@ -189,7 +189,7 @@ class CellActor(Actor):
 	def move(self, diff, undo=False):
 		self.c = apply_diff(self.c, diff, undo)
 
-	def move_animated(self, diff=None, target=None, enable_animation=True):
+	def move_animated(self, diff=None, target=None, enable_animation=True, on_finished=None):
 		if diff is None and target is None:
 			return
 		if diff is None:
@@ -204,7 +204,7 @@ class CellActor(Actor):
 			self.pos = old_pos
 			distance = get_distance(old_cell, target)
 			animate_time_factor = distance - (distance - 1) / 2
-			self.animate(animate_time_factor * ARROW_KEYS_RESOLUTION)
+			self.animate(animate_time_factor * ARROW_KEYS_RESOLUTION, on_finished=on_finished)
 
 	def _transform(self):
 		if not hasattr(self, '_orig_surf'):

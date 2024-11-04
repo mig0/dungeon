@@ -1555,7 +1555,7 @@ def move_char(diff_x, diff_y):
 		for i in range(1, distance):
 			char.move(diff)
 		lift = get_actor_on_cell(old_char_cell, lifts)
-		lift.move_animated(target=lift_target, enable_animation=is_move_animate_enabled)
+		lift.move_animated(target=lift_target, enable_animation=is_move_animate_enabled, on_finished=activate_cursor_after_lift_movement)
 
 	leave_cell(old_char_cell)
 
@@ -1569,11 +1569,18 @@ def move_char(diff_x, diff_y):
 
 	reveal_map_near_char()
 
+def activate_cursor_after_lift_movement():
+	if not cursor.is_lift_selected():
+		return
+	lift = cursor.selected_actor
+	if lift.type in (LIFT_L, LIFT_R, LIFT_U, LIFT_D):
+		cursor.toggle()
+
 def move_selected_lift(diff):
 	lift = cursor.selected_actor
 	if lift_target := get_lift_target(lift.c, diff):
 		for actor in [lift, char] if char.c == lift.c else [lift]:
-			actor.move_animated(target=lift_target, enable_animation=is_move_animate_enabled)
+			actor.move_animated(target=lift_target, enable_animation=is_move_animate_enabled, on_finished=activate_cursor_after_lift_movement)
 
 def can_move(diff):
 	dest_cell = apply_diff(cursor.selected_actor.c, diff)
