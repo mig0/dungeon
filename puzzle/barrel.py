@@ -306,7 +306,7 @@ class BarrelPuzzle(Puzzle):
 			else:
 				quit()
 
-		self.Globals.place_char_in_closest_accessible_cell((self.room.x1, self.room.y1))
+		self.Globals.place_char_in_topleft_accessible_cell()
 		self.Globals.set_char_cell(char.c)
 
 	def generate_room(self):

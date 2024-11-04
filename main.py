@@ -554,10 +554,18 @@ def set_char_cell(cell, room_idx=None):
 
 	char_cells[room.idx if room_idx is None else room_idx] = cell
 
-def place_char_in_closest_accessible_cell(init_cell):
-	accessible_cells = get_all_accessible_cells()
+def get_closest_accessible_cell(start_cell, target_cell):
+	accessible_cells = get_accessible_cells(start_cell)
+	return min(accessible_cells, key=lambda cell: get_distance(cell, target_cell))
 
-	char.c = min(accessible_cells, key=lambda cell: get_distance(init_cell, cell))
+def get_topleft_accessible_cell(start_cell):
+	return get_closest_accessible_cell(start_cell, (0, 0))
+
+def place_char_in_closest_accessible_cell(target_cell):
+	char.c = get_closest_accessible_cell(char.c, target_cell)
+
+def place_char_in_topleft_accessible_cell():
+	char.c = get_topleft_accessible_cell(char.c)
 
 def place_char_in_first_free_spot():
 	for cell in room.cells:
@@ -807,7 +815,7 @@ class Globals:
 	find_path = find_path
 	is_path_found = is_path_found
 	set_char_cell = set_char_cell
-	place_char_in_closest_accessible_cell = place_char_in_closest_accessible_cell
+	place_char_in_topleft_accessible_cell = place_char_in_topleft_accessible_cell
 	get_random_floor_cell_type = get_random_floor_cell_type
 	convert_to_floor_if_needed = convert_to_floor_if_needed
 	generate_random_free_path = generate_random_free_path
