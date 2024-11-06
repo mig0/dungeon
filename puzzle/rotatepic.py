@@ -1,6 +1,9 @@
 from . import *
 
 ROTATEPIC_PUZZLE_VALUE_OUTSIDE = -1
+CLOCKWISE = -1
+COUNTERCLOCKWISE = +1
+UPSIDEDOWN = 2
 CELL_ROTATEPIC_BOX = '~b'
 
 class RotatepicPuzzle(Puzzle):
@@ -46,7 +49,7 @@ class RotatepicPuzzle(Puzzle):
 		if not self.is_shared_bg:
 			self.image = self.Globals.load_image(self.config.get("image", "bg/stonehenge.jpg"), (self.area.size_x * CELL_W, self.area.size_y * CELL_H), self.config.get("image_crop", False))
 
-	def rotate_cell(self, cell, delta=1):
+	def rotate_cell(self, cell, delta=COUNTERCLOCKWISE):
 		if self.rotatepic_map[cell] == ROTATEPIC_PUZZLE_VALUE_OUTSIDE:
 			return False
 
@@ -85,11 +88,11 @@ class RotatepicPuzzle(Puzzle):
 			return self.Globals.create_cell_subimage(image, cell, starting_cell, rotate_angle)
 		return None
 
-	def press_cell(self, cell, clockwise=True):
-		return self.rotate_cell(cell, 1 if clockwise else -1)
+	def press_cell(self, cell, button=None):
+		return self.rotate_cell(cell, CLOCKWISE if button in (None, 3, 5) else UPSIDEDOWN if button == 2 else COUNTERCLOCKWISE)
 
 	def press_char_cell(self, clockwise=True):
-		self.press_cell(char.c, clockwise)
+		self.rotate_cell(char.c, CLOCKWISE if clockwise else COUNTERCLOCKWISE)
 
 	def on_press_key(self, keyboard):
 		if keyboard.space:

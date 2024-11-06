@@ -86,9 +86,11 @@ class MemoryPuzzle(Puzzle):
 			del self.room_memory_pairs[self.room.idx][pair_idx]
 		self.unset_open_cells()
 
-	def press_cell(self, cell):
+	def press_cell(self, cell, button=None):
 		if self.memory_map[cell] == MEMORY_PUZZLE_VALUE_OUTSIDE:
 			return False
+		if button not in (None, 1):
+			return True
 
 		if self.is_time_to_reveal():
 			# allow to cancel reveal_time (otherwise, would just return)

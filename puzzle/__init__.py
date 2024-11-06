@@ -144,7 +144,7 @@ class Puzzle:
 	def on_draw(self, mode):
 		pass
 
-	def press_cell(self, cell):
+	def press_cell(self, cell, button=None):
 		return False
 
 	def on_press_key(self, keyboard):

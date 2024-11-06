@@ -131,9 +131,11 @@ class FifteenPuzzle(Puzzle):
 			return self.Globals.create_text_cell_image(str(num), color='#FFFFC0', gcolor="#808040", owidth=1, ocolor="#404030")
 		return None
 
-	def press_cell(self, cell):
+	def press_cell(self, cell, button=None):
 		if self.fifteen_map[cell] == FIFTEEN_PUZZLE_VALUE_OUTSIDE:
 			return False
+		if button not in (None, 1):
+			return True
 
 		empty_cell = self.get_empty_cell()
 		self.move(cell, empty_cell, FIFTEEN_PUZZLE_MOVE_NEIGHBOUR_ONLY)

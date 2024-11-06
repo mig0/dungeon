@@ -1384,6 +1384,15 @@ def on_key_down(key):
 
 	puzzle.on_press_key(keyboard)
 
+def on_mouse_down(pos, button):
+	if mode != "game":
+		return
+
+	if cursor.is_active():
+		cursor.toggle()
+	cell = pos_to_cell(pos)
+	puzzle.press_cell(cell, button)
+
 def loose_game():
 	global mode, is_game_won
 

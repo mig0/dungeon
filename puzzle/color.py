@@ -82,7 +82,7 @@ class ColorPuzzle(Puzzle):
 				break
 			num_tries -= 1
 
-	def press_cell(self, cell):
+	def press_cell(self, cell, button=None):
 		if not self.is_in_area(cell):
 			return False
 
