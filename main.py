@@ -1435,9 +1435,6 @@ def loose_game():
 def win_room():
 	global mode
 
-	if level.get("disable_win"):
-		return
-
 	play_sound("finish")
 	mode = "next"
 	clock.schedule(init_new_room, WIN_NEW_DELAY)
@@ -1446,21 +1443,44 @@ def check_victory():
 	if mode != "game":
 		return
 
-	if "time_limit" in level and level_time > level["time_limit"]:
+	if "time_limit" in level and level_time > level["time_limit"] or char.health is not None and char.health <= MIN_CHAR_HEALTH:
 		loose_game()
-	elif char.health is not None and char.health <= MIN_CHAR_HEALTH:
-		loose_game()
-	elif flags.has_finish or puzzle.has_finish():
-		if map[char.c] == CELL_FINISH and (not puzzle.is_target_to_be_solved() or puzzle.is_solved()):
+		return
+
+	status_messages = []
+	can_win = True
+	target_achieved = False
+
+	if puzzle.is_target_to_be_solved():
+		if puzzle.is_solved():
+			target_achieved = True
+			status_messages.append("Puzzle solved!")
+		else:
+			can_win = False
+			status_messages.append("Solve puzzle!")
+
+	if puzzle.is_target_to_kill_enemies():
+		if not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
+			target_achieved = True
+			status_messages.append("All enemies killed!")
+		else:
+			can_win = False
+			status_messages.append("Kill all enemies!")
+
+	if level.get("disable_win"):
+		can_win = False
+
+	if flags.has_finish or puzzle.has_finish():
+		if map[char.c] == CELL_FINISH and can_win:
 			char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0))
 			win_room()
-	elif puzzle.is_target_to_be_solved():
-		if puzzle.is_solved():
-			win_room()
-	elif not puzzle.is_target_to_kill_enemies():
-		pass
-	elif not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
+		else:
+			status_messages.append("Reach finish!")
+	elif target_achieved and can_win:
 		win_room()
+
+	if status_messages:
+		set_status_message(" ".join(status_messages))
 
 def teleport_char():
 	if map[char.c] != CELL_PORTAL:
