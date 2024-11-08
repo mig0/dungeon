@@ -1417,6 +1417,19 @@ def on_key_down(key):
 	if DEBUG_LEVEL > 0 and cursor_was_active and not cursor.is_active():
 		set_status_message2()
 
+	if keyboard.home:
+		puzzle.press_cell(cursor.selected_actor.c, 1)
+	if keyboard.end:
+		puzzle.press_cell(cursor.selected_actor.c, 3)
+	if keyboard.insert:
+		puzzle.press_cell(cursor.selected_actor.c, 2)
+	if keyboard.delete:
+		puzzle.press_cell(cursor.selected_actor.c, 6)
+	if keyboard.pageup:
+		puzzle.press_cell(cursor.selected_actor.c, 4)
+	if keyboard.pagedown:
+		puzzle.press_cell(cursor.selected_actor.c, 5)
+
 	puzzle.on_press_key(keyboard)
 
 def on_mouse_down(pos, button):
