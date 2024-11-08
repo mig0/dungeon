@@ -354,6 +354,15 @@ def create_text_cell_image(text, color='#E0E0E0', gcolor="#408080", owidth=1.2, 
 	pgzero.ptext.draw(text, surf=cell_surface, center=cell_to_pos((0, 0)), color=color, gcolor=gcolor, owidth=owidth, ocolor=ocolor, alpha=alpha, fontsize=fontsize)
 	return cell_surface
 
+def get_fade_text_factor(fade_out_time, fade_duration=2, rest_duration=0):
+	if level_time > fade_out_time + rest_duration:
+		return None
+	if level_time > fade_out_time:
+		return 0
+	if level_time > fade_out_time - fade_duration:
+		return (fade_out_time - level_time) / fade_duration
+	return 1
+
 def is_portal_destination(cell):
 	return cell in {v: k for k, v in portal_destinations.items()}
 
@@ -803,6 +812,7 @@ class Globals:
 	colorize_cell_image = colorize_cell_image
 	create_cell_subimage = create_cell_subimage
 	create_text_cell_image = create_text_cell_image
+	get_fade_text_factor = get_fade_text_factor
 	is_cell_occupied = is_cell_occupied
 	advance_room = advance_room
 	get_max_room_distance = get_max_room_distance

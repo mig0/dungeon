@@ -64,11 +64,8 @@ class MemoryPuzzle(Puzzle):
 	def is_solved(self):
 		return not self.room_memory_pairs[self.room.idx]
 
-	def get_reveal_time_left(self):
-		return self.reveal_time - self.level_time
-
 	def is_time_to_reveal(self):
-		return self.get_reveal_time_left() > 0
+		return self.reveal_time > self.level_time
 
 	def store_level(self, stored_level):
 		stored_level["memory_map"] = self.memory_map.copy()
@@ -140,8 +137,8 @@ class MemoryPuzzle(Puzzle):
 		self.Globals.set_char_cell(self.get_empty_central_cell())
 
 	def get_reveal_fade_factor(self):
-		if self.is_time_to_reveal() and self.get_reveal_time_left() < MEMORY_PUZZLE_REVEAL_FADE_TIME:
-			return self.get_reveal_time_left() / MEMORY_PUZZLE_REVEAL_FADE_TIME
+		if self.is_time_to_reveal():
+			return self.Globals.get_fade_text_factor(self.reveal_time, MEMORY_PUZZLE_REVEAL_FADE_DURATION)
 		return None
 
 	def modify_cell_types_to_draw(self, cell, cell_types):
