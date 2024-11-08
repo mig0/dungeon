@@ -1401,17 +1401,21 @@ def on_key_down(key):
 	if keyboard.space and cursor.is_char_selected() and map[char.c] == CELL_PORTAL:
 		teleport_char()
 
+	cursor_was_active = cursor.is_active()
+
 	if keyboard.enter:
 		if not cursor.is_active():
 			cursor.toggle()
 		else:
-			set_status_message()
 			if not puzzle.press_cell(cursor.c):
 				cursor.toggle()
 
 	if keyboard.space or keyboard.escape:
 		if not cursor.is_char_selected():
 			cursor.reset()
+
+	if DEBUG_LEVEL > 0 and cursor_was_active and not cursor.is_active():
+		set_status_message2()
 
 	puzzle.on_press_key(keyboard)
 
@@ -1710,8 +1714,8 @@ def update(dt):
 
 	check_victory()
 
-	if cursor.is_active():
-		set_status_message(str(cursor.c))
+	if DEBUG_LEVEL > 0 and cursor.is_active():
+		set_status_message2(str(cursor.c))
 
 	if char.is_animated():
 		return
