@@ -216,11 +216,17 @@ room = Area()
 enter_room_idx = None
 
 status_message = None
+status_message2 = None
+status_message2_time = 0
 
 def set_status_message(msg=None):
 	global status_message
-
 	status_message = msg
+
+def set_status_message2(msg=None, duration=10):
+	global status_message2, status_message2_time
+	status_message2 = msg
+	status_message2_time = level_time + (duration if duration is not None else 1000000)
 
 def get_bg_image():
 	return bg_image
@@ -432,6 +438,7 @@ def enter_room(idx):
 
 	set_room(idx)
 	set_status_message()
+	set_status_message2()
 
 	place_char_in_room()
 	char_cells[idx] = char.c  # needed for Alt-R
@@ -801,6 +808,7 @@ class Globals:
 	get_actor_neighbors = get_actor_neighbors
 	get_all_neighbors = get_all_neighbors
 	set_status_message = set_status_message
+	set_status_message2 = set_status_message2
 	get_bg_image = get_bg_image
 	debug = debug
 	debug_map = debug_map
@@ -1212,8 +1220,18 @@ def draw_status():
 
 	draw_status_drops(screen, drops)
 
-	if status_message is not None:
-		screen.draw.text(status_message, center=(POS_CENTER_X, POS_STATUS_Y), color="#FFF0A0", gcolor="#A09060", owidth=1.2, ocolor="#303020", alpha=1, fontsize=26)
+	status_message_to_draw = None
+	status_message_alpha = 1
+	if status_message2 is not None:
+		if (alpha := get_fade_text_factor(status_message2_time, STATUS_MESSAGE2_FADE_DURATION, STATUS_MESSAGE2_REST_DURATION)) is not None:
+			status_message_to_draw = status_message2
+			status_message_alpha = alpha
+		else:
+			set_status_message2()
+	elif status_message is not None:
+		status_message_to_draw = status_message
+	if status_message_to_draw is not None:
+		screen.draw.text(status_message_to_draw, midleft=(20, POS_STATUS_Y), color="#FFF0A0", gcolor="#A09060", owidth=1.2, ocolor="#303020", alpha=status_message_alpha, fontsize=26)
 
 	if mode == "game":
 		color, gcolor = ("#60C0FF", "#0080A0") if "time_limit" not in level else ("#FFC060", "#A08000") if level["time_limit"] - level_time > CRITICAL_REMAINING_LEVEL_TIME else ("#FF6060", "#A04040")
@@ -1376,6 +1394,9 @@ def on_key_down(key):
 
 	if keyboard.w:
 		win_room()
+
+	if keyboard.o:
+		set_status_message2("Hello, world!", 5)
 
 	if keyboard.space and cursor.is_char_selected() and map[char.c] == CELL_PORTAL:
 		teleport_char()
