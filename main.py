@@ -16,6 +16,7 @@ from drop import draw_status_drops
 from flags import flags
 from puzzle import create_puzzle
 from sizetools import *
+from joystick import scan_joysticks_and_state, emulate_joysticks_press_key, get_joysticks_arrow_keys
 
 lang = 'en'
 
@@ -1296,13 +1297,16 @@ def draw():
 def kill_enemy():
 	enemy = killed_enemies.pop(0)
 
-def on_key_down(key):
+def handle_press_key():
 	global lang
 	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled
 
 	# apply workaround for the invalid syntax keyboard.return in python
 	keyboard.enter = keys.RETURN in keyboard._pressed
+
 	keyboard.shift = keyboard.lshift or keyboard.rshift
+	keyboard.ctrl  = keyboard.lctrl  or keyboard.rctrl
+	keyboard.alt   = keyboard.lalt   or keyboard.ralt
 
 	reset_idle_time()
 
@@ -1431,6 +1435,9 @@ def on_key_down(key):
 		puzzle.press_cell(cursor.selected_actor.c, 5)
 
 	puzzle.on_press_key(keyboard)
+
+def on_key_down(key):
+	handle_press_key()
 
 def on_mouse_down(pos, button):
 	if mode != "game":
@@ -1688,10 +1695,12 @@ def can_move(diff):
 def get_char_image_name(is_left):
 	return "left" if is_left ^ (not flags.allow_barrel_pull or not keyboard.lshift) else "stand"
 
-ARROW_KEY_R = pygame.K_RIGHT
-ARROW_KEY_L = pygame.K_LEFT
-ARROW_KEY_D = pygame.K_DOWN
-ARROW_KEY_U = pygame.K_UP
+ARROW_KEY_CODE = {
+	'r': pygame.K_RIGHT,
+	'l': pygame.K_LEFT,
+	'd': pygame.K_DOWN,
+	'u': pygame.K_UP,
+}
 
 def update(dt):
 	global level_title_time, level_target_time
@@ -1733,12 +1742,20 @@ def update(dt):
 	if char.is_animated():
 		return
 
+	scan_joysticks_and_state()
+
+	if emulate_joysticks_press_key(keyboard):
+		handle_press_key()
+		return
+
 	keys = pygame.key.get_pressed()
-	for key in (ARROW_KEY_R, ARROW_KEY_L, ARROW_KEY_D, ARROW_KEY_U):
-		if keys[key] and key not in pressed_arrow_keys:
+	joistick_arrow_keys = get_joysticks_arrow_keys()
+	for key in ('r', 'l', 'd', 'u'):
+		is_key_pressed = keys[ARROW_KEY_CODE[key]] or key in joistick_arrow_keys
+		if is_key_pressed and key not in pressed_arrow_keys:
 			pressed_arrow_keys.append(key)
 			reset_idle_time()
-		if not keys[key] and key in pressed_arrow_keys and key in last_processed_arrow_keys:
+		if not is_key_pressed and key in pressed_arrow_keys and key in last_processed_arrow_keys:
 			pressed_arrow_keys.remove(key)
 
 	if game_time - last_time_arrow_keys_processed < ARROW_KEYS_RESOLUTION:
@@ -1759,29 +1776,29 @@ def update(dt):
 			last_processed_arrow_diff = next_diff
 
 	for key in list(pressed_arrow_keys):
-		if key == ARROW_KEY_R and key not in last_processed_arrow_keys and ARROW_KEY_L not in last_processed_arrow_keys:
+		if key == 'r' and key not in last_processed_arrow_keys and 'l' not in last_processed_arrow_keys:
 			set_arrow_key_to_process(key, (+1, +0))
-		if key == ARROW_KEY_L and key not in last_processed_arrow_keys and ARROW_KEY_R not in last_processed_arrow_keys:
+		if key == 'l' and key not in last_processed_arrow_keys and 'r' not in last_processed_arrow_keys:
 			set_arrow_key_to_process(key, (-1, +0))
-		if key == ARROW_KEY_D and key not in last_processed_arrow_keys and ARROW_KEY_U not in last_processed_arrow_keys:
+		if key == 'd' and key not in last_processed_arrow_keys and 'u' not in last_processed_arrow_keys:
 			set_arrow_key_to_process(key, (+0, +1))
-		if key == ARROW_KEY_U and key not in last_processed_arrow_keys and ARROW_KEY_D not in last_processed_arrow_keys:
+		if key == 'u' and key not in last_processed_arrow_keys and 'd' not in last_processed_arrow_keys:
 			set_arrow_key_to_process(key, (+0, -1))
 
 	diff_x = 0
 	diff_y = 0
 
-	if ARROW_KEY_R in last_processed_arrow_keys:
+	if 'r' in last_processed_arrow_keys:
 		diff_x += 1
 		if cursor.is_char_selected():
 			char.image = get_char_image_name(True)
-	if ARROW_KEY_L in last_processed_arrow_keys:
+	if 'l' in last_processed_arrow_keys:
 		diff_x -= 1
 		if cursor.is_char_selected():
 			char.image = get_char_image_name(False)
-	if ARROW_KEY_D in last_processed_arrow_keys:
+	if 'd' in last_processed_arrow_keys:
 		diff_y += 1
-	if ARROW_KEY_U in last_processed_arrow_keys:
+	if 'u' in last_processed_arrow_keys:
 		diff_y -= 1
 
 	if diff_x or diff_y:
