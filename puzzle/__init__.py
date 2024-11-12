@@ -2,7 +2,7 @@ from constants import *
 from cellactor import *
 from objects import *
 from flags import flags
-from random import randint, random, shuffle
+from random import randint, random, shuffle, choice
 from numpy import ndarray, arange, array_equal, ix_, argwhere, copyto
 from sizetools import import_size_constants
 
@@ -65,6 +65,12 @@ class Puzzle:
 
 	def is_target_to_be_solved(self):
 		return False
+
+	def parse_config_num(self, config_key, default):
+		num = self.config.get(config_key, default)
+		if type(num) in (tuple, range):
+			num = choice(num)
+		return num
 
 	def set_area_from_config(self, min_size=None, request_odd_size=False, align_to_center=False):
 		max_size = flags.ROOM_SIZE(self.room.idx, request_odd_size)
