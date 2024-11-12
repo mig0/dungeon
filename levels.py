@@ -46,7 +46,6 @@ levels = [
 	},
 	{
 		"n": 2.1,
-		"map_size": (13, 13),
 		"num_enemies": 5,
 		"theme": "classic",
 		"music": "a_new_path",
@@ -61,8 +60,8 @@ levels = [
 	{
 		"n": 2.2,
 		"num_enemies": 5,
-		"theme": "classic",
-		"music": "a_new_path",
+		"theme": "ancient2",
+		"music": "the_last_kingdom",
 		"random_maze": True,
 		"target": "reach-finish",
 		"char_health": 100,
@@ -74,8 +73,8 @@ levels = [
 	{
 		"n": 2.3,
 		"num_enemies": 5,
-		"theme": "classic",
-		"music": "a_new_path",
+		"theme": "modern1",
+		"music": "playful_sparrow",
 		"spiral_maze": True,
 		"target": "reach-finish",
 		"char_health": 100,
@@ -83,6 +82,33 @@ levels = [
 		"gate_puzzle": {
 			"num_gates": 6,
 			"num_plates": 4,
+		},
+	},
+	{
+		"n": 2.4,
+		"num_enemies": 5,
+		"theme": "moss",
+		"music": "forest_walk",
+		"random_maze": True,
+		"target": "reach-finish",
+		"char_health": 100,
+		"gate_puzzle": {
+			"num_gates": 3,
+			"num_plates": 4,
+		},
+	},
+	{
+		"n": 2.5,
+		"num_enemies": 3,
+		"theme": "minecraft",
+		"music": "superepic_short",
+		"random_maze": True,
+		"target": "reach-finish",
+		"char_health": 170,
+		'four_rooms': True,
+		"gate_puzzle": {
+			"num_gates": (2, 3),
+			"num_plates": range(2, 4),
 		},
 	},
 	{
