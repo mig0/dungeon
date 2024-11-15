@@ -1,6 +1,7 @@
 translations = {
 	'en': {
 		'level-label': "Level",
+		'level-0-name': "Welcome to Puzzle Dungeon",
 		'level-1.1-name': "First skeleton encounter",
 		'level-1.2-name': "Quick escape!",
 		'level-1.3-name': "More skeletons...",
@@ -20,6 +21,7 @@ translations = {
 		'level-6.1-name': "Solve stone age puzzle",
 		'level-target-label': "Level target",
 		'default-level-target': "Kill all enemies",
+		'select-level': "Press any key to play assorted levels",
 		'kill-all-1-min': "Kill all enemies in 1 minute",
 		'reach-finish-30-sec': "Run to the finish in 30 seconds",
 		'reach-finish': "Reach the finish",

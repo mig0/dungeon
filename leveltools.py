@@ -15,6 +15,11 @@ def set_level(offset):
 	level_idx += offset
 	return None if level_idx < 0 or level_idx >= len(levels) else levels[level_idx]
 
+def reset_level():
+	global level_idx
+
+	level_idx = -1
+
 def get_prev_level_offset(offset=0):
 	if level_idx + offset > 0:
 		offset -= 1

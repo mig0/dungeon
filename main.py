@@ -179,6 +179,7 @@ is_move_animate_enabled = True
 is_level_intro_enabled = True
 
 mode = "start"
+is_main_screen = True
 
 puzzle = None
 
@@ -409,7 +410,7 @@ def get_revealed_actors(actors):
 	return revealed_actors
 
 def assert_room():
-	if mode != 'game' and mode != 'init' and mode != 'next':
+	if mode != "game" and mode != "init" and mode != "next":
 		print("Called room function when not inside game or init (mode=%s). Fix this bug" % mode)
 		quit()
 
@@ -1045,7 +1046,7 @@ def reset_idle_time():
 	idle_time = 0
 	last_autogeneration_time = 0
 
-def init_new_level(offset=1, reload_stored=False):
+def init_new_level(offset=1, config=None, reload_stored=False):
 	global level, level_time, mode, is_game_won
 	global puzzle
 	global bg_image
@@ -1055,11 +1056,15 @@ def init_new_level(offset=1, reload_stored=False):
 	global level_time
 	global map, stored_level
 
+	if config and offset != 0:
+		print("Can't reload a non-current level")
+		quit()
+
 	if reload_stored and offset != 0:
 		print("Can't reload a non-current level")
 		quit()
 
-	if is_level_out_of_range(offset):
+	if not is_main_screen and is_level_out_of_range(offset):
 		print("Requested level is out of range")
 		return
 
@@ -1071,7 +1076,7 @@ def init_new_level(offset=1, reload_stored=False):
 	clear_level_title_and_target_time()
 	mode = "init"
 
-	level = set_level(offset)
+	level = config if config else set_level(offset)
 	if not level:
 		mode = "end"
 		is_game_won = True
@@ -1173,6 +1178,24 @@ def init_new_room():
 		enter_room_idx += 1
 		enter_room(enter_room_idx)
 
+def init_main_screen():
+	global is_main_screen
+
+	is_main_screen = True
+	reset_level()
+	config = {
+		"n": 0,
+		"num_enemies": 3,
+		"theme": "ancient2",
+		"music": "valiant_warriors",
+		"char_health": 100,
+		"use_clock": True,
+		"target": 'select-level',
+		"random_maze": True,
+		"mainscreen_puzzle": {},
+	}
+	init_new_level(0, config)
+
 def draw_map():
 	for cy in range(len(map[0])):
 		for cx in range(len(map)):
@@ -1246,6 +1269,8 @@ def draw_central_flash():
 	screen.blit(msg_surface, (0, POS_CENTER_Y - 60))
 
 def draw():
+	if mode == "start":
+		return
 	screen.fill("#2f3542")
 	if bg_image:
 		screen.blit(bg_image, (MAP_POS_X1, MAP_POS_Y1))
@@ -1298,6 +1323,7 @@ def kill_enemy():
 	enemy = killed_enemies.pop(0)
 
 def handle_press_key():
+	global is_main_screen
 	global lang
 	global is_move_animate_enabled, is_level_intro_enabled, is_sound_enabled
 
@@ -1308,9 +1334,19 @@ def handle_press_key():
 	keyboard.ctrl  = keyboard.lctrl  or keyboard.rctrl
 	keyboard.alt   = keyboard.lalt   or keyboard.ralt
 
+	if mode == "game" and is_main_screen and keyboard._pressed \
+		and not (keyboard.ctrl or keyboard.escape or keyboard.right or keyboard.left or keyboard.up or keyboard.down):
+		is_main_screen = False
+		init_new_level()
+		return
+
 	reset_idle_time()
 
 	if mode != "game" and mode != "end" and mode != "next":
+		return
+
+	if keyboard.escape and not cursor.is_active():
+		init_main_screen()
 		return
 
 	if keyboard.rshift:
@@ -1391,7 +1427,7 @@ def handle_press_key():
 		init_new_level(offset)
 	if keyboard.r:
 		offset = get_curr_level_group_offset() if keyboard.lctrl else 0
-		init_new_level(offset, keyboard.lalt and not keyboard.lctrl)
+		init_new_level(offset, reload_stored=keyboard.lalt and not keyboard.lctrl)
 	if keyboard.n:
 		offset = get_next_level_group_offset() if keyboard.lctrl else get_next_level_offset()
 		init_new_level(offset)
@@ -1483,7 +1519,9 @@ def check_victory():
 			can_win = False
 			status_messages.append("Solve puzzle!")
 
-	if puzzle.is_target_to_kill_enemies():
+	if is_main_screen:
+		status_messages.append("Press any key to continue")
+	elif puzzle.is_target_to_kill_enemies():
 		if not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
 			target_achieved = True
 			status_messages.append("All enemies killed!")
@@ -1707,8 +1745,8 @@ def update(dt):
 	global game_time, level_time, idle_time, last_autogeneration_time
 	global last_time_arrow_keys_processed, last_processed_arrow_keys, last_processed_arrow_diff
 
-	if mode == 'start':
-		init_new_level()
+	if mode == "start":
+		init_main_screen()
 		return
 
 	game_time += dt
