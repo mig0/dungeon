@@ -72,6 +72,17 @@ class Puzzle:
 			num = choice(num)
 		return num
 
+	def get_map_cells(self, *cell_types):
+		cells = []
+		for cy in MAP_Y_RANGE:
+			for cx in MAP_X_RANGE:
+				if self.map[cx, cy] in cell_types:
+					cells.append((cx, cy))
+		return cells
+
+	def get_room_cells(self, *cell_types):
+		return [ cell for cell in self.get_map_cells(*cell_types) if self.is_in_room(cell) ]
+
 	def set_area_from_config(self, min_size=None, request_odd_size=False, align_to_center=False):
 		max_size = flags.ROOM_SIZE(self.room.idx, request_odd_size)
 		if min_size is None:

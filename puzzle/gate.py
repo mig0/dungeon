@@ -184,8 +184,18 @@ class GatePuzzle(Puzzle):
 	def generate_room(self):
 		self.generate_random_solvable_room(self.accessible_cells, self.finish_cell)
 
+	def on_load_map(self, special_cell_values, extra_values):
+		plate_cells = self.get_map_cells(CELL_PLATE)
+		gate_cells = self.get_map_cells(CELL_GATE0, CELL_GATE1)
+
+		self.attached_plate_gates = {}
+		for plate_gate_idx_strs in extra_values:
+			plate_gate_cells = [gate_cells[int(idx_str)] for idx_str in plate_gate_idx_strs.split(' ')]
+			self.attached_plate_gates[plate_cells[len(self.attached_plate_gates)]] = plate_gate_cells
+			if len(self.attached_plate_gates) >= len(plate_cells):
+				break
+
 	def on_press_key(self, keyboard):
 		if keyboard.space and self.map[char.c] == CELL_PLATE:
 			self.press_plate()
 		return False
-
