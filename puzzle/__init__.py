@@ -17,8 +17,6 @@ class Puzzle:
 		self.room = None
 		self.level = level
 		self.Globals = Globals
-		self.accessible_cells = None
-		self.finish_cell = None
 		self.area = Area()
 		self.config_name = self.__class__.config_name()
 		self.config = {} if type(level.get(self.config_name)) != dict else dict(level[self.config_name])
