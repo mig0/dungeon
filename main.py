@@ -1419,7 +1419,7 @@ def handle_press_key():
 	if keyboard.q:
 		quit()
 
-	if mode == "next":
+	if mode == "next" or is_main_screen:
 		return
 
 	if keyboard.p:
@@ -1520,7 +1520,7 @@ def check_victory():
 			status_messages.append("Solve puzzle!")
 
 	if is_main_screen:
-		status_messages.append("Press any key to continue")
+		status_messages.append("Press Enter to continue")
 	elif puzzle.is_target_to_kill_enemies():
 		if not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
 			target_achieved = True
