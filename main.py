@@ -472,11 +472,26 @@ def get_actors_in_room(actors):
 def is_cell_in_room(cell):
 	return is_cell_in_area(cell, room.x_range, room.y_range)
 
+accessible_obstacles = None
+
+def start_accessible_obstacles():
+	global accessible_obstacles
+	accessible_obstacles = set()
+
+def clear_accessible_obstacles():
+	global accessible_obstacles
+	accessible_obstacles0 = accessible_obstacles
+	accessible_obstacles = None
+	return accessible_obstacles0
+
 def is_cell_accessible(cell, obstacles=None, place=False, allow_enemy=False):
-	if map[cell] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES):
-		return False
+	is_cell_blocked = map[cell] in (CELL_CHAR_PLACE_OBSTACLES if place else CELL_CHAR_MOVE_OBSTACLES)
 	if obstacles is not None:
-		return cell not in obstacles
+		if accessible_obstacles is not None and cell in obstacles:
+			accessible_obstacles.add(cell)
+		return False if is_cell_blocked or cell in obstacles else True
+	if is_cell_blocked:
+		return False
 	for actor in barrels if allow_enemy else barrels + enemies:
 		if actor.c == cell:
 			return False
@@ -829,6 +844,8 @@ class Globals:
 	is_actor_in_room = is_actor_in_room
 	is_cell_in_room = is_cell_in_room
 	get_actors_in_room = get_actors_in_room
+	start_accessible_obstacles = start_accessible_obstacles
+	clear_accessible_obstacles = clear_accessible_obstacles
 	get_accessible_cells = get_accessible_cells
 	get_all_accessible_cells = get_all_accessible_cells
 	get_num_accessible_target_directions = get_num_accessible_target_directions
