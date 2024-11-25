@@ -499,7 +499,7 @@ def is_cell_accessible(cell, obstacles=None, place=False, allow_enemy=False):
 			return False
 	return True
 
-def get_accessible_neighbors(cell, obstacles=None, allow_closed_gate=False):
+def get_accessible_neighbors(cell, obstacles=None, allow_enemy=False, allow_closed_gate=False):
 	neighbors = []
 	if ALLOW_DIAGONAL_MOVES and False:
 		directions = ((-1, -1), (0, -1), (+1, -1), (-1, 0), (+1, 0), (-1, +1), (0, +1), (+1, +1))
@@ -507,7 +507,7 @@ def get_accessible_neighbors(cell, obstacles=None, allow_closed_gate=False):
 		directions = ((-1, 0), (+1, 0), (0, -1), (0, +1))
 	for diff in directions:
 		neigh = apply_diff(cell, diff)
-		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(neigh, obstacles)):
+		if is_cell_in_room(neigh) and (allow_closed_gate and map[neigh] == CELL_GATE0 or is_cell_accessible(neigh, obstacles, allow_enemy=allow_enemy)):
 			neighbors.append(neigh)
 	debug(3, "* get_accessible_neighbors %s - %s" % (str(cell), neighbors))
 	return neighbors
