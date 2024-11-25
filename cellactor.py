@@ -46,6 +46,9 @@ def get_distance(cx, cy, tx=None, ty=None):
 		return get_distance(*cx, *cy)
 	return abs(tx - cx) + abs(ty - cy)
 
+def sort_cells(cells):
+	return sorted(cells, key=lambda cell: (cell[1], cell[0]))
+
 @tweener
 def example(n):
 	return n
