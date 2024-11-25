@@ -233,9 +233,11 @@ def set_status_message2(msg=None, duration=10):
 def get_bg_image():
 	return bg_image
 
-def debug(level, str):
+def debug(level, str, depth=None):
 	if DEBUG_LEVEL < level:
 		return
+	if depth is not None:
+		print(" " * depth, end="")
 	print(str)
 
 def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=False, endl=False):
