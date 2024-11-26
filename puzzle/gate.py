@@ -209,8 +209,8 @@ class GatePuzzle(Puzzle):
 	def restore_level(self, stored_level):
 		self.room_values = stored_level["room_values"]
 
-	def get_empty_gate_bits(self):
-		return frozenbitarray('0' * self.num_gates)
+	def get_all_gate_bits(self, value='0'):
+		return frozenbitarray(value * self.num_gates)
 
 	def get_attached_plate_gate_bits(self, plate_idx):
 		return frozenbitarray([gate_idx in self.attached_plate_gate_idxs[plate_idx] for gate_idx in range(self.num_gates)])
@@ -219,7 +219,7 @@ class GatePuzzle(Puzzle):
 		combined_plate_idxs_to_gate_bits = {}
 		for num in range(1 << len(plate_idxs)):
 			selected_plate_idxs = tuple(plate_idxs[idx] for idx in range(len(plate_idxs)) if num & (1 << idx))
-			all_attached_gate_bits = [self.get_empty_gate_bits()] if num == 0 else \
+			all_attached_gate_bits = [self.get_all_gate_bits()] if num == 0 else \
 				[self.get_attached_plate_gate_bits(plate_idx) for plate_idx in selected_plate_idxs]
 			combined_gate_bits = reduce(xor, all_attached_gate_bits)
 			toggled_gate_bits = reduce(or_, all_attached_gate_bits)
@@ -332,6 +332,7 @@ class GatePuzzle(Puzzle):
 		self.num_plates = self.parse_config_num("num_plates", DEFAULT_NUM_GATE_PUZZLE_PLATES)
 		self.num_gates  = self.parse_config_num("num_gates",  DEFAULT_NUM_GATE_PUZZLE_GATES)
 		num_plates_to_press = self.parse_config_num("num_plates_to_press", self.num_plates)
+		all_gates_to_open = self.config.get("all_gates_to_open", False)
 
 		def select_random_gates_attached_to_plate(num_gates):
 			num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
@@ -384,7 +385,7 @@ class GatePuzzle(Puzzle):
 			self.gate_cells = sort_cells(gates)
 			solution = self.find_solution(char.c)
 			if (solution
-#				and solution.open_gates == frozenbitarray('1' * self.num_gates)
+				and (not all_gates_to_open or solution.open_gates == self.get_all_gate_bits('1'))
 				and len(solution.used_plates) >= self.num_plates
 				and len(solution.passed_gates) >= self.num_gates
 				and len(solution.visited_spans) >= self.num_spans

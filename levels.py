@@ -68,6 +68,7 @@ levels = [
 		"gate_puzzle": {
 			"num_gates": 4,
 			"num_plates": 4,
+			"all_gates_to_open": True,
 		},
 	},
 	{
@@ -93,8 +94,8 @@ levels = [
 		"target": "reach-finish",
 		"char_health": 100,
 		"gate_puzzle": {
-			"num_gates": 3,
-			"num_plates": 4,
+			"num_gates": 5,
+			"num_plates": 5,
 		},
 	},
 	{
