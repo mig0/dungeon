@@ -3,6 +3,7 @@ import io
 import random
 import pygame
 import pgzero
+import builtins
 from pgzero.constants import keys
 from numpy import ndarray, chararray
 from copy import deepcopy
@@ -240,11 +241,16 @@ def debug(level, str, depth=None):
 		print(" " * depth, end="")
 	print(str)
 
-def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=False, endl=False):
+def debug_map(level=0, descr=None, full_format=False, full=True, clean=True, combined=True, dual=False, endl=False):
 	if DEBUG_LEVEL < level:
 		return
 	if descr:
 		print(descr)
+	if full_format:
+		full = True
+		combined = True
+		dual = False
+		print("# Dungeon %s anonymous map %dx%d" % (puzzle.__class__.__name__ if puzzle else "non-puzzle", MAP_SIZE_X, MAP_SIZE_Y))
 	for cy in MAP_Y_RANGE if full else PLAY_Y_RANGE:
 		if not combined:
 			for cx in MAP_X_RANGE if full else PLAY_X_RANGE:
@@ -269,6 +275,10 @@ def debug_map(level=0, descr=None, full=True, clean=True, combined=True, dual=Fa
 					cell_ch = actor_chars['char']
 				print(cell_ch, end="")
 		print()
+	if full_format:
+		for extra_value in puzzle.get_map_extra_values() if puzzle else ():
+			line = ' '.join(builtins.map(str, extra_value)) if hasattr(extra_value, '__iter__') else str(extra_value)
+			print(line)
 	if endl:
 		print()
 
@@ -1388,7 +1398,7 @@ def handle_press_key():
 			flags.is_stopless = not flags.is_stopless
 
 		if keyboard.d:
-			debug_map()
+			debug_map(full_format=not keyboard.ralt, clean=not keyboard.rctrl)
 
 		return
 

@@ -125,6 +125,9 @@ class Puzzle:
 	def on_load_map(self, special_cell_values, extra_values):
 		pass
 
+	def get_map_extra_values(self):
+		return ()
+
 	def on_set_room(self, room):
 		self.room = room
 

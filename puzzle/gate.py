@@ -304,7 +304,7 @@ class GatePuzzle(Puzzle):
 		span_model = self.create_span_model(start_cell, self.finish_cell, self.plate_cells, self.gate_cells, self.attached_plate_gate_idxs)
 		self.num_spans = len(span_model.spans)
 
-		self.Globals.debug_map(2, descr="Checking solution for map")
+		self.Globals.debug_map(2, descr="Checking solution for map", full_format=True)
 		self.Globals.debug(3, span_model)
 
 		solution = span_model.find_solution()
@@ -415,6 +415,9 @@ class GatePuzzle(Puzzle):
 			self.attached_plate_gate_idxs.append(plate_gate_idxs)
 			if len(self.attached_plate_gate_idxs) >= self.num_plates:
 				break
+
+	def get_map_extra_values(self):
+		return self.attached_plate_gate_idxs
 
 	def on_press_key(self, keyboard):
 		if keyboard.space:
