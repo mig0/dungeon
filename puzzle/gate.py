@@ -374,9 +374,16 @@ class GatePuzzle(Puzzle):
 					break
 
 			self.attached_plate_gate_idxs = []
+			toggled_gate_idxs = set()
 			for plate in plates:
 				gate_idxs = select_random_gates_attached_to_plate(len(gates))
+				toggled_gate_idxs.update(gate_idxs)
 				self.attached_plate_gate_idxs.append(gate_idxs)
+
+			# append all unused gates to a plate with the less attached gates
+			unused_gate_idxs = [gate_idx for gate_idx in range(self.num_gates) if gate_idx not in toggled_gate_idxs]
+			min_plate_idx = min(range(self.num_plates), key=lambda plate_idx: self.attached_plate_gate_idxs[plate_idx])
+			self.attached_plate_gate_idxs[min_plate_idx].extend(unused_gate_idxs)
 
 			self.Globals.debug(3, "Generating gate puzzle - tries left: %d" % num_tries)
 			self.Globals.debug(3, "Attached plate gates: %s" % str(self.attached_plate_gate_idxs))
