@@ -1,7 +1,7 @@
 from . import *
 from bitarray import frozenbitarray
 from functools import reduce
-from operator import xor
+from operator import xor, or_
 
 def shortstr(obj):
 	return str(obj) \
@@ -87,10 +87,11 @@ class SpanModel:
 		best_gate_idx = None
 		is_unknown = False
 
-		for combined_plate_idxs, toggled_gate_bits in combined_plate_idxs_to_gate_bits.items():
+		for combined_plate_idxs, gate_bits_pair in combined_plate_idxs_to_gate_bits.items():
+			combined_gate_bits, toggled_gate_bits = gate_bits_pair
 			orig_open_gate_bits = open_gate_bits
-			open_gate_bits = open_gate_bits ^ toggled_gate_bits
-			new_open_gate_bits = open_gate_bits & toggled_gate_bits
+			open_gate_bits = open_gate_bits ^ combined_gate_bits
+			new_open_gate_bits = open_gate_bits & toggled_gate_bits | combined_gate_bits ^ toggled_gate_bits
 
 			for gate_idx, adj_span_idxs in gate_adj_span_idxs.items():
 				if not open_gate_bits[gate_idx]:
@@ -221,7 +222,8 @@ class GatePuzzle(Puzzle):
 			all_attached_gate_bits = [self.get_empty_gate_bits()] if num == 0 else \
 				[self.get_attached_plate_gate_bits(plate_idx) for plate_idx in selected_plate_idxs]
 			combined_gate_bits = reduce(xor, all_attached_gate_bits)
-			combined_plate_idxs_to_gate_bits[selected_plate_idxs] = combined_gate_bits
+			toggled_gate_bits = reduce(or_, all_attached_gate_bits)
+			combined_plate_idxs_to_gate_bits[selected_plate_idxs] = (combined_gate_bits, toggled_gate_bits)
 		return combined_plate_idxs_to_gate_bits
 
 	def create_span_model(self, start_cell, finish_cell, plate_cells, gate_cells, attached_plate_gate_idxs):
