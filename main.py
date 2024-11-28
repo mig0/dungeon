@@ -5,9 +5,9 @@ import pygame
 import pgzero
 import builtins
 from pgzero.constants import keys
-from numpy import ndarray, chararray
+from numpy import ndarray, chararray, array, any
 from copy import deepcopy
-from random import randint
+from random import randint, choice
 from constants import *
 from leveltools import *
 from translations import *
@@ -1292,11 +1292,21 @@ def draw_status():
 		time_str = get_time_str(level_time if "time_limit" not in level else level["time_limit"] - level_time)
 		screen.draw.text(time_str, midright=(WIDTH - 20, POS_STATUS_Y), color=color, gcolor=gcolor, owidth=1.2, ocolor="#404030", alpha=1, fontsize=27)
 
-def draw_central_flash():
-	msg_surface = pygame.Surface((WIDTH, 120))
-	msg_surface.set_alpha(50)
-	msg_surface.fill((0, 40, 40))
-	screen.blit(msg_surface, (0, POS_CENTER_Y - 60))
+main_screen_color = array((80, 80, 80))
+
+def advance_main_screen_color():
+	global main_screen_color
+	step = array(choice(((1, 1, -2), (1, -2, 1), (-2, 1, 1), (-1, -1, 2), (-1, 2, -1), (2, -1, -1)))) * randint(1, 2)
+	main_screen_color += step
+	if any(main_screen_color >= 256) or any(main_screen_color < 0):
+		main_screen_color -= step
+		advance_main_screen_color()
+
+def draw_central_flash(full=False, color=(0, 40, 40)):
+	surface = pygame.Surface((WIDTH, HEIGHT if full else 120))
+	surface.set_alpha(50)
+	surface.fill(color)
+	screen.blit(surface, (0, POS_CENTER_Y - surface.get_height() / 2))
 
 def draw():
 	if mode == "start":
@@ -1334,14 +1344,18 @@ def draw():
 		draw_central_flash()
 		screen.draw.text(end_line, center=(POS_CENTER_X, POS_CENTER_Y), color='white', gcolor=("#008080" if is_game_won else "#800000"), owidth=0.8, ocolor="#202020", alpha=1, fontsize=60)
 
+	if is_main_screen:
+		advance_main_screen_color()
+		draw_central_flash(True, tuple(main_screen_color))
+
 	if mode == "game" and level_title_time > 0:
 		draw_central_flash()
-		level_line_1 = _('level-label') + " " + str(level["n"])
+		level_line_1 = _("Main Screen") if level["n"] == 0 else _('level-label') + " " + str(level["n"])
 		level_line_2 = _(level.get("name", 'level-' + str(level["n"]) + '-name'))
 		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 20), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
 		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 18), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
 	elif mode == "game" and level_target_time > 0:
-		target_line = _('level-target-label') + ": " + _(level["target"])
+		target_line = _(level["target"])
 		draw_central_flash()
 		screen.draw.text(target_line, center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=40)
 
