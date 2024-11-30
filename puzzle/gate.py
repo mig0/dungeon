@@ -31,11 +31,10 @@ class Solution():
 			(self.open_gates, self.used_plates, self.passed_gates, self.visited_spans, self.pressed_plates)
 
 class SpanModel:
-	def __init__(self, spans, num_plates, num_gates, init_open_gate_bits, Globals):
+	def __init__(self, spans, num_plates, num_gates, Globals):
 		self.spans = spans
 		self.num_plates = num_plates
 		self.num_gates = num_gates
-		self.init_open_gate_bits = init_open_gate_bits
 		self.Globals = Globals
 		pass
 
@@ -51,7 +50,7 @@ class SpanModel:
 			return False
 		return True
 
-	def find_solution(self, depth=0, span_idx=0, open_gate_bits=None):
+	def find_solution(self, depth, span_idx, open_gate_bits):
 		if depth == 0:
 			if not self.spans:
 				return Solution()
@@ -61,7 +60,6 @@ class SpanModel:
 
 			self.visited_span_open_gates = {}
 			self.unfinished_span_open_gates = []
-			open_gate_bits = self.init_open_gate_bits
 
 		self.Globals.debug(3, depth=depth, str="span=%d open_gates=%s" % (span_idx, open_gate_bits.to01()))
 
@@ -132,8 +130,8 @@ class SpanModel:
 		return solution
 
 	def __str__(self):
-		return "plates=%d gates=%d init_open_gates=%s spans=%s" % \
-			(self.num_plates, self.num_gates, self.init_open_gate_bits.to01(), shortstr(self.spans))
+		return "plates=%d gates=%d spans=%s" % \
+			(self.num_plates, self.num_gates, shortstr(self.spans))
 
 class GatePuzzle(Puzzle):
 	def assert_config(self):
@@ -226,7 +224,7 @@ class GatePuzzle(Puzzle):
 			combined_plate_idxs_to_gate_bits[selected_plate_idxs] = (combined_gate_bits, toggled_gate_bits)
 		return combined_plate_idxs_to_gate_bits
 
-	def create_span_model(self, start_cell, finish_cell, plate_cells, gate_cells, attached_plate_gate_idxs):
+	def create_span_model(self, start_cell, finish_cell, plate_cells, gate_cells):
 		spans = []
 		processed_span_cells = {}
 		all_processed_cells = []
@@ -250,7 +248,7 @@ class GatePuzzle(Puzzle):
 					break
 				processed_span_cells[span_idx] = accessible_cells
 				all_processed_cells.extend(accessible_cells)
-				span_plate_idxs = [plate_cells.index(cell) for cell in accessible_cells if self.map[cell] == CELL_PLATE]
+				span_plate_idxs = [plate_cells.index(cell) for cell in accessible_cells if cell in plate_cells]
 				span_plate_idxs.sort()
 			span_gate_adj_span_idxs = {}
 			for gate_cell in adj_gate_cells:
@@ -262,7 +260,7 @@ class GatePuzzle(Puzzle):
 					for gate_next_cell in self.Globals.get_accessible_neighbors(gate_cell, allow_enemy=True, allow_closed_gate=True):
 						if gate_next_cell in accessible_cells:
 							continue
-						if self.map[gate_next_cell] in (CELL_GATE0, CELL_GATE1):
+						if gate_next_cell in gate_cells:
 							gate_pair_cells = [gate_cell, gate_next_cell]
 							sorted_gate_pair_cells = tuple(sorted(gate_pair_cells))
 							if sorted_gate_pair_cells in all_empty_spans:
@@ -299,22 +297,38 @@ class GatePuzzle(Puzzle):
 							unprocessed_span_idxs.remove(span_idx)
 							break
 
-		init_open_gate_bits = frozenbitarray([0 if self.map[gate_cell] == CELL_GATE0 else 1 for gate_cell in gate_cells])
-		return SpanModel(spans, len(plate_cells), len(gate_cells), init_open_gate_bits, self.Globals)
+		return SpanModel(spans, len(plate_cells), len(gate_cells), self.Globals)
 
-	def find_solution(self, start_cell):
-		span_model = self.create_span_model(start_cell, self.finish_cell, self.plate_cells, self.gate_cells, self.attached_plate_gate_idxs)
+	def find_solution(self, span_model, init_open_gate_bits):
+		solution = span_model.find_solution(0, 0, init_open_gate_bits)
+		self.Globals.debug(2, "Found solution: %s" % shortstr(solution) if solution else "No solution found")
+		return solution
+
+	def find_map_solution(self, start_cell):
+		span_model = self.create_span_model(start_cell, self.finish_cell, self.plate_cells, self.gate_cells)
+		init_open_gate_bits = frozenbitarray([0 if self.map[gate_cell] == CELL_GATE0 else 1 for gate_cell in self.gate_cells])
+		self.Globals.debug_map(2, descr="Checking solution for map", full_format=True)
+		return self.find_solution(span_model, init_open_gate_bits)
+
+	def find_decent_solution(self, start_cell):
+		span_model = self.create_span_model(start_cell, self.finish_cell, self.plate_cells, self.gate_cells)
 		self.num_spans = len(span_model.spans)
 
-		self.Globals.debug_map(2, descr="Checking solution for map", full_format=True)
-		self.Globals.debug(3, span_model)
+		for init_open_gate_n in range(1, 1 << self.num_gates):
+			init_open_gate_bits = frozenbitarray([0 if init_open_gate_n & (1 << gate_idx) else 1 for gate_idx in range(self.num_gates)])
+#			self.Globals.debug_map(2, descr="Checking solution for map with gate_bits=%s" % init_open_gate_bits, full_format=True)
+			solution = self.find_solution(span_model, init_open_gate_bits)
+			if (solution
+				and (not self.all_gates_to_open or solution.open_gates == self.get_all_gate_bits('1'))
+				and len(solution.used_plates) >= self.num_plates
+				and len(solution.passed_gates) >= self.num_gates
+				and len(solution.visited_spans) >= self.num_spans
+				and len(solution.pressed_plates) >= self.num_plates_to_press
+			):
+				solution.init_open_gate_bits = init_open_gate_bits
+				return solution
 
-		solution = span_model.find_solution()
-		if solution is None:
-			self.Globals.debug(2, "No solution found")
-		else:
-			self.Globals.debug(2, "Found solution: %s" % shortstr(solution))
-		return solution
+		return None
 
 	def toggle_gate(self, cell):
 		self.map[cell] = CELL_GATE1 if self.map[cell] == CELL_GATE0 else CELL_GATE0
@@ -327,12 +341,10 @@ class GatePuzzle(Puzzle):
 			self.toggle_gate(self.gate_cells[gate_idx])
 
 	def generate_random_solvable_room(self, accessible_cells, finish_cell):
-		orig_map = self.map.copy()
-
 		self.num_plates = self.parse_config_num("num_plates", DEFAULT_NUM_GATE_PUZZLE_PLATES)
 		self.num_gates  = self.parse_config_num("num_gates",  DEFAULT_NUM_GATE_PUZZLE_GATES)
-		num_plates_to_press = self.parse_config_num("num_plates_to_press", self.num_plates)
-		all_gates_to_open = self.config.get("all_gates_to_open", False)
+		self.num_plates_to_press = self.parse_config_num("num_plates_to_press", self.num_plates)
+		self.all_gates_to_open = self.config.get("all_gates_to_open", False)
 
 		def select_random_gates_attached_to_plate(num_gates):
 			num_attached_gates = randint(MIN_GATE_PUZZLE_ATTACHED_GATES, MAX_GATE_PUZZLE_ATTACHED_GATES)
@@ -346,37 +358,37 @@ class GatePuzzle(Puzzle):
 				attached_gate_idxs.append(gate_idx)
 			return attached_gate_idxs
 
-		num_tries = 100000
-		while num_tries > 0:
-			plates = []
-			for p in range(self.num_plates):
+		try_n = 1
+		while try_n <= 100000:
+			plate_cells = []
+			for _ in range(self.num_plates):
 				while True:
 					cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-					if self.map[cell] in CELL_CHAR_PLACE_OBSTACLES:
+					if cell in plate_cells:
 						continue
-					self.map[cell] = CELL_PLATE
-					plates.append(cell)
+					plate_cells.append(cell)
 					break
+			plate_cells = sort_cells(plate_cells)
 
-			target_cells = [char.c, finish_cell, *plates]
+			target_cells = [char.c, finish_cell, *plate_cells]
 
-			gates = []
-			for g in range(self.num_gates):
+			gate_cells = []
+			for _ in range(self.num_gates):
 				while True:
 					cell = accessible_cells[randint(0, len(accessible_cells) - 1)]
-					if self.map[cell] in CELL_CHAR_PLACE_OBSTACLES:
+					if cell in target_cells:
 						continue
 					if self.Globals.get_num_accessible_target_directions(cell, target_cells) < 2:
 						continue
 					target_cells.append(cell)
-					self.map[cell] = CELL_GATE0 if randint(0, 1) == 0 else CELL_GATE1
-					gates.append(cell)
+					gate_cells.append(cell)
 					break
+			gate_cells = sort_cells(gate_cells)
 
 			self.attached_plate_gate_idxs = []
 			toggled_gate_idxs = set()
-			for plate in plates:
-				gate_idxs = select_random_gates_attached_to_plate(len(gates))
+			for _ in range(self.num_plates):
+				gate_idxs = select_random_gates_attached_to_plate(self.num_gates)
 				toggled_gate_idxs.update(gate_idxs)
 				self.attached_plate_gate_idxs.append(gate_idxs)
 
@@ -385,26 +397,25 @@ class GatePuzzle(Puzzle):
 			min_plate_idx = min(range(self.num_plates), key=lambda plate_idx: self.attached_plate_gate_idxs[plate_idx])
 			self.attached_plate_gate_idxs[min_plate_idx].extend(unused_gate_idxs)
 
-			self.Globals.debug(3, "Generating gate puzzle - tries left: %d" % num_tries)
+			self.Globals.debug(3, "Generating gate puzzle try=%d" % try_n)
 			self.Globals.debug(3, "Attached plate gates: %s" % str(self.attached_plate_gate_idxs))
 			self.finish_cell = finish_cell  # redundant, since it was already set
-			self.plate_cells = sort_cells(plates)
-			self.gate_cells = sort_cells(gates)
-			solution = self.find_solution(char.c)
-			if (solution
-				and (not all_gates_to_open or solution.open_gates == self.get_all_gate_bits('1'))
-				and len(solution.used_plates) >= self.num_plates
-				and len(solution.passed_gates) >= self.num_gates
-				and len(solution.visited_spans) >= self.num_spans
-				and len(solution.pressed_plates) >= num_plates_to_press
-			):
+			self.plate_cells = plate_cells
+			self.gate_cells = gate_cells
+			solution = self.find_decent_solution(char.c)
+			if solution:
 				break
 
-			copyto(self.map, orig_map)
-			num_tries -= 1
+			try_n += 1
 		else:
 			print("Can't generate gate puzzle for %d plates and %d gates, sorry" % (self.num_plates, self.num_gates))
 			quit()
+
+		for plate_cell in plate_cells:
+			self.map[plate_cell] = CELL_PLATE
+
+		for gate_idx, gate_cell in enumerate(gate_cells):
+			self.map[gate_cell] = CELL_GATE1 if solution.init_open_gate_bits[gate_idx] else CELL_GATE0
 
 	def generate_room(self):
 		self.generate_random_solvable_room(self.accessible_cells, self.finish_cell)
@@ -433,7 +444,7 @@ class GatePuzzle(Puzzle):
 		if keyboard.space:
 			self.press_plate(char.c)
 		if keyboard.kp_enter:
-			solution = self.find_solution(char.c)
+			solution = self.find_map_solution(char.c)
 			if solution:
 				pressed_plate_cells = tuple(self.plate_cells[idx] for idx in solution.pressed_plates)
 				print("Press plates:", *pressed_plate_cells)
