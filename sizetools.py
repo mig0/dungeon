@@ -117,8 +117,8 @@ def set_map_size(size, has_border=True):
 
 	WIDTH = CELL_W * MAP_SIZE_X
 	HEIGHT = CELL_H * (MAP_SIZE_Y + 1)
-	POS_CENTER_X = WIDTH / 2
-	POS_CENTER_Y = HEIGHT / 2
+	POS_CENTER_X = MAP_W / 2
+	POS_CENTER_Y = MAP_H / 2
 	POS_STATUS_Y = HEIGHT - CELL_H / 2
 
 	PLAY_X1 = border_width

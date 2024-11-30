@@ -1303,7 +1303,7 @@ def advance_main_screen_color():
 		advance_main_screen_color()
 
 def draw_central_flash(full=False, color=(0, 40, 40)):
-	surface = pygame.Surface((WIDTH, HEIGHT if full else 120))
+	surface = pygame.Surface((MAP_W, MAP_H if full else 120))
 	surface.set_alpha(50)
 	surface.fill(color)
 	screen.blit(surface, (0, POS_CENTER_Y - surface.get_height() / 2))
@@ -1352,8 +1352,8 @@ def draw():
 		draw_central_flash()
 		level_line_1 = _("Main Screen") if level["n"] == 0 else _('level-label') + " " + str(level["n"])
 		level_line_2 = _(level.get("name", 'level-' + str(level["n"]) + '-name'))
-		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 20), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
-		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 18), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
+		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 14), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
+		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 21), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
 	elif mode == "game" and level_target_time > 0:
 		target_line = _(level["target"])
 		draw_central_flash()
