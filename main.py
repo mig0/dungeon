@@ -825,9 +825,10 @@ def create_enemy(cell, health=None, attack=None, drop=None):
 	global enemies
 
 	enemy = create_actor("skeleton", cell)
-	enemy.health = health if health is not None else randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
-	enemy.attack = attack if attack is not None else randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
-	enemy.drop   = drop   if drop   is not None else (None, drop_heart, drop_sword)[randint(0, 2)]
+	enemy.power  = health if char.power else None
+	enemy.health = None if char.power else health if health is not None else randint(MIN_ENEMY_HEALTH, MAX_ENEMY_HEALTH)
+	enemy.attack = None if char.power else attack if attack is not None else randint(MIN_ENEMY_ATTACK, MAX_ENEMY_ATTACK)
+	enemy.drop   = None if char.power else drop   if drop   is not None else (None, drop_heart, drop_sword)[randint(0, 2)]
 	if enemy.drop:
 		enemy.drop.contain(enemy)
 	enemies.append(enemy)
@@ -906,6 +907,8 @@ def generate_room(idx):
 	puzzle.generate_room()
 
 	# generate enemies
+	if char.power:
+		return
 	for i in range(level["num_enemies"] if "num_enemies" in level else DEFAULT_NUM_ENEMIES):
 		place_char_in_room()
 		num_tries = 10000
@@ -1128,8 +1131,9 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 		bg_image = load_image(level["bg_image"], (MAP_W, MAP_H), level.get("bg_image_crop", False))
 
 	char_cells = [None] * flags.NUM_ROOMS
-	char.health = level["char_health"]
-	char.attack = INITIAL_CHAR_ATTACK
+	char.power  = level.get("char_power")
+	char.health = level.get("char_health")
+	char.attack = None if char.power else INITIAL_CHAR_ATTACK
 
 	barrels.clear()
 	enemies.clear()
@@ -1190,7 +1194,7 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 	stored_level = {
 		"map": map.copy(),
 		"char_cells": char_cells.copy(),
-		"enemy_infos": tuple((enemy.c, enemy.health, enemy.attack, enemy.drop) for enemy in enemies),
+		"enemy_infos": tuple((enemy.c, enemy.power or enemy.health, enemy.attack, enemy.drop) for enemy in enemies),
 		"barrel_cells": tuple(barrel.c for barrel in barrels),
 		"lift_infos": tuple((lift.c, lift.type) for lift in lifts),
 		"portal_destinations": dict(portal_destinations),
@@ -1308,6 +1312,9 @@ def draw_central_flash(full=False, color=(0, 40, 40)):
 	surface.fill(color)
 	screen.blit(surface, (0, POS_CENTER_Y - surface.get_height() / 2))
 
+def draw_actor_hint(actor, hint, pos_diff, colors):
+	screen.draw.text(str(hint), center=apply_diff(actor.pos, pos_diff), color=colors[0], gcolor=colors[1], owidth=1.2, ocolor=colors[2], alpha=0.8, fontsize=24)
+
 def draw():
 	if mode == "start":
 		return
@@ -1331,10 +1338,11 @@ def draw():
 			enemy.draw()
 		char.draw()
 		for actor in visible_enemies + [char]:
-			if actor.health is None:
-				continue
-			screen.draw.text(str(actor.health), center=apply_diff(actor.pos, (-12, -CELL_H * 0.5 - 14)), color="#AAFF00", gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
-			screen.draw.text(str(actor.attack), center=apply_diff(actor.pos, (+12, -CELL_H * 0.5 - 14)), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=0.8, fontsize=24)
+			if actor.power:
+				draw_actor_hint(actor, actor.power, (0, -CELL_H * 0.5 - 14), CHAR_POWER_COLORS if actor == char else ENEMY_POWER_COLORS)
+			elif actor.health is not None:
+				draw_actor_hint(actor, actor.health, (-12, -CELL_H * 0.5 - 14), ACTOR_HEALTH_COLORS)
+				draw_actor_hint(actor, actor.attack, (+12, -CELL_H * 0.5 - 14), ACTOR_ATTACK_COLORS)
 		cursor.draw()
 
 	puzzle.on_draw(mode)
@@ -1547,7 +1555,7 @@ def check_victory():
 	if mode != "game":
 		return
 
-	if "time_limit" in level and level_time > level["time_limit"] or char.health is not None and char.health <= MIN_CHAR_HEALTH:
+	if "time_limit" in level and level_time > level["time_limit"] or char.health is not None and char.health <= 0 or char.power is not None and char.power <= 0:
 		loose_game()
 		return
 
@@ -1613,9 +1621,9 @@ def enter_cell():
 	# collect drop if any
 	for drop in drops:
 		if drop.collect(char.c):
-			if drop.name == 'heart':
+			if drop.name == 'heart' and not char.power:
 				char.health += BONUS_HEALTH_VALUE
-			if drop.name == 'sword':
+			if drop.name == 'sword' and not char.power:
 				char.attack += BONUS_ATTACK_VALUE
 
 	if map[char.c] == CELL_PORTAL:
@@ -1644,11 +1652,12 @@ def activate_beat_animation(actor, diff, tween):
 	actor.animate(ENEMY_BEAT_ANIMATION_TIME, tween)
 
 def beat_or_kill_enemy(enemy, diff):
-	enemy.health -= char.attack
+	if enemy.power is None:
+		enemy.health -= char.attack
 	# can't move if we face enemy, cancel the move
 	char.move(diff, undo=True)
 	# animate beat or kill
-	if enemy.health > 0:
+	if enemy.power is None and enemy.health > 0:
 		play_sound("beat")
 		activate_beat_animation(enemy, diff, 'decelerate')
 	else:
@@ -1698,7 +1707,13 @@ def move_char(diff_x, diff_y):
 	# collision with enemies
 	enemy = get_actor_on_cell(char.c, enemies)
 	if enemy:
-		char.health -= enemy.attack
+		if char.power is None:
+			char.health -= enemy.attack
+		else:
+			if char.power > enemy.power:
+				char.power += enemy.power
+			else:
+				char.power = 0
 		beat_or_kill_enemy(enemy, diff)
 		return
 
