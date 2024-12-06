@@ -21,7 +21,7 @@ class Drop:
 		self.active = False
 		self.num_contained = 0
 		self.num_collected = 0
-		self.cells = []
+		self.cells = {}
 
 		import_size_constants()
 
@@ -31,31 +31,33 @@ class Drop:
 	def contain(self, actor):
 		self.num_contained += 1
 
-	def instantiate(self, actor):
+	def instantiate(self, actor, *args):
 		if isinstance(actor, tuple):
 			cell = actor
 		else:
 			cell = actor.c
 			self.num_contained -= 1
-		self.cells.append(cell)
+		self.cells[cell] = args
 
 	def collect(self, curr_cell):
 		for cell in self.cells:
 			if cell == curr_cell:
-				self.cells.remove(cell)
 				self.num_collected += 1
-				return True
-		return False
+				return self.cells.pop(cell)
+		return None
 
 	def consume(self):
 		self.num_collected -= 1
 
-	def draw_instances(self):
+	def draw_instances(self, draw_actor_hint):
 		for cell in self.cells:
 			if is_cell_in_actors(cell, self.disappeared_actors):
 				continue
 			self.actor.c = cell
 			self.actor.draw()
+			args = self.cells[cell]
+			if len(args) == 2 and args[0] in '×÷+-':
+				draw_actor_hint(self.actor, args[0] + str(args[1]), (0, -CELL_H * 0.5 - 14), DROP_FACTOR_COLORS)
 		for actor in self.disappeared_actors:
 			actor.draw()
 

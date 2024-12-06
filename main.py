@@ -1329,7 +1329,7 @@ def draw():
 		for lift in lifts:
 			lift.draw()
 		for drop in drops:
-			drop.draw_instances()
+			drop.draw_instances(draw_actor_hint)
 		for barrel in visible_barrels:
 			barrel.draw()
 		for enemy in killed_enemies:
@@ -1620,7 +1620,7 @@ def prepare_enter_cell(animate_duration):
 def enter_cell():
 	# collect drop if any
 	for drop in drops:
-		if drop.collect(char.c):
+		if (args := drop.collect(char.c)) is not None:
 			if drop.name == 'heart' and not char.power:
 				char.health += BONUS_HEALTH_VALUE
 			if drop.name == 'sword' and not char.power:
