@@ -1625,6 +1625,12 @@ def enter_cell():
 				char.health += BONUS_HEALTH_VALUE
 			if drop.name == 'sword' and not char.power:
 				char.attack += BONUS_ATTACK_VALUE
+			if drop.name == 'might' and char.power:
+				op, factor = args
+				if op == '×': char.power *= factor
+				if op == '÷': char.power //= factor
+				if op == '+': char.power += factor
+				if op == '-': char.power -= factor
 
 	if map[char.c] == CELL_PORTAL:
 		teleport_char()

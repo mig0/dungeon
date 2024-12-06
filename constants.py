@@ -32,6 +32,7 @@ CELL_CHAR_MOVE_OBSTACLES  = (*CELL_WALLS, CELL_GATE0, CELL_LOCK1, CELL_LOCK2, CE
 ACTOR_CHARS = {
 	'heart':  '♥',
 	'sword':  '⸸',
+	'might':  '🖠',
 	'key1':   '¹',
 	'key2':   '²',
 	'enemy':  '🕱',
@@ -42,6 +43,7 @@ ACTOR_CHARS = {
 ACTOR_ON_PLATE_CHARS = {
 	'heart':  '♡',
 	'sword':  '⸷',
+	'might':  '🖞',
 	'key1':   '₁',
 	'key2':   '₂',
 	'enemy':  '☠',

@@ -11,10 +11,11 @@ portal_destinations = {}
 
 drop_heart = Drop('heart')
 drop_sword = Drop('sword')
+drop_might = Drop('might')
 drop_key1  = Drop('key1')
 drop_key2  = Drop('key2')
 
-drops = (drop_heart, drop_sword, drop_key1, drop_key2)
+drops = (drop_heart, drop_sword, drop_might, drop_key1, drop_key2)
 
 from cursor import Cursor
 
