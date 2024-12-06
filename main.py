@@ -294,11 +294,11 @@ def is_outer_wall(cell):
 			return False
 	return True
 
-def replace_outer_walls(cell_type):
+def replace_outer_walls(*cell_types):
 	for cy in MAP_Y_RANGE:
 		for cx in MAP_X_RANGE:
 			if map[cx, cy] == CELL_OUTER_WALL:
-				map[cx, cy] = cell_type
+				map[cx, cy] = choice(cell_types)
 
 def convert_outer_walls(cell_type=None):
 	for cy in MAP_Y_RANGE:
@@ -307,7 +307,7 @@ def convert_outer_walls(cell_type=None):
 				map[cx, cy] = CELL_OUTER_WALL
 
 	if cell_type is not None:
-		replace_outer_walls(cell_type)
+		replace_outer_walls(*cell_type)
 
 def convert_outer_floors(cell_type=None):
 	floor_cells_to_convert = set()
