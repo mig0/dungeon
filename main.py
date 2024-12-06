@@ -1165,7 +1165,7 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 		generate_map()
 
 	for drop in drops:
-		drop.active = drop.num_contained > 0
+		drop.active = drop.num_total > 0
 
 	if "target" not in level:
 		level["target"] = "default-level-target"

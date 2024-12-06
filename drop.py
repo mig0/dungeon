@@ -86,7 +86,7 @@ def draw_status_drops(screen, drops):
 	n = len(active_drops)
 	i = 0
 	for drop in active_drops:
-		pos_x = POS_CENTER_X + CELL_W * (i * STATUS_DROP_X_SIZE - n + 1)
+		pos_x = POS_CENTER_X + CELL_W * STATUS_DROP_X_SIZE * (i - (n - 1) / 2)
 		drop.status_actor.pos = (pos_x + CELL_W * STATUS_DROP_X_ACTOR_OFFSET, POS_STATUS_Y)
 		drop.status_actor.draw()
 		screen.draw.text(drop.str(), center=(pos_x + CELL_W * STATUS_DROP_X_TEXT_OFFSET, POS_STATUS_Y), color="#FFAA00", gcolor="#AA6600", owidth=1.2, ocolor="#404030", alpha=1, fontsize=24)
