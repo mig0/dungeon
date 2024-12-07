@@ -1118,6 +1118,17 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 
 	flags.parse_level(level)
 
+	char_cells = [None] * flags.NUM_ROOMS
+	char.power  = level.get("char_power")
+	char.health = level.get("char_health")
+	char.attack = None if char.power else INITIAL_CHAR_ATTACK
+
+	barrels.clear()
+	enemies.clear()
+	lifts.clear()
+	killed_enemies.clear()
+	portal_destinations.clear()
+
 	puzzle = create_puzzle(level, Globals)
 
 	set_map_size(level.get("map_size", DEFAULT_MAP_SIZE), puzzle.has_border())
@@ -1130,18 +1141,8 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 	if "bg_image" in level:
 		bg_image = load_image(level["bg_image"], (MAP_W, MAP_H), level.get("bg_image_crop", False))
 
-	char_cells = [None] * flags.NUM_ROOMS
-	char.power  = level.get("char_power")
-	char.health = level.get("char_health")
-	char.attack = None if char.power else INITIAL_CHAR_ATTACK
-
-	barrels.clear()
-	enemies.clear()
-	lifts.clear()
-	killed_enemies.clear()
-	portal_destinations.clear()
-
 	for drop in drops:
+		# should be called after set_map_size()
 		drop.reset()
 
 	theme_name = stored_level["theme_name"] if reload_stored else level["theme"]
