@@ -114,6 +114,33 @@ levels = [
 	},
 	{
 		"n": 3.1,
+		"theme": "classic",
+		"music": "stoneage/08_the_golden_valley.mp3",
+		"char_power": 40,
+		"target": "complete-hero-puzzle",
+		"hero_puzzle": True,
+	},
+	{
+		"n": 3.2,
+		"theme": "default",
+		"music": "stoneage/08_the_golden_valley.mp3",
+		"char_power": 40,
+		"target": "complete-hero-puzzle",
+		"hero_puzzle": {
+			"size": (7, 7),
+		},
+	},
+	{
+		"n": 3.3,
+		"theme": "moss",
+		"music": "stoneage/08_the_golden_valley.mp3",
+		"char_power": 40,
+		"target": "complete-hero-puzzle",
+		"four_rooms": True,
+		"hero_puzzle": True,
+	},
+	{
+		"n": 3.91,
 		"num_enemies": 0,
 		"theme": "modern1",
 		"music": "adventures",
@@ -125,7 +152,7 @@ levels = [
 		},
 	},
 	{
-		"n": 3.2,
+		"n": 3.92,
 		"num_enemies": 5,
 		"theme": "modern1",
 		"music": "valiant_warriors",
@@ -138,7 +165,7 @@ levels = [
 		},
 	},
 	{
-		"n": 3.3,
+		"n": 3.93,
 		"num_enemies": 5,
 		"theme": "modern1",
 		"music": "adventures",

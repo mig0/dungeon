@@ -81,12 +81,12 @@ class Puzzle:
 	def get_room_cells(self, *cell_types):
 		return [ cell for cell in self.get_map_cells(*cell_types) if self.is_in_room(cell) ]
 
-	def set_area_from_config(self, min_size=None, request_odd_size=False, align_to_center=False):
+	def set_area_from_config(self, min_size=None, default_size=None, request_odd_size=False, align_to_center=False):
 		max_size = flags.ROOM_SIZE(self.room.idx, request_odd_size)
 		if min_size is None:
 			min_size = (3, 3) if request_odd_size else (2, 2)
 
-		size = list(self.config.get("size", max_size))
+		size = list(self.config.get("size", default_size or max_size))
 		if size[0] < min_size[0]:
 			size[0] = min_size[0]
 		if size[1] < min_size[1]:
@@ -115,6 +115,14 @@ class Puzzle:
 
 	def is_in_room(self, cell):
 		return self.Globals.is_cell_in_area(cell, self.room.x_range, self.room.y_range)
+
+	def set_area_border_walls(self):
+		for x in self.area.x_range:
+			self.map[x, self.area.y1 - 1] = CELL_WALL
+			self.map[x, self.area.y2 + 1] = CELL_WALL
+		for y in range(self.area.y1 - 1, self.area.y2 + 2):
+			self.map[self.area.x1 - 1, y] = CELL_WALL
+			self.map[self.area.x2 + 1, y] = CELL_WALL
 
 	def on_set_theme(self):
 		pass
