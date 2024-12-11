@@ -128,6 +128,7 @@ levels = [
 		"target": "complete-hero-puzzle",
 		"hero_puzzle": {
 			"size": (7, 7),
+			"strict_floors": True,
 		},
 	},
 	{

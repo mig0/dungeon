@@ -1,17 +1,29 @@
 from . import *
 
 class HeroPuzzle(Puzzle):
+	def init(self):
+		self.is_strict_floors = bool(self.config.get("strict_floors"))
+
 	def assert_config(self):
 		return bool(char.power)
 
 	def has_finish(self):
 		return True
 
+	def has_portal(self):
+		return self.is_strict_floors
+
 	def has_gate(self):
 		return True
 
+	def has_dirs(self):
+		return self.is_strict_floors
+
+	def is_target_to_kill_enemies(self):
+		return self.is_strict_floors
+
 	def is_target_to_be_solved(self):
-		return True
+		return not self.is_target_to_kill_enemies()
 
 	def is_solved(self):
 		return self.get_num_keys_in_room() == 0
@@ -44,12 +56,17 @@ class HeroPuzzle(Puzzle):
 			self.map[self.area.x1 - 1, (self.area.y1 + self.area.y2) // 2] = CELL_GATE1
 
 		for cell in self.area.cells:
-			if cell[0] == self.area.x1:
-				pass
-			elif (cell[1] - self.area.y1) % 2 == 1:
-				self.map[cell] = CELL_WALL
+			if (cell[1] - self.area.y1) % 2 == 1:
+				if cell[0] != self.area.x1:
+					self.map[cell] = CELL_WALL
+			elif cell[0] == self.area.x1:
+				if self.is_strict_floors:
+					self.map[cell] = CELL_DIR_R
 			elif cell[0] == self.area.x2:
-				choice((drop_key1, drop_key2)).instantiate(cell)
+				if self.is_strict_floors:
+					self.Globals.create_portal(cell, (self.area.x1, cell[1]))
+				else:
+					choice((drop_key1, drop_key2)).instantiate(cell)
 			else:
 				self.generate_random_nonsolvable_floor_cell(cell)
 
