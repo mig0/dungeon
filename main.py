@@ -1378,8 +1378,8 @@ def draw():
 		screen.fill("#a8b6b7")
 		screen.draw.text(_("Initializing level…"), center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#88AA66", owidth=1.2, ocolor="#404030", alpha=1, fontsize=80)
 
-def kill_enemy():
-	enemy = killed_enemies.pop(0)
+def kill_enemy_cleanup():
+	killed_enemies.pop(0)
 
 def handle_press_key():
 	global is_main_screen
@@ -1663,24 +1663,29 @@ def activate_beat_animation(actor, diff, tween):
 	actor.move_pos((diff[0] * ENEMY_BEAT_OFFSET, diff[1] * ENEMY_BEAT_OFFSET))
 	actor.animate(ENEMY_BEAT_ANIMATION_TIME, tween)
 
+def kill_enemy(enemy):
+	play_sound("kill")
+	enemies.remove(enemy)
+	# fallen drops upon enemy death
+	if enemy.drop:
+		enemy.drop.instantiate(enemy)
+	enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
+	killed_enemies.append(enemy)
+	clock.schedule(kill_enemy_cleanup, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
+
 def beat_or_kill_enemy(enemy, diff):
-	if enemy.power is None:
-		enemy.health -= char.attack
+	if enemy.power is None or char.power is None:
+		die("Called beat_or_kill_enemy in power mode")
+
+	enemy.health -= char.attack
 	# can't move if we face enemy, cancel the move
 	char.move(diff, undo=True)
 	# animate beat or kill
-	if enemy.power is None and enemy.health > 0:
+	if enemy.health > 0:
 		play_sound("beat")
 		activate_beat_animation(enemy, diff, 'decelerate')
 	else:
-		play_sound("kill")
-		enemies.remove(enemy)
-		# fallen drops upon enemy death
-		if enemy.drop:
-			enemy.drop.instantiate(enemy)
-		enemy.activate_inplace_animation(level_time, ENEMY_KILL_ANIMATION_TIME, angle=(0, (-90, 90)[randint(0, 1)]), opacity=(1, 0.3), scale=(1, 0.8))
-		killed_enemies.append(enemy)
-		clock.schedule(kill_enemy, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
+		kill_enemy(enemy)
 	activate_beat_animation(char, diff, 'bounce_end')
 
 def move_char(diff_x, diff_y):
@@ -1721,13 +1726,17 @@ def move_char(diff_x, diff_y):
 	if enemy:
 		if char.power is None:
 			char.health -= enemy.attack
+			beat_or_kill_enemy(enemy, diff)
+			return
 		else:
-			if char.power > enemy.power:
+			if char.power >= enemy.power:
 				char.power += enemy.power
+				kill_enemy(enemy)
 			else:
 				char.power = 0
-		beat_or_kill_enemy(enemy, diff)
-		return
+				# we die, cancel move
+				char.move(diff, undo=True)
+				return
 
 	# collision with barrels
 	barrel = get_actor_on_cell(pull_barrel_cell or char.c, barrels)
@@ -1738,11 +1747,15 @@ def move_char(diff_x, diff_y):
 			char.move(diff, undo=True)
 			return
 		else:
-			# if enemy is in the next barrel cell, don't move, beat or kill it
+			# if enemy is in the next barrel cell, possibly don't move; beat or kill it
 			if enemy := get_actor_on_cell(next_barrel_cell, enemies):
-				beat_or_kill_enemy(enemy, diff)
-				activate_beat_animation(barrel, diff, 'bounce_end')
-				return
+				if char.power is None:
+					beat_or_kill_enemy(enemy, diff)
+					activate_beat_animation(barrel, diff, 'bounce_end')
+					return
+				else:
+					# in power mode unconditionally kill enemy using barrel
+					kill_enemy(enemy)
 
 			# can push, animate the push
 			barrel.move_animated(diff, enable_animation=is_move_animate_enabled)
