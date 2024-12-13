@@ -21,6 +21,10 @@ from joystick import scan_joysticks_and_state, emulate_joysticks_press_key, get_
 
 lang = 'en'
 
+def die(error):
+	print(error)
+	quit()
+
 def autodetect_lang():
 	global lang
 
@@ -327,8 +331,7 @@ def get_theme_image_name(image_name):
 			debug(2, "Found image %s" % full_image_name)
 			return full_image_name
 
-	print("Unable to find image %s in neither %s nor %s" % (image_name, theme_prefix, DEFAULT_IMAGE_PREFIX))
-	quit()
+	die("Unable to find image %s in neither %s nor %s" % (image_name, theme_prefix, DEFAULT_IMAGE_PREFIX))
 
 def load_image(image_name, size, do_crop=False):
 	image = pygame.image.load(image_name).convert()
@@ -423,8 +426,7 @@ def get_revealed_actors(actors):
 
 def assert_room():
 	if mode != "game" and mode != "init" and mode != "next":
-		print("Called room function when not inside game or init (mode=%s). Fix this bug" % mode)
-		quit()
+		die("Called room function when not inside game or init (mode=%s). Fix this bug" % mode)
 
 def set_room(idx):
 	room.size = flags.ROOM_SIZE(idx)
@@ -790,8 +792,7 @@ def replace_random_floor_cell(cell_type, num=1, callback=None, extra=None, extra
 
 def create_portal(cell, dst_cell):
 	if cell == dst_cell:
-		print("BUG: Portal destination can't be the same cell %s, exiting" % str(cell))
-		quit()
+		die("BUG: Portal destination can't be the same cell %s, exiting" % str(cell))
 
 	map[cell] = CELL_PORTAL
 	portal_destinations[cell] = dst_cell
@@ -1098,12 +1099,10 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 	global map, stored_level
 
 	if config and offset != 0:
-		print("Can't reload a non-current level")
-		quit()
+		die("Can't reload a non-current level")
 
 	if reload_stored and offset != 0:
-		print("Can't reload a non-current level")
-		quit()
+		die("Can't reload a non-current level")
 
 	if not is_main_screen and is_level_out_of_range(offset):
 		print("Requested level is out of range")
@@ -1264,8 +1263,7 @@ def draw_map():
 
 				if not cell_image:
 					debug_map()
-					print("Bug. Got null cell image at %s cell_type=%s" % (cell, cell_type))
-					quit()
+					die("Bug. Got null cell image at %s cell_type=%s" % (cell, cell_type))
 				elif cell_image.__class__.__name__ == 'CellActor':
 					cell_image.c = cell
 					cell_image.draw()
@@ -1607,8 +1605,7 @@ def check_victory():
 
 def teleport_char():
 	if map[char.c] != CELL_PORTAL:
-		print("Called teleport_char not on CELL_PORTAL")
-		quit()
+		die("Called teleport_char not on CELL_PORTAL")
 
 	if char._scale != 0:
 		char.activate_inplace_animation(level_time, CHAR_APPEARANCE_SCALE_DURATION, scale=(1, 0), angle=(0, 540), on_finished=teleport_char)
