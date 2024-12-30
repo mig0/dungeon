@@ -5,6 +5,7 @@ from flags import flags
 from random import randint, random, shuffle, choice
 from numpy import ndarray, arange, array_equal, ix_, argwhere, copyto
 from sizetools import import_size_constants
+from puzzleinfo import PuzzleInfo
 
 class Puzzle:
 	@classmethod
@@ -14,6 +15,10 @@ class Puzzle:
 	@classmethod
 	def config_name(cls):
 		return None if cls == Puzzle else cls.canonic_name() + '_puzzle'
+
+	@classmethod
+	def get_info(cls):
+		return PuzzleInfo(cls.canonic_name())
 
 	def __init__(self, level, Globals):
 		self.map = None
