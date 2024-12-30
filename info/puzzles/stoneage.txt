@@ -1,0 +1,21 @@
+Stoneage Puzzle
+
+This puzzle is an accurate replication of the classic DOS game Stone Age,
+released in 1992. The puzzle area consists of various elements, including
+a start cell, a finish cell, floors, walls, sands, paired portals, keys,
+locks, void cells, and directional lifts. Each element adds unique
+mechanics to the challenge.
+
+The character can freely travel through floor cells. Sand cells are
+traversable once and transform into void cells upon exit, requiring
+careful planning. Portals and directional lifts allow access to otherwise
+unreachable areas, while keys of two distinct types can be collected and
+used to unlock corresponding locks. Directional lifts are the only way to
+cross void cells.
+
+Strategic use of these mechanics is essential to navigate through the
+puzzle and access the finish cell. The combination of diverse elements
+makes this puzzle both challenging and nostalgic for fans of the original
+game.
+
+Goal: Reach the finish by utilizing the environment and its mechanics.

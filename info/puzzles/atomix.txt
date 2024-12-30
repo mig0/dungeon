@@ -1,0 +1,16 @@
+Atomix Puzzle
+
+Atomix is a puzzle game where you construct complete molecules, ranging
+from simple to highly complex, by arranging isolated atoms scattered
+among walls and other obstacles.
+
+When you push an atom in a direction, it moves until it collides with an
+object that halts its motion - this could be a wall or another atom. This
+mechanic makes Atomix challenging and engaging, as careful planning is
+required to organize your molecule correctly.
+
+There are also bonus levels where the colored numbered atoms are used
+instead of the chemical atoms. The player must guess the correct number
+structure and arrange these atoms into it.
+
+Goal: Build a complete molecule from atoms. Press Enter to select atoms.

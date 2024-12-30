@@ -1,0 +1,21 @@
+Memory Puzzle
+
+This puzzle tests your memory skills within a grid of cells. The puzzle
+area consists of an even number of cells, each containing a hidden value.
+All values are randomly shuffled, and pairs of equivalent numbers are
+scattered across the grid in a way that their locations are unknown to
+the player. Your task is to find and match these pairs.
+
+You select two cells at a time to reveal their values. The first selected
+cell stays revealed until the second cell is chosen. If the two revealed
+cells match, they are removed from the puzzle. If they do not match, they
+are hidden again, and you must remember their positions for future
+attempts.
+
+A visual variation replaces numbers with distinct colors for matching,
+offering a more aesthetic challenge. The puzzle can be navigated and
+manipulated using various controls: arrow keys and Space for keyboard
+users, a PlayStation controller for similar precise navigation, or a
+mouse for point-and-click simplicity.
+
+Goal: Clear the puzzle area by matching and removing all pairs of values.

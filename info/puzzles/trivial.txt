@@ -1,0 +1,8 @@
+Trivial Puzzle
+
+This puzzle serves as a demonstration of Puzzle API. It is minimalistic
+and relies mostly on default settings, with the only significant
+modification being the inclusion of a finish cell. If enemies are
+present, they can be avoided.
+
+Goal: Simply reach the finish.

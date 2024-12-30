@@ -1,0 +1,19 @@
+Fifteen Puzzle
+
+The 15 Puzzle, popularized by Sam Lloyd, is a sliding puzzle. It consists
+of 15 numbered tiles, arranged within a 4×4 frame containing one empty
+cell. Tiles in the same row or column as the empty cell can be slid
+horizontally or vertically.
+
+The frame can be of size n×n or even n×m, then the puzzle may be called
+the 2ⁿ-1 puzzle or the n×m sliding puzzle rather than 15 Puzzle.
+
+The objective is to rearrange the tiles into numerical order (left to
+right, top to bottom). Starting from a shuffled configuration (after
+numerous random legal moves), players must use strategic sliding to
+return the tiles to their original positions.
+
+No shortest solution is required, the puzzle can be solved using any
+valid sequence of moves.
+
+Goal: Restore the numbered tiles to their original positions.

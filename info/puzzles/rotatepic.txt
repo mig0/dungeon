@@ -1,0 +1,15 @@
+Rotatepic Puzzle
+
+This puzzle involves restoring a large image that has been divided into
+square mini-image cells. Each cell is randomly rotated by 0, 90, 180, or
+270 degrees at the start. Your task is to rotate all mini-image cells to
+return them to their correct orientation and recreate the original image.
+
+The puzzle can be navigated and manipulated using various controls. With
+the keyboard, you can use the arrow keys to navigate to a cell and Space
+or PageDown (or PageUp) to rotate it clockwise (or counter-clockwise).
+The cells may be similarly navigated and rotated with PlayStation
+controller. For mouse users, clicking on a cell rotates it clockwise or
+anti-clockwise depending on the mouse button used.
+
+Goal: Rotate all mini-image cells to restore the original image.

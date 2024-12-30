@@ -1,0 +1,18 @@
+Hero Puzzle
+
+This puzzle challenges the hero to build their power and defeat enemies.
+
+Similar to Hero Wars bonus levels but with more complexity, the hero
+starts with a configured power level. Power can be increased or decreased
+using power potions that apply four distinct arithmetic operations.
+
+To solve the puzzle, the player must strategically navigate the map,
+defeating all enemies and collecting items in the correct order.
+
+In the default mode, players collect keys available in each floor after
+defeating enemies and gathering potions. Floors can be completed in any
+order, but all must be finished. In the "strict_floors" mode, players
+must complete a floor before moving to the next and cannot revisit
+previous floors.
+
+Goal: Collect all keys (if applicable) and defeat all enemies.

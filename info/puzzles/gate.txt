@@ -1,0 +1,13 @@
+Gate Puzzle
+
+In this puzzle, you navigate a maze filled with plates and gates. Gates
+can either be open or closed, blocking or allowing progress. Plates are
+scattered throughout the maze and serve as triggers for the gates.
+
+Each plate toggles the state of one or more attached gates. Pressing a
+plate may open previously closed gates while closing others, requiring
+careful planning and exploration.
+
+Press Space on keyboard (or "X" on PS controller) to activate the plate.
+
+Goal: Reach the finish by pressing plates to open a path.

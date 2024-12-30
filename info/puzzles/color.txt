@@ -1,0 +1,13 @@
+Color Puzzle
+
+This simple yet intriguing puzzle is designed to demonstrate the
+potential of Puzzle mechanics. Some floor cells are assigned colors, and
+the number of colors and their areas are configurable. Plates on the
+floor can be pressed to alter the colors of the eight surrounding cells.
+
+Pressing a plate rotates the colors in sequence. For instance, if there
+are five colors (1 - red, 2 - green, 3 - blue, 4 - yellow, 5 - purple)
+and neighboring cells are colors 1, 3, and 5, pressing the plate changes
+them to 2, 4, and 1, respectively.
+
+Goal: Turn all colored cells green by pressing the plates.

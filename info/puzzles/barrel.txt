@@ -1,0 +1,16 @@
+Barrel Puzzle (Sokoban)
+
+This is a classic game with straightforward yet challenging rules. You
+guide the "warehouse keeper" ("Sokoban" in Japanese) to push barrels into
+designated slots. A barrel can only be pushed in one of four directions,
+provided there is empty space behind it in that direction.
+
+The objective is to place all barrels onto the plates in the room.
+Sometimes, barrels must be temporarily moved off plates to enable access
+for others. Limited space and the potential for unsolvable positions make
+this puzzle both strategic and addictive.
+
+Each level introduces a unique layout of walls, floors, barrels, and
+plates, requiring new strategies and solutions.
+
+Goal: Push all barrels onto the designated plates.

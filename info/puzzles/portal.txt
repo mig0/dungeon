@@ -1,0 +1,21 @@
+Portal Puzzle
+
+In this puzzle, there are 9 halls arranged in a 3x3 grid. Each hall has
+portals located in its corners as the only means of exit. Depending on
+the puzzle variation, a hall may have 2, 3, or 4 portals. Each portal
+transports the character to one of the 9 halls, with the destination
+being pre-determined randomly at the start of the puzzle and remaining
+consistent throughout.
+
+The first hall, located in the top-left corner, serves as the starting
+point. The central hall is unique; it contains the finish in one corner
+and an additional portal in the opposite corner that leads back to the
+starting hall. This return portal is added for fun, allowing players to
+revisit the challenge and experiment with different portal choices.
+
+The other 8 halls are structurally identical, each containing the same
+number of portals in corresponding corners. Success requires strategic
+navigation and exploration to determine the paths that lead to the
+central hall and ultimately to the finish.
+
+Goal: Reach the finish by navigating through the portals.
