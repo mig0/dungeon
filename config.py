@@ -1,4 +1,6 @@
-TITLE = "Skull Labyrinth"
+DATA_DIR = "."
+
+TITLE = "Puzzle Dungeon"
 FPS = 30
 
 DEBUG_LEVEL = 1  # 0 means no debug at all, 2 means more verbose
