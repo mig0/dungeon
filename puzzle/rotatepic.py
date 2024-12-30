@@ -20,7 +20,7 @@ class RotatepicPuzzle(Puzzle):
 		self.rotatepic_map = ndarray((MAP_SIZE_X, MAP_SIZE_X), dtype=int)
 		self.rotatepic_map.fill(ROTATEPIC_PUZZLE_VALUE_OUTSIDE)
 
-	def is_target_to_be_solved(self):
+	def is_goal_to_be_solved(self):
 		return True
 
 	def get_real_rotatepic_map(self):

@@ -215,7 +215,7 @@ def get_drop_on_cell(cell):
 killed_enemies = []
 
 level_title_time = 0
-level_target_time = 0
+level_goal_time = 0
 
 level = None
 
@@ -1070,17 +1070,17 @@ def play_sound(name):
 	sound = getattr(sounds, name)
 	sound.play()
 
-def reset_level_title_and_target_time():
-	global level_title_time, level_target_time
+def reset_level_title_and_goal_time():
+	global level_title_time, level_goal_time
 
 	level_title_time = level_time + LEVEL_TITLE_TIME
-	level_target_time = level_title_time + LEVEL_TARGET_TIME
+	level_goal_time = level_title_time + LEVEL_GOAL_TIME
 
-def clear_level_title_and_target_time():
-	global level_title_time, level_target_time
+def clear_level_title_and_goal_time():
+	global level_title_time, level_goal_time
 
 	level_title_time = 0
-	level_target_time = 0
+	level_goal_time = 0
 
 def reset_idle_time():
 	global idle_time, last_autogeneration_time
@@ -1113,7 +1113,7 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 		puzzle.finish()
 
 	stop_music()
-	clear_level_title_and_target_time()
+	clear_level_title_and_goal_time()
 	mode = "init"
 
 	level = config if config else set_level(offset)
@@ -1179,13 +1179,13 @@ def init_new_level(offset=1, config=None, reload_stored=False):
 	for drop in drops:
 		drop.active = drop.num_total > 0
 
-	if "target" not in level:
-		level["target"] = "default-level-target"
+	if "goal" not in level:
+		level["goal"] = "default-level-goal"
 
 	level_time = 0
 	reset_idle_time()
 	if is_level_intro_enabled:
-		reset_level_title_and_target_time()
+		reset_level_title_and_goal_time()
 
 	if reload_stored:
 		char_cells = stored_level["char_cells"]
@@ -1232,7 +1232,7 @@ def init_main_screen():
 		"music": "valiant_warriors",
 		"char_health": 100,
 		"use_clock": True,
-		"target": 'select-level',
+		"goal": 'select-level',
 		"random_maze": True,
 		"mainscreen_puzzle": {},
 	}
@@ -1369,10 +1369,10 @@ def draw():
 		level_line_2 = _(level.get("name", 'level-' + str(level["n"]) + '-name'))
 		screen.draw.text(level_line_1, center=(POS_CENTER_X, POS_CENTER_Y - 14), color='yellow', gcolor="#AAA060", owidth=1.2, ocolor="#404030", alpha=1, fontsize=50)
 		screen.draw.text(level_line_2, center=(POS_CENTER_X, POS_CENTER_Y + 21), color='white', gcolor="#C08080", owidth=1.2, ocolor="#404030", alpha=1, fontsize=32)
-	elif mode == "game" and level_target_time > 0:
-		target_line = _(level["target"])
+	elif mode == "game" and level_goal_time > 0:
+		goal_line = _(level["goal"])
 		draw_central_flash()
-		screen.draw.text(target_line, center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=40)
+		screen.draw.text(goal_line, center=(POS_CENTER_X, POS_CENTER_Y), color='#FFFFFF', gcolor="#66AA00", owidth=1.2, ocolor="#404030", alpha=1, fontsize=40)
 
 	if mode == "init":
 		screen.fill("#a8b6b7")
@@ -1419,9 +1419,9 @@ def handle_press_key():
 		if keyboard.l:
 			is_level_intro_enabled = not is_level_intro_enabled
 			if is_level_intro_enabled:
-				reset_level_title_and_target_time()
+				reset_level_title_and_goal_time()
 			else:
-				clear_level_title_and_target_time()
+				clear_level_title_and_goal_time()
 
 		if keyboard.s:
 			flags.is_stopless = not flags.is_stopless
@@ -1461,7 +1461,7 @@ def handle_press_key():
 		pygame.mouse.set_visible(not pygame.mouse.get_visible())
 
 	if keyboard.l:
-		reset_level_title_and_target_time()
+		reset_level_title_and_goal_time()
 
 	if keyboard.m:
 		if is_music_enabled:
@@ -1568,11 +1568,11 @@ def check_victory():
 
 	status_messages = []
 	can_win = True
-	target_achieved = False
+	goal_achieved = False
 
-	if puzzle.is_target_to_be_solved():
+	if puzzle.is_goal_to_be_solved():
 		if puzzle.is_solved():
-			target_achieved = True
+			goal_achieved = True
 			status_messages.append("Puzzle solved!")
 		else:
 			can_win = False
@@ -1580,9 +1580,9 @@ def check_victory():
 
 	if is_main_screen:
 		status_messages.append("Press Enter to continue")
-	elif puzzle.is_target_to_kill_enemies():
+	elif puzzle.is_goal_to_kill_enemies():
 		if not sum(1 for enemy in enemies if is_actor_in_room(enemy)) and not killed_enemies:
-			target_achieved = True
+			goal_achieved = True
 			status_messages.append("All enemies killed!")
 		else:
 			can_win = False
@@ -1597,7 +1597,7 @@ def check_victory():
 			win_room()
 		else:
 			status_messages.append("Reach finish!")
-	elif target_achieved and can_win:
+	elif goal_achieved and can_win:
 		win_room()
 
 	if status_messages:
@@ -1831,7 +1831,7 @@ ARROW_KEY_CODE = {
 }
 
 def update(dt):
-	global level_title_time, level_target_time
+	global level_title_time, level_goal_time
 	global game_time, level_time, idle_time, last_autogeneration_time
 	global last_time_arrow_keys_processed, last_processed_arrow_keys, last_processed_arrow_diff
 
@@ -1850,8 +1850,8 @@ def update(dt):
 
 	if level_title_time < level_time:
 		level_title_time = 0
-	if level_target_time < level_time:
-		level_target_time = 0
+	if level_goal_time < level_time:
+		level_goal_time = 0
 
 	if char.health is not None and (
 		last_autogeneration_time == 0 and idle_time >= AUTOGENERATION_IDLE_TIME or

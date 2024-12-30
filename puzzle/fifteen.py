@@ -22,7 +22,7 @@ class FifteenPuzzle(Puzzle):
 		self.fifteen_map = ndarray((MAP_SIZE_X, MAP_SIZE_X), dtype=int)
 		self.fifteen_map.fill(FIFTEEN_PUZZLE_VALUE_OUTSIDE)
 
-	def is_target_to_be_solved(self):
+	def is_goal_to_be_solved(self):
 		return True
 
 	def get_num_solved(self, cell):

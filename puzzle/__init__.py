@@ -64,10 +64,10 @@ class Puzzle:
 	def has_dirs(self):
 		return False
 
-	def is_target_to_kill_enemies(self):
-		return not self.has_finish() and not self.is_target_to_be_solved()
+	def is_goal_to_kill_enemies(self):
+		return not self.has_finish() and not self.is_goal_to_be_solved()
 
-	def is_target_to_be_solved(self):
+	def is_goal_to_be_solved(self):
 		return False
 
 	def parse_config_num(self, config_key, default):

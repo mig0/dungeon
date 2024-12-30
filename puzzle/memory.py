@@ -58,7 +58,7 @@ class MemoryPuzzle(Puzzle):
 		self.memory_map.fill(MEMORY_PUZZLE_VALUE_OUTSIDE)
 		self.room_memory_pairs.clear()
 
-	def is_target_to_be_solved(self):
+	def is_goal_to_be_solved(self):
 		return True
 
 	def is_solved(self):

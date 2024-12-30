@@ -130,7 +130,7 @@ for i in range(NUM_MAPS):
 		"time_limit": stoneage_infos[i][2],
 		"char_health": None,
 		"num_enemies": 0,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"stoneage_puzzle": {
 			"code": stoneage_infos[i][1],
 		},

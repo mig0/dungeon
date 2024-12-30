@@ -11,7 +11,7 @@ class ColorPuzzle(Puzzle):
 	def has_plate(self):
 		return True
 
-	def is_target_to_be_solved(self):
+	def is_goal_to_be_solved(self):
 		return True
 
 	def on_set_theme(self):

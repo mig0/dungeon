@@ -19,11 +19,11 @@ class HeroPuzzle(Puzzle):
 	def has_dirs(self):
 		return self.is_strict_floors
 
-	def is_target_to_kill_enemies(self):
+	def is_goal_to_kill_enemies(self):
 		return self.is_strict_floors
 
-	def is_target_to_be_solved(self):
-		return not self.is_target_to_kill_enemies()
+	def is_goal_to_be_solved(self):
+		return not self.is_goal_to_kill_enemies()
 
 	def is_solved(self):
 		return self.get_num_keys_in_room() == 0

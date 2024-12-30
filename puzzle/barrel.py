@@ -22,7 +22,7 @@ class BarrelPuzzle(Puzzle):
 	def is_long_generation(self):
 		return True
 
-	def is_target_to_be_solved(self):
+	def is_goal_to_be_solved(self):
 		return True
 
 	def on_enter_room(self):

@@ -21,7 +21,7 @@ levels = [
 		"time_limit": 30,
 		"spiral_maze": True,
 		"char_health": None,
-		"target": 'reach-finish-30-sec',
+		"goal": 'reach-finish-30-sec',
 		"has_finish": True,
 	},
 	{
@@ -40,7 +40,7 @@ levels = [
 		"music": "valiant_warriors",
 		"time_limit": 60,
 		"char_health": 250,
-		"target": 'kill-all-1-min',
+		"goal": 'kill-all-1-min',
 		"bg_image": "bg/stonehenge.jpg",
 		"cloud_mode": True,
 	},
@@ -50,7 +50,7 @@ levels = [
 		"theme": "classic",
 		"music": "a_new_path",
 		"random_maze": True,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"char_health": 100,
 		"gate_puzzle": {
 			"num_gates": 2,
@@ -63,7 +63,7 @@ levels = [
 		"theme": "ancient2",
 		"music": "the_last_kingdom",
 		"random_maze": True,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"char_health": 100,
 		"gate_puzzle": {
 			"num_gates": 4,
@@ -77,7 +77,7 @@ levels = [
 		"theme": "modern1",
 		"music": "playful_sparrow",
 		"spiral_maze": True,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"char_health": 100,
 		"cloud_mode": True,
 		"gate_puzzle": {
@@ -91,7 +91,7 @@ levels = [
 		"theme": "moss",
 		"music": "forest_walk",
 		"random_maze": True,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"char_health": 100,
 		"gate_puzzle": {
 			"num_gates": 5,
@@ -104,7 +104,7 @@ levels = [
 		"theme": "minecraft",
 		"music": "superepic_short",
 		"random_maze": True,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"char_health": 170,
 		'four_rooms': True,
 		"gate_puzzle": {
@@ -117,7 +117,7 @@ levels = [
 		"theme": "classic",
 		"music": "stoneage/08_the_golden_valley.mp3",
 		"char_power": 40,
-		"target": "complete-hero-puzzle",
+		"goal": "complete-hero-puzzle",
 		"hero_puzzle": True,
 	},
 	{
@@ -125,7 +125,7 @@ levels = [
 		"theme": "default",
 		"music": "stoneage/08_the_golden_valley.mp3",
 		"char_power": 40,
-		"target": "complete-hero-puzzle",
+		"goal": "complete-hero-puzzle",
 		"hero_puzzle": {
 			"size": (7, 7),
 			"strict_floors": True,
@@ -136,7 +136,7 @@ levels = [
 		"theme": "moss",
 		"music": "stoneage/08_the_golden_valley.mp3",
 		"char_power": 40,
-		"target": "complete-hero-puzzle",
+		"goal": "complete-hero-puzzle",
 		"four_rooms": True,
 		"hero_puzzle": True,
 	},
@@ -147,7 +147,7 @@ levels = [
 		"music": "adventures",
 		"four_rooms": True,
 		"char_health": None,
-		"target": 'complete-color-puzzle-green',
+		"goal": 'complete-color-puzzle-green',
 		"color_puzzle": {
 			"num_values": 2,
 		},
@@ -159,7 +159,7 @@ levels = [
 		"music": "valiant_warriors",
 		"time_limit": 60,
 		"char_health": 100,
-		"target": 'complete-color-puzzle-green',
+		"goal": 'complete-color-puzzle-green',
 		"color_puzzle": {
 			"num_values": 4,
 			"size": (9, 9),
@@ -172,7 +172,7 @@ levels = [
 		"music": "adventures",
 		"time_limit": 120,
 		"char_health": 100,
-		"target": 'complete-color-puzzle-green',
+		"goal": 'complete-color-puzzle-green',
 		"color_puzzle": {
 			"num_values": 6,
 			"size": (11, 11),
@@ -185,7 +185,7 @@ levels = [
 		"theme": "modern2",
 		"music": "breath",
 		"char_health": 100,
-		"target": 'complete-barrel-puzzle',
+		"goal": 'complete-barrel-puzzle',
 		"barrel_puzzle": {
 			"num_barrels": 2,
 		},
@@ -196,7 +196,7 @@ levels = [
 		"theme": "default",
 		"music": "the_last_kingdom",
 		"char_health": 100,
-		"target": 'complete-barrel-puzzle',
+		"goal": 'complete-barrel-puzzle',
 		"barrel_puzzle": {
 			"num_barrels": 5,
 		},
@@ -207,7 +207,7 @@ levels = [
 		"theme": "moss",
 		"music": "adventures",
 		"char_health": 150,
-		"target": 'complete-barrel-puzzle',
+		"goal": 'complete-barrel-puzzle',
 		"barrel_puzzle": {
 			"num_barrels": 7,
 		},
@@ -219,7 +219,7 @@ levels = [
 		"music": "breath",
 		"random_maze": True,
 		"char_health": 100,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"lock_puzzle": {
 			"min_locks": 2,
 			"max_locks": 3,
@@ -232,7 +232,7 @@ levels = [
 		"music": "breath",
 		"random_maze": True,
 		"char_health": 100,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"lock_puzzle": {
 			"min_locks": 3,
 			"max_locks": 5,
@@ -245,7 +245,7 @@ levels = [
 		"random_maze": True,
 		"enemy_key_drop": True,
 		"char_health": 150,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"lock_puzzle": {
 			"min_locks": 5,
 			"max_locks": 7,
@@ -257,7 +257,7 @@ levels = [
 		"music": "epic_cinematic_trailer",
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "complete-memory-puzzle",
+		"goal": "complete-memory-puzzle",
 		"memory_puzzle": {
 			"size": (5, 3),
 			"reveal_time": 10,
@@ -271,7 +271,7 @@ levels = [
 		"has_finish": True,
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "complete-memory-puzzle",
+		"goal": "complete-memory-puzzle",
 		"memory_puzzle": {
 			"size": (3, 4),
 		},
@@ -283,7 +283,7 @@ levels = [
 		"four_rooms": True,
 		"num_enemies": 2,
 		"char_health": 100,
-		"target": "complete-memory-puzzle",
+		"goal": "complete-memory-puzzle",
 		"memory_puzzle": {
 		},
 	},
@@ -295,7 +295,7 @@ levels = [
 		"time_limit": 150,
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "complete-memory-puzzle",
+		"goal": "complete-memory-puzzle",
 		"memory_puzzle": {
 			"size": (3, 3),
 			"reveal_time": 8,
@@ -308,7 +308,7 @@ levels = [
 		"num_enemies": 0,
 		"time_limit": 300,
 		"char_health": None,
-		"target": "complete-memory-puzzle-revealed-5-min",
+		"goal": "complete-memory-puzzle-revealed-5-min",
 		"memory_puzzle": {
 			"is_revealed": True,
 		},
@@ -319,7 +319,7 @@ levels = [
 		"music": "stoneage/01_stardust_falling",
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "solve-fifteen-puzzle",
+		"goal": "solve-fifteen-puzzle",
 		"fifteen_puzzle": {
 			"size": (3, 2),
 		},
@@ -331,7 +331,7 @@ levels = [
 		"nine_rooms": True,
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "solve-fifteen-puzzle",
+		"goal": "solve-fifteen-puzzle",
 		"fifteen_puzzle": {
 		},
 	},
@@ -342,7 +342,7 @@ levels = [
 		"four_rooms": True,
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "solve-fifteen-puzzle",
+		"goal": "solve-fifteen-puzzle",
 		"fifteen_puzzle": {
 			"size": (4, 4),
 		},
@@ -355,7 +355,7 @@ levels = [
 		"char_health": 200,
 		"has_start": True,
 		"has_finish": True,
-		"target": "solve-fifteen-puzzle",
+		"goal": "solve-fifteen-puzzle",
 		"fifteen_puzzle": {
 			"size": (7, 7),
 		},
@@ -368,7 +368,7 @@ levels = [
 		"bg_image_crop": True,
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "solve-rotatepic-puzzle",
+		"goal": "solve-rotatepic-puzzle",
 		"rotatepic_puzzle": {
 			"size": (8, 8),
 		},
@@ -381,7 +381,7 @@ levels = [
 		"has_finish": True,
 		"num_enemies": 10,
 		"char_health": 150,
-		"target": "solve-rotatepic-puzzle",
+		"goal": "solve-rotatepic-puzzle",
 		"rotatepic_puzzle": {
 			"size": (7, 7),
 			"image": "pictures/danik-lion-irisha-square.jpg",
@@ -393,7 +393,7 @@ levels = [
 		"music": "forest_walk",
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "solve-rotatepic-puzzle",
+		"goal": "solve-rotatepic-puzzle",
 		"rotatepic_puzzle": {
 			"image": "pictures/danik-lego-tiger.jpg",
 			"image_crop": True,
@@ -407,7 +407,7 @@ levels = [
 #		"bg_image_crop": True,
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "solve-rotatepic-puzzle",
+		"goal": "solve-rotatepic-puzzle",
 		"rotatepic_puzzle": {
 			"size": (9, 9),
 		},
@@ -418,7 +418,7 @@ levels = [
 		"music": "stoneage/01_stardust_falling",
 		"num_enemies": 0,
 		"char_health": None,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"portal_puzzle": {
 			"num_portals_per_hall": 2,
 		},
@@ -431,7 +431,7 @@ levels = [
 		"has_finish": True,
 		"num_enemies": 5,
 		"char_health": 100,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"portal_puzzle": {
 			"num_portals_per_hall": 3,
 		},
@@ -442,7 +442,7 @@ levels = [
 		"music": "forest_walk",
 		"num_enemies": 10,
 		"char_health": 150,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"portal_puzzle": {
 		},
 	},
@@ -451,7 +451,7 @@ levels = [
 		"theme": "stoneage1",
 		"bg_image": "bg/chemistry-1.webp",
 		"music": "playful_sparrow.mp3",
-		"target": "compose-molecule",
+		"goal": "compose-molecule",
 		"num_enemies": 0,
 		"char_health": None,
 		"four_rooms": True,
@@ -464,7 +464,7 @@ levels = [
 		"theme": "default",
 		"bg_image": "bg/chemistry-2.webp",
 		"music": "film.mp3",
-		"target": "compose-molecule",
+		"goal": "compose-molecule",
 		"num_enemies": 0,
 		"char_health": None,
 		"atomix_puzzle": {
@@ -476,7 +476,7 @@ levels = [
 		"theme": "moss",
 		"bg_image": "bg/chemistry-2.webp",
 		"music": "forest_walk",
-		"target": "compose-molecule",
+		"goal": "compose-molecule",
 		"num_enemies": 0,
 		"char_health": None,
 		"nine_rooms": True,
@@ -489,7 +489,7 @@ levels = [
 		"theme": "stoneage2",
 		"bg_image": "bg/chemistry-1.webp",
 		"music": "epic_cinematic_trailer.mp3",
-		"target": "compose-molecule",
+		"goal": "compose-molecule",
 		"num_enemies": 0,
 		"char_health": None,
 		"atomix_puzzle": {
@@ -501,7 +501,7 @@ levels = [
 		"theme": "modern1",
 		"bg_image": "bg/chemistry-2.webp",
 		"music": "adventures.mp3",
-		"target": "compose-molecule",
+		"goal": "compose-molecule",
 		"num_enemies": 0,
 		"char_health": None,
 		"atomix_puzzle": {
@@ -513,7 +513,7 @@ levels = [
 		"theme": "stoneage1",
 		"music": "stoneage/01_stardust_falling",
 		"bg_image": "bg/remains_of_a_threat.jpg",
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"num_enemies": 0,
 		"char_health": None,
 		"stoneage_puzzle": {
@@ -525,7 +525,7 @@ levels = [
 		"theme": "stoneage1",
 		"music": "stoneage/08_the_golden_valley.mp3",
 		"char_health": 40,
-		"target": "reach-finish",
+		"goal": "reach-finish",
 		"trivial_puzzle": True,
 	},
 	*atomix_levels,
