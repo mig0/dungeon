@@ -8,9 +8,12 @@ from sizetools import import_size_constants
 
 class Puzzle:
 	@classmethod
+	def canonic_name(cls):
+		return cls.__name__.lower().removesuffix("puzzle")
+
+	@classmethod
 	def config_name(cls):
-		cls_lower_name = cls.__name__.lower()
-		return None if cls == Puzzle else cls_lower_name[:cls_lower_name.rindex("puzzle")] + '_puzzle'
+		return None if cls == Puzzle else cls.canonic_name() + '_puzzle'
 
 	def __init__(self, level, Globals):
 		self.map = None
@@ -189,13 +192,16 @@ import os, pkgutil
 for _, module, _ in pkgutil.iter_modules([os.path.dirname(__file__)]):
 	__import__(__name__ + "." + module)
 
+def get_all_puzzle_subclasses():
+	return Puzzle.__subclasses__()
+
 def create_puzzle(level, Globals):
 	if not Puzzle.__subclasses__():
 		print("Internal bug. Didn't find any Puzzle subclasses")
 		quit()
 
 	puzzle_class = Puzzle
-	for cls in Puzzle.__subclasses__():
+	for cls in get_all_puzzle_subclasses():
 		if cls.config_name() in level:
 			puzzle_class = cls
 
