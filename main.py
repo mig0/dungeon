@@ -1674,7 +1674,7 @@ def kill_enemy(enemy):
 	clock.schedule(kill_enemy_cleanup, ENEMY_KILL_ANIMATION_TIME + ENEMY_KILL_DELAY)
 
 def beat_or_kill_enemy(enemy, diff):
-	if enemy.power is None or char.power is None:
+	if enemy.power is not None or char.power is not None:
 		die("Called beat_or_kill_enemy in power mode")
 
 	enemy.health -= char.attack
