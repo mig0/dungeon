@@ -1,0 +1,604 @@
+<!--DOCTYPE html-->
+<html>
+<head>
+<base href=".">
+<title>Puzzle Dungeon - Home</title>
+<style>
+body {
+	margin: 0px;
+	display: table;
+	width: 100%;
+	height: 100%;
+}
+
+div {
+	margin: 0px;
+	padding: 0px;
+}
+
+#body {
+	display: grid;
+	grid-gap: 0px;
+	grid-template-columns: 256px;
+	grid-template-rows: 128px 128px;
+	grid-template-areas:
+		"logo    header"
+		"logo    content"
+		"sidebar content";
+	height: 100%;
+}
+
+#logo {
+	grid-area: logo;
+}
+
+#sidebar {
+	grid-area: sidebar;
+	background: url("sidebar-bg.jpg") repeat #dcb;
+	color: navy;
+	padding: 10px;
+	text-align: center;
+}
+
+#header {
+	grid-area: header;
+	background: url("header-bg.jpg") repeat #234;
+}
+
+#content {
+	grid-area: content;
+	background: url("content-bg.jpg") repeat #567;
+	padding: 10px;
+	color: #f0f0f0;
+}
+
+#categories {
+	padding: 15px 15px;
+}
+
+button {
+	white-space: nowrap;
+	font-family: Arial, sans-serif;
+}
+
+a {
+	text-decoration: none;
+}
+
+.category {
+	margin: 20px 15px;
+	border: 1px solid black;
+	border-radius: 16px;
+	width: 160px;
+	height: 60px;
+	background: #4e5f6d;
+	color: #e0e0e0;
+	font-size: 22px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.current-category {
+	background: #46b482;
+}
+
+.category:hover {
+	background: #4682b4;
+	color: white;
+	transform: translateY(-3px) scale(110%);
+}
+
+.current-category:hover {
+	background: #46b482;
+}
+
+.page {
+	display: block;
+	margin: 3px auto;
+	border: 1px solid rgba(32, 32, 32, 0.2);
+	border-radius: 3px;
+	width: 220px;
+	height: 30px;
+	background: transparent;
+	backdrop-filter: brightness(90%);
+	color: #111;
+	font-size: 18px;
+	font-weight: normal;
+}
+
+.current-page {
+	backdrop-filter: hue-rotate(80deg) brightness(90%);
+}
+
+.page:hover {
+	transform: scale(105%);
+	backdrop-filter: hue-rotate(110deg) brightness(90%);
+	color: #000;
+}
+
+.current-page:hover {
+	backdrop-filter: hue-rotate(80deg) brightness(90%);
+}
+
+#sidebar hr {
+	border: 0.5px solid rgba(32, 32, 32, 0.2);
+	width: 200px;
+	margin: 12px auto;
+}
+
+#content h1 {
+	margin: -10px;
+	padding: 10px;
+	backdrop-filter: brightness(90%);
+	text-align: center;
+}
+
+#content table {
+	color: inherit;
+}
+
+#content a {
+	color: rgb(255, 255, 128);
+	text-decoration: none;
+}
+
+#content a:visited {
+	color: rgb(100, 200, 40);
+}
+
+#content a:active {
+	color: rgb(220, 110, 110);
+}
+
+p.goal {
+	 font-style: italic;
+}
+
+p.goal:before {
+	 content: "Goal: ";
+}
+
+#img-table {
+	padding: 10px;
+	width: 100%;
+	table-layout: fixed;
+}
+
+#img-table tr > * {
+	margin: 0px;
+	padding: 1px;
+	white-space: nowrap;
+	text-align: center;
+	vertical-align: middle;
+}
+
+#img-table th {
+	font: 14px Arial, sans-serif;
+	overflow: hidden;
+}
+
+#img-table .zoom,
+#img-table tr > th:not(:first-child) {
+	height: 32px;
+}
+
+#img-table th:first-child {
+	width: 70px;
+}
+
+.img-table-full tr > th:first-child {
+	height: 64px;
+}
+
+.img-table-half tr > th:first-child {
+	height: 32px;
+}
+
+.img-table-full tr > th:not(:first-child) {
+	width: 64px;
+}
+
+.img-table-half tr > th:not(:first-child) {
+	width: 32px;
+}
+
+.img-table-half tr > td {
+	width: 32px;
+	height: 32px;
+}
+
+.img-table-full tr > td {
+	width: 64px;
+	height: 64px;
+}
+
+.img-table-half img {
+	width: 32px;
+	height: 32px;
+}
+
+.img-table-full img {
+	width: 64px;
+	height: 64px;
+}
+
+#img-table .zoom {
+	text-align: left;
+}
+</style>
+</head>
+
+<body>
+<div id="body">
+<div id="logo">
+<a href="./"><img src="puzzle-dungeon-logo.jpg"></a>
+</div>
+<div id="sidebar">
+<a href="./"><button class="page current-page">About</button></a>
+<a href="download.html"><button class="page">Download</button></a>
+<a href="resources.html"><button class="page">Resources</button></a>
+<a href="authors.html"><button class="page">Authors</button></a>
+<hr>
+<a href="puzzles/"><button class="page">Puzzles</button></a>
+<a href="screenshots/"><button class="page">Screenshots</button></a>
+<a href="themes/"><button class="page">Themes</button></a>
+<a href="tutorial/"><button class="page">Tutorial</button></a>
+
+</div>
+<div id="header">
+<div id="categories">
+<a href="./"><button class="category current-category">Home</button></a>
+<a href="./puzzles/"><button class="category">Puzzles</button></a>
+<a href="./screenshots/"><button class="category">Screenshots</button></a>
+<a href="./themes/"><button class="category">Themes</button></a>
+<a href="./tutorial/"><button class="category">Tutorial</button></a>
+</div>
+</div>
+<div id="content">
+<h1 id="puzzle-dungeon">Puzzle Dungeon</h1>
+<h2 id="about-game">About Game</h2>
+<p>Puzzle Dungeon is a cell-based puzzle game packed with features and
+diverse puzzles. It incorporates classic games like Sokoban, StoneAge,
+Atomix, Memory, Fifteen, and plans to include Chip’s Challenge and Rogue
+in future updates.</p>
+<p>See the list of all <a href="#puzzles">puzzles</a> for details.</p>
+<p>The game uses pygame and pgzero. It should work well on GNU/Linux and
+possibly other Operating Systems, but this should be tested yet.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li><p><strong>Procedurally Generated Puzzles</strong>: Most levels are
+generated automatically, offering a new experience every time.
+Pre-created maps are also supported, including classic collections.
+Players can reload the same level if stuck - whether it’s newly
+generated or pre-created.</p></li>
+<li><p><strong>Variety of Challenges</strong>: Some puzzles are
+time-limited, others require strict adherence to rules, and many involve
+finding a path to the finish. Some levels even feature enemy
+encounters.</p></li>
+<li><p><strong>Customizable Themes</strong>: The game includes 13
+themes, well suited for different puzzle types.</p></li>
+<li><p><strong>Multilingual Support</strong>: The game is primarily in
+English, with partial translations available in several other
+languages.</p></li>
+<li><p><strong>Versatile Controls</strong>: Players can use a keyboard,
+mouse, or PlayStation controller.</p></li>
+<li><p><strong>Audio Options</strong>: Background music and sound
+effects can be toggled on or off.</p></li>
+</ul>
+<h2 id="themes">Themes</h2>
+<ul>
+<li>default</li>
+<li>classic</li>
+<li>ancient1, ancient2</li>
+<li>modern1, modern2</li>
+<li>minecraft</li>
+<li>moss</li>
+<li>stoneage1, stoneage2, stoneage3, stoneage4, stoneage5</li>
+</ul>
+<h2 id="static-cells">Static cells</h2>
+<ul>
+<li>floor (empty or textured with crack, bones, rocks)</li>
+<li>wall</li>
+<li>plate</li>
+<li>gate0 (closed), gate1 (open)</li>
+<li>start</li>
+<li>finish</li>
+<li>portal</li>
+<li>lock1, lock2</li>
+<li>dir_l, dir_r, dir_u, dir_d (blocked access from left, right, up and
+down)</li>
+<li>sand (one time access, converted to void on leave)</li>
+<li>void (for lifts only, not for character)</li>
+</ul>
+<h2 id="actors">Actors</h2>
+<ul>
+<li>character - it’s you</li>
+<li>enemy - you fight it</li>
+<li>barrel - you push it</li>
+<li>lift - you ride it</li>
+</ul>
+<h2 id="drops-from-enemies-or-floor-collectibles">Drops from enemies or
+floor collectibles</h2>
+<ul>
+<li>heart (extra health)</li>
+<li>sword (extra attack)</li>
+<li>might (extra power)</li>
+<li>key1, key2</li>
+</ul>
+<h2 id="keyboard-bindings">Keyboard bindings</h2>
+<table>
+<thead>
+<tr class="header">
+<th>key</th>
+<th>action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>n</td>
+<td>Next level</td>
+</tr>
+<tr class="even">
+<td>p</td>
+<td>Prev level</td>
+</tr>
+<tr class="odd">
+<td>r</td>
+<td>Restart level</td>
+</tr>
+<tr class="even">
+<td>Ctrl-N</td>
+<td>Next level collection</td>
+</tr>
+<tr class="odd">
+<td>Ctrl-P</td>
+<td>Prev level collection</td>
+</tr>
+<tr class="even">
+<td>Ctrl-R</td>
+<td>Curr level collection</td>
+</tr>
+<tr class="odd">
+<td>F1-F10</td>
+<td>Set different themes</td>
+</tr>
+<tr class="even">
+<td>Shift F1-F10</td>
+<td>Set more themes</td>
+</tr>
+<tr class="odd">
+<td>F11</td>
+<td>Set fullscreen on/off</td>
+</tr>
+<tr class="even">
+<td>F12</td>
+<td>Set mouse visible off/on</td>
+</tr>
+<tr class="odd">
+<td>l</td>
+<td>Shows title and goal</td>
+</tr>
+<tr class="even">
+<td>m</td>
+<td>Turn on/off music</td>
+</tr>
+<tr class="odd">
+<td>s</td>
+<td>Turn on/off sound</td>
+</tr>
+<tr class="even">
+<td>a</td>
+<td>Enabled/disabled animation</td>
+</tr>
+<tr class="odd">
+<td>Enter</td>
+<td>Activate cursur</td>
+</tr>
+<tr class="even">
+<td>RShift-E</td>
+<td>Set lang english</td>
+</tr>
+<tr class="odd">
+<td>RShift-R</td>
+<td>Set lang russian</td>
+</tr>
+<tr class="even">
+<td>RShift-H</td>
+<td>Set lang hebrew</td>
+</tr>
+<tr class="odd">
+<td>RShift-L</td>
+<td>Enabled/disabled show title and goal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="source-code">Source code</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout https://github.com/mig0/dungeon.git</span></code></pre></div>
+<h2 id="how-to-run">How to run</h2>
+<p>No installation is needed to quickly run the game, just checkout from
+github, then:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./dungeon</span></span></code></pre></div>
+<h2 id="puzzles">Puzzles</h2>
+<h3 id="atomix-puzzle">Atomix Puzzle</h3>
+<p>Atomix is a puzzle game where you construct complete molecules,
+ranging from simple to highly complex, by arranging isolated atoms
+scattered among walls and other obstacles.</p>
+<p>When you push an atom in a direction, it moves until it collides with
+an object that halts its motion - this could be a wall or another atom.
+This mechanic makes Atomix challenging and engaging, as careful planning
+is required to organize your molecule correctly.</p>
+<p>There are also bonus levels where the colored numbered atoms are used
+instead of the chemical atoms. The player must guess the correct number
+structure and arrange these atoms into it.</p>
+<p>Goal: Build a complete molecule from atoms. Press Enter to select
+atoms.</p>
+<h3 id="barrel-puzzle-sokoban">Barrel Puzzle (Sokoban)</h3>
+<p>This is a classic game with straightforward yet challenging rules.
+You guide the “warehouse keeper” (“Sokoban” in Japanese) to push barrels
+into designated slots. A barrel can only be pushed in one of four
+directions, provided there is empty space behind it in that
+direction.</p>
+<p>The objective is to place all barrels onto the plates in the room.
+Sometimes, barrels must be temporarily moved off plates to enable access
+for others. Limited space and the potential for unsolvable positions
+make this puzzle both strategic and addictive.</p>
+<p>Each level introduces a unique layout of walls, floors, barrels, and
+plates, requiring new strategies and solutions.</p>
+<p>Goal: Push all barrels onto the designated plates.</p>
+<h3 id="color-puzzle">Color Puzzle</h3>
+<p>This simple yet intriguing puzzle is designed to demonstrate the
+potential of Puzzle mechanics. Some floor cells are assigned colors, and
+the number of colors and their areas are configurable. Plates on the
+floor can be pressed to alter the colors of the eight surrounding
+cells.</p>
+<p>Pressing a plate rotates the colors in sequence. For instance, if
+there are five colors (1 - red, 2 - green, 3 - blue, 4 - yellow, 5 -
+purple) and neighboring cells are colors 1, 3, and 5, pressing the plate
+changes them to 2, 4, and 1, respectively.</p>
+<p>Goal: Turn all colored cells green by pressing the plates.</p>
+<h3 id="fifteen-puzzle">Fifteen Puzzle</h3>
+<p>The 15 Puzzle, popularized by Sam Lloyd, is a sliding puzzle. It
+consists of 15 numbered tiles, arranged within a 4×4 frame containing
+one empty cell. Tiles in the same row or column as the empty cell can be
+slid horizontally or vertically.</p>
+<p>The frame can be of size n×n or even n×m, then the puzzle may be
+called the 2ⁿ-1 puzzle or the n×m sliding puzzle rather than 15
+Puzzle.</p>
+<p>The objective is to rearrange the tiles into numerical order (left to
+right, top to bottom). Starting from a shuffled configuration (after
+numerous random legal moves), players must use strategic sliding to
+return the tiles to their original positions.</p>
+<p>No shortest solution is required, the puzzle can be solved using any
+valid sequence of moves.</p>
+<p>Goal: Restore the numbered tiles to their original positions.</p>
+<h3 id="gate-puzzle">Gate Puzzle</h3>
+<p>In this puzzle, you navigate a maze filled with plates and gates.
+Gates can either be open or closed, blocking or allowing progress.
+Plates are scattered throughout the maze and serve as triggers for the
+gates.</p>
+<p>Each plate toggles the state of one or more attached gates. Pressing
+a plate may open previously closed gates while closing others, requiring
+careful planning and exploration.</p>
+<p>Press Space on keyboard (or “X” on PS controller) to activate the
+plate.</p>
+<p>Goal: Reach the finish by pressing plates to open a path.</p>
+<h3 id="hero-puzzle">Hero Puzzle</h3>
+<p>This puzzle challenges the hero to build their power and defeat
+enemies.</p>
+<p>Similar to Hero Wars bonus levels but with more complexity, the hero
+starts with a configured power level. Power can be increased or
+decreased using power potions that apply four distinct arithmetic
+operations.</p>
+<p>To solve the puzzle, the player must strategically navigate the map,
+defeating all enemies and collecting items in the correct order.</p>
+<p>In the default mode, players collect keys available in each floor
+after defeating enemies and gathering potions. Floors can be completed
+in any order, but all must be finished. In the “strict_floors” mode,
+players must complete a floor before moving to the next and cannot
+revisit previous floors.</p>
+<p>Goal: Collect all keys (if applicable) and defeat all enemies.</p>
+<h3 id="lock-puzzle">Lock Puzzle</h3>
+<p>In this puzzle, the maze contains keys and locks of two distinct
+types. Closed locks block your progress, and keys are scattered
+throughout the maze. Each key can open any lock of the corresponding
+type, but once used, a key disappears, and the lock remains permanently
+open.</p>
+<p>The maze includes branching paths, some of which lead to dead ends.
+These branches may still hold valuable keys or locks, requiring
+exploration and strategy to navigate effectively. The number and type of
+keys are perfectly matched to the number and type of locks, so every key
+must be used wisely.</p>
+<p>Goal: Reach the finish by collecting and using keys to unlock the
+path.</p>
+<h3 id="memory-puzzle">Memory Puzzle</h3>
+<p>This puzzle tests your memory skills within a grid of cells. The
+puzzle area consists of an even number of cells, each containing a
+hidden value. All values are randomly shuffled, and pairs of equivalent
+numbers are scattered across the grid in a way that their locations are
+unknown to the player. Your task is to find and match these pairs.</p>
+<p>You select two cells at a time to reveal their values. The first
+selected cell stays revealed until the second cell is chosen. If the two
+revealed cells match, they are removed from the puzzle. If they do not
+match, they are hidden again, and you must remember their positions for
+future attempts.</p>
+<p>A visual variation replaces numbers with distinct colors for
+matching, offering a more aesthetic challenge. The puzzle can be
+navigated and manipulated using various controls: arrow keys and Space
+for keyboard users, a PlayStation controller for similar precise
+navigation, or a mouse for point-and-click simplicity.</p>
+<p>Goal: Clear the puzzle area by matching and removing all pairs of
+values.</p>
+<h3 id="portal-puzzle">Portal Puzzle</h3>
+<p>In this puzzle, there are 9 halls arranged in a 3x3 grid. Each hall
+has portals located in its corners as the only means of exit. Depending
+on the puzzle variation, a hall may have 2, 3, or 4 portals. Each portal
+transports the character to one of the 9 halls, with the destination
+being pre-determined randomly at the start of the puzzle and remaining
+consistent throughout.</p>
+<p>The first hall, located in the top-left corner, serves as the
+starting point. The central hall is unique; it contains the finish in
+one corner and an additional portal in the opposite corner that leads
+back to the starting hall. This return portal is added for fun, allowing
+players to revisit the challenge and experiment with different portal
+choices.</p>
+<p>The other 8 halls are structurally identical, each containing the
+same number of portals in corresponding corners. Success requires
+strategic navigation and exploration to determine the paths that lead to
+the central hall and ultimately to the finish.</p>
+<p>Goal: Reach the finish by navigating through the portals.</p>
+<h3 id="rotatepic-puzzle">Rotatepic Puzzle</h3>
+<p>This puzzle involves restoring a large image that has been divided
+into square mini-image cells. Each cell is randomly rotated by 0, 90,
+180, or 270 degrees at the start. Your task is to rotate all mini-image
+cells to return them to their correct orientation and recreate the
+original image.</p>
+<p>The puzzle can be navigated and manipulated using various controls.
+With the keyboard, you can use the arrow keys to navigate to a cell and
+Space or PageDown (or PageUp) to rotate it clockwise (or
+counter-clockwise). The cells may be similarly navigated and rotated
+with PlayStation controller. For mouse users, clicking on a cell rotates
+it clockwise or anti-clockwise depending on the mouse button used.</p>
+<p>Goal: Rotate all mini-image cells to restore the original image.</p>
+<h3 id="stoneage-puzzle">Stoneage Puzzle</h3>
+<p>This puzzle is an accurate replication of the classic DOS game Stone
+Age, released in 1992. The puzzle area consists of various elements,
+including a start cell, a finish cell, floors, walls, sands, paired
+portals, keys, locks, void cells, and directional lifts. Each element
+adds unique mechanics to the challenge.</p>
+<p>The character can freely travel through floor cells. Sand cells are
+traversable once and transform into void cells upon exit, requiring
+careful planning. Portals and directional lifts allow access to
+otherwise unreachable areas, while keys of two distinct types can be
+collected and used to unlock corresponding locks. Directional lifts are
+the only way to cross void cells.</p>
+<p>Strategic use of these mechanics is essential to navigate through the
+puzzle and access the finish cell. The combination of diverse elements
+makes this puzzle both challenging and nostalgic for fans of the
+original game.</p>
+<p>Goal: Reach the finish by utilizing the environment and its
+mechanics.</p>
+<h3 id="trivial-puzzle">Trivial Puzzle</h3>
+<p>This puzzle serves as a demonstration of Puzzle API. It is
+minimalistic and relies mostly on default settings, with the only
+significant modification being the inclusion of a finish cell. If
+enemies are present, they can be avoided.</p>
+<p>Goal: Simply reach the finish.</p>
+<h2 id="license">License</h2>
+<p>This is Free Software, distributed under GNU General Public License
+version 3 or later.</p>
+<h2 id="developers">Developers</h2>
+<p>The game <strong>Puzzle Dungeon</strong> is developed by Mikhael
+Goikhman and his son Daniel Goikhman. The project began as a fun and
+educational way to teach and learn programming from scratch. It
+continues to evolve with the same passion, highlighting programming as a
+lifelong skill and an exciting creative endeavor.</p>
+<p>The development team welcomes contributions from other
+developers.</p>
+<p>Have fun with Puzzle Dungeon!</p>
+
+</div>
+</div>
+</body>
+</html>

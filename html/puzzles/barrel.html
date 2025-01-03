@@ -1,0 +1,285 @@
+<!--DOCTYPE html-->
+<html>
+<head>
+<base href="..">
+<title>Puzzle Dungeon - Puzzles</title>
+<style>
+body {
+	margin: 0px;
+	display: table;
+	width: 100%;
+	height: 100%;
+}
+
+div {
+	margin: 0px;
+	padding: 0px;
+}
+
+#body {
+	display: grid;
+	grid-gap: 0px;
+	grid-template-columns: 256px;
+	grid-template-rows: 128px 128px;
+	grid-template-areas:
+		"logo    header"
+		"logo    content"
+		"sidebar content";
+	height: 100%;
+}
+
+#logo {
+	grid-area: logo;
+}
+
+#sidebar {
+	grid-area: sidebar;
+	background: url("sidebar-bg.jpg") repeat #dcb;
+	color: navy;
+	padding: 10px;
+	text-align: center;
+}
+
+#header {
+	grid-area: header;
+	background: url("header-bg.jpg") repeat #234;
+}
+
+#content {
+	grid-area: content;
+	background: url("content-bg.jpg") repeat #567;
+	padding: 10px;
+	color: #f0f0f0;
+}
+
+#categories {
+	padding: 15px 15px;
+}
+
+button {
+	white-space: nowrap;
+	font-family: Arial, sans-serif;
+}
+
+a {
+	text-decoration: none;
+}
+
+.category {
+	margin: 20px 15px;
+	border: 1px solid black;
+	border-radius: 16px;
+	width: 160px;
+	height: 60px;
+	background: #4e5f6d;
+	color: #e0e0e0;
+	font-size: 22px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.current-category {
+	background: #46b482;
+}
+
+.category:hover {
+	background: #4682b4;
+	color: white;
+	transform: translateY(-3px) scale(110%);
+}
+
+.current-category:hover {
+	background: #46b482;
+}
+
+.page {
+	display: block;
+	margin: 3px auto;
+	border: 1px solid rgba(32, 32, 32, 0.2);
+	border-radius: 3px;
+	width: 220px;
+	height: 30px;
+	background: transparent;
+	backdrop-filter: brightness(90%);
+	color: #111;
+	font-size: 18px;
+	font-weight: normal;
+}
+
+.current-page {
+	backdrop-filter: hue-rotate(80deg) brightness(90%);
+}
+
+.page:hover {
+	transform: scale(105%);
+	backdrop-filter: hue-rotate(110deg) brightness(90%);
+	color: #000;
+}
+
+.current-page:hover {
+	backdrop-filter: hue-rotate(80deg) brightness(90%);
+}
+
+#sidebar hr {
+	border: 0.5px solid rgba(32, 32, 32, 0.2);
+	width: 200px;
+	margin: 12px auto;
+}
+
+#content h1 {
+	margin: -10px;
+	padding: 10px;
+	backdrop-filter: brightness(90%);
+	text-align: center;
+}
+
+#content table {
+	color: inherit;
+}
+
+#content a {
+	color: rgb(255, 255, 128);
+	text-decoration: none;
+}
+
+#content a:visited {
+	color: rgb(100, 200, 40);
+}
+
+#content a:active {
+	color: rgb(220, 110, 110);
+}
+
+p.goal {
+	 font-style: italic;
+}
+
+p.goal:before {
+	 content: "Goal: ";
+}
+
+#img-table {
+	padding: 10px;
+	width: 100%;
+	table-layout: fixed;
+}
+
+#img-table tr > * {
+	margin: 0px;
+	padding: 1px;
+	white-space: nowrap;
+	text-align: center;
+	vertical-align: middle;
+}
+
+#img-table th {
+	font: 14px Arial, sans-serif;
+	overflow: hidden;
+}
+
+#img-table .zoom,
+#img-table tr > th:not(:first-child) {
+	height: 32px;
+}
+
+#img-table th:first-child {
+	width: 70px;
+}
+
+.img-table-full tr > th:first-child {
+	height: 64px;
+}
+
+.img-table-half tr > th:first-child {
+	height: 32px;
+}
+
+.img-table-full tr > th:not(:first-child) {
+	width: 64px;
+}
+
+.img-table-half tr > th:not(:first-child) {
+	width: 32px;
+}
+
+.img-table-half tr > td {
+	width: 32px;
+	height: 32px;
+}
+
+.img-table-full tr > td {
+	width: 64px;
+	height: 64px;
+}
+
+.img-table-half img {
+	width: 32px;
+	height: 32px;
+}
+
+.img-table-full img {
+	width: 64px;
+	height: 64px;
+}
+
+#img-table .zoom {
+	text-align: left;
+}
+</style>
+</head>
+
+<body>
+<div id="body">
+<div id="logo">
+<a href="./"><img src="puzzle-dungeon-logo.jpg"></a>
+</div>
+<div id="sidebar">
+<a href="puzzles/index.html"><button class="page">All Puzzles</button></a>
+<a href="puzzles/atomix.html"><button class="page">atomix</button></a>
+<a href="puzzles/barrel.html"><button class="page current-page">barrel</button></a>
+<a href="puzzles/color.html"><button class="page">color</button></a>
+<a href="puzzles/fifteen.html"><button class="page">fifteen</button></a>
+<a href="puzzles/gate.html"><button class="page">gate</button></a>
+<a href="puzzles/hero.html"><button class="page">hero</button></a>
+<a href="puzzles/lock.html"><button class="page">lock</button></a>
+<a href="puzzles/memory.html"><button class="page">memory</button></a>
+<a href="puzzles/portal.html"><button class="page">portal</button></a>
+<a href="puzzles/rotatepic.html"><button class="page">rotatepic</button></a>
+<a href="puzzles/stoneage.html"><button class="page">stoneage</button></a>
+<a href="puzzles/trivial.html"><button class="page">trivial</button></a>
+
+</div>
+<div id="header">
+<div id="categories">
+<a href="./"><button class="category">Home</button></a>
+<a href="./puzzles/"><button class="category current-category">Puzzles</button></a>
+<a href="./screenshots/"><button class="category">Screenshots</button></a>
+<a href="./themes/"><button class="category">Themes</button></a>
+<a href="./tutorial/"><button class="category">Tutorial</button></a>
+</div>
+</div>
+<div id="content">
+<h1>Barrel Puzzle (Sokoban)</h1>
+
+<p>This is a classic game with straightforward yet challenging rules. You
+guide the "warehouse keeper" ("Sokoban" in Japanese) to push barrels into
+designated slots. A barrel can only be pushed in one of four directions,
+provided there is empty space behind it in that direction.
+</p>
+
+<p>The objective is to place all barrels onto the plates in the room.
+Sometimes, barrels must be temporarily moved off plates to enable access
+for others. Limited space and the potential for unsolvable positions make
+this puzzle both strategic and addictive.
+</p>
+
+<p>Each level introduces a unique layout of walls, floors, barrels, and
+plates, requiring new strategies and solutions.
+</p>
+
+<p class="goal">Push all barrels onto the designated plates.</p>
+
+</div>
+</div>
+</body>
+</html>
