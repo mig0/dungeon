@@ -1,0 +1,4 @@
+#!/bin/sh
+
+pandoc -o elements/index.html README.md && \
+echo "Created elements/index.html from README.md"
