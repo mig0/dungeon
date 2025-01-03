@@ -1,0 +1,49 @@
+#!/bin/bash
+
+export pagename=$1
+if test -z "$pagename"; then
+	echo "Usage: $0 NAME"
+	exit 1
+fi
+
+assert_filename() {
+	if ! test -f "$1"; then
+		echo "Can't find file $1"
+		exit 1
+	fi
+}
+
+export element_filename="elements/$pagename.html"
+assert_filename $element_filename
+
+export template_filename="elements/template.html"
+assert_filename $template_filename
+
+export category=`dirname "$pagename"`
+if test "$category" = .; then
+	export category=home
+	export base_dir=.
+else
+	export base_dir=..
+fi
+
+export sidebar_filename="elements/sidebars/$category.html"
+assert_filename $sidebar_filename
+
+output_filename="html/$pagename.html"
+
+cat $template_filename | perl -pe '
+	s/<{BASE}>/$ENV{base_dir}/g;
+	s/<{TITLE}>/ucfirst($ENV{category})/eg;
+	s/<{SIDEBAR}>/`cat $ENV{sidebar_filename}`/e;
+	s/<{CONTENT}>/`cat $ENV{element_filename}`/e;
+	s/<{(.*?) IF (\w+) (.*?)}>/$ENV{$2} eq $3 ? $1 : ""/eg;
+' >$output_filename.new
+
+if test -f "$output_filename" && test "`cat $output_filename`" = "`cat $output_filename.new`"; then
+	rm -f $output_filename.new
+	echo "File $output_filename was not changed"
+else
+	mv $output_filename.new $output_filename && \
+	echo "Generated new $output_filename"
+fi
